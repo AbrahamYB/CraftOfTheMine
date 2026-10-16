@@ -8,7 +8,10 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
@@ -24,6 +27,18 @@ import static com.botwclimb.common.paraglider.ParagliderConstants.*;
 @EventBusSubscriber(modid = BotwClimb.MOD_ID)
 public final class ParagliderController {
     private ParagliderController() {}
+
+    private static final ResourceLocation SLOW_FALL = ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "slow_fall");
+
+    /** Falls are slower for everyone. Runs on both sides so the client's prediction matches the server. */
+    @SubscribeEvent
+    public static void onFallSpeed(PlayerTickEvent.Post event) {
+        var gravity = event.getEntity().getAttribute(Attributes.GRAVITY);
+        if (gravity != null && !gravity.hasModifier(SLOW_FALL)) {
+            gravity.addPermanentModifier(new AttributeModifier(SLOW_FALL, ParagliderConstants.GRAVITY_MODIFIER,
+                    AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+        }
+    }
 
     /** Conditions that must hold for as long as the glider is open. */
     public static boolean stateAllows(Player p) {

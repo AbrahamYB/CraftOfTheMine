@@ -5,7 +5,7 @@ end-rod particles). Use creative mode + a stone brick/stone build area. Third pe
 
 Legend: `#` stone, `P` the player hanging on the wall, side view, wall is on the right.
 Start climbing: **hold the Climb key (default Shift + Space, rebind in Options > Controls > BOTW Climb; combos with Shift/Ctrl/Alt are allowed) for 0.6 s while next to a wall**. Space and walking into a wall never start a climb.
-Controls while hanging: W/S up/down, A/D sideways, Space (release it first, then press) = climb jump, **Sneak or Sprint = let go**.
+Controls while hanging: W/S up/down, A/D sideways, Space (release it first, then press) = climb jump, **Sneak = let go** (sprint no longer affects climbing).
 
 Automatic geometry check of the jump planner (no game window needed):
 `gradlew runGameTestServer` – 7 headless tests (open wall, 1-block lip, lip on a wall top, lip out of reach,
@@ -76,8 +76,8 @@ or a wall that ends with a roof over it).
 Expected: you go up as far as the hop allows and then fall normally (and take fall damage).
 
 ## TEST 11 – letting go
-While hanging (also mid-jump): press Shift; hold Ctrl (sprint); double-tap W.
-Expected: you drop immediately and the climbing pose disappears. While Shift or Ctrl is still held you cannot re-grab.
+While hanging (also mid-jump): press Shift.
+Expected: you drop immediately and the climbing pose disappears. While Shift is still held you cannot re-grab. Sprint (Ctrl) has no effect on climbing.
 Release the key and walk into the wall again to re-grab.
 
 ## TEST 12 – corners
@@ -143,3 +143,8 @@ champion, majora, demon_king.
     with your character (relog, death). There is no keybind and no middle-click; creative cannot clone items from it.
 23. The panel only shows while an inventory-style screen is open and you have an Elytra in it; it disappears otherwise.
     The Fabric key over anything that is not an Elytra does nothing. Middle-click (pick block) is NOT used, so creative never clones items because of this.
+
+## Falling and the glider
+24. Falls are 20% slower than before (gravity -20% for everyone, including other players).
+25. Walk off a ledge of 2+ blocks and press Space once: the paraglider opens (not the Elytra). A plain jump on the
+    ground or a small step does not open it. The Shift+Space chord still switches Elytra <-> glider as before.
