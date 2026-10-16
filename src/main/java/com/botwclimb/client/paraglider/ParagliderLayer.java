@@ -1,6 +1,8 @@
 package com.botwclimb.client.paraglider;
 
 import com.botwclimb.BotwClimb;
+import com.botwclimb.common.paraglider.FabricDefinition;
+import com.botwclimb.common.paraglider.FabricRegistry;
 import com.botwclimb.common.paraglider.ParagliderData;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.model.PlayerModel;
@@ -33,7 +35,9 @@ public final class ParagliderLayer extends RenderLayer<AbstractClientPlayer, Pla
         ps.translate(0, -10 / 16f, 0); // unfold from the hands
         ps.scale(sx, sy, sx);
         ps.translate(0, 10 / 16f, 0);
-        model.renderToBuffer(ps, buffer.getBuffer(model.renderType(ParagliderModel.TEXTURE)), light,
+        FabricDefinition fabric = FabricRegistry.byIndex(g.fabric);
+        model.setRibbons(fabric.hasLongRibbons());
+        model.renderToBuffer(ps, buffer.getBuffer(model.renderType(fabric.texture())), light,
                 OverlayTexture.NO_OVERLAY, -1);
         ps.popPose();
     }

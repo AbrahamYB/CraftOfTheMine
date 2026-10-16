@@ -35,6 +35,8 @@ public final class ClimbConstants {
     public static final double JUMP_MIN_GAIN = 0.75;
     /** Only wall faces this close to the original wall plane count as "the wall"; no clinging to a lip's outer face. */
     public static final double JUMP_MAX_WALL_OUT = 0.5;
+    /** How far a jump drifts sideways when A / D is held. */
+    public static final double JUMP_SIDE_REACH = 1.5;
     public static final double JUMP_GRID = 0.25;
     public static final double JUMP_CLEARANCE = 0.04;
     public static final double JUMP_AVG_SPEED = 0.48;

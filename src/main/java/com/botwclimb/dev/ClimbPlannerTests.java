@@ -372,4 +372,35 @@ public class ClimbPlannerTests {
             h.fail("must settle on the cruise speed");
         h.succeed();
     }
+
+    @GameTest(template = "empty")
+    public static void sidewaysJumpDriftsAlongWall(GameTestHelper h) {
+        wall(h, 14);
+        Player p = h.makeMockPlayer(GameType.SURVIVAL);
+        Vec3 start = h.absoluteVec(new Vec3(5.5, 4.0, FLUSH_Z));
+        JumpPlan left = JumpPlanner.plan(h.getLevel(), p, start, Direction.SOUTH, 1);
+        JumpPlan right = JumpPlanner.plan(h.getLevel(), p, start, Direction.SOUTH, -1);
+        // facing south, the player's left is +x (east)
+        if (left.end().x < 1.0 || right.end().x > -1.0) h.fail("A/D jump should drift ~1.5 blocks: " + left.end() + " " + right.end());
+        if (left.end().y < 2.0) h.fail("drifting jump must still rise");
+        // a wall that ends to the left: no sideways drift into thin air
+        for (int y = 1; y <= 14; y++) for (int x = 7; x < 12; x++) h.setBlock(x, y, 8, Blocks.AIR);
+        JumpPlan blocked = JumpPlanner.plan(h.getLevel(), p, start, Direction.SOUTH, 1);
+        System.out.printf("[botwclimb-test] side jumps: L=%s R=%s edge-limited=%s%n", left.end(), right.end(), blocked.end());
+        h.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void fabricTexturesExist(GameTestHelper h) throws java.io.IOException {
+        for (var f : com.botwclimb.common.paraglider.FabricRegistry.all()) {
+            try (var in = ClimbPlannerTests.class.getResourceAsStream("/assets/botwclimb/textures/entity/paraglider/" + f.id() + ".png")) {
+                if (in == null) h.fail("missing texture for fabric " + f.id());
+                byte[] head = in.readNBytes(24);
+                int w = java.nio.ByteBuffer.wrap(head, 16, 4).getInt(), hh = java.nio.ByteBuffer.wrap(head, 20, 4).getInt();
+                if (w != 128 || hh != 64) h.fail(f.id() + " must be 128x64, is " + w + "x" + hh);
+            }
+        }
+        if (com.botwclimb.common.paraglider.FabricRegistry.indexOf("zonai") < 0) h.fail("zonai registered");
+        h.succeed();
+    }
 }

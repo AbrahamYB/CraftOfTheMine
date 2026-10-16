@@ -29,8 +29,10 @@ public final class NetworkHandler {
     private static void onGlideState(ParagliderStatePayload p, IPayloadContext ctx) {
         Player self = ctx.player();
         if (!(self.level().getEntity(p.entityId()) instanceof Player target)) return;
-        if (target == self && !p.correction()) return; // the owner predicted this already
-        target.getData(BotwClimb.PARAGLIDER).gliding = p.gliding();
+        var g = target.getData(BotwClimb.PARAGLIDER);
+        g.fabric = p.fabric();
+        if (target == self && !p.correction()) return; // the owner predicted the open/close already
+        g.gliding = p.gliding();
     }
 
     private static void onInput(ClimbInputPayload p, IPayloadContext ctx) {

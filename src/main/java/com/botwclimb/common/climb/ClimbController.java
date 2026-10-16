@@ -117,7 +117,7 @@ public final class ClimbController {
         double side = Math.abs(str) < 0.1f ? 0 : Math.signum(str);
 
         if (jumpPressed && d.jumpCooldown == 0 && c.holds(HOLD_GAP)) {
-            startJump(p, d);
+            startJump(p, d, (int) side);
             return;
         }
         if (up < 0 && p.onGround() && d.stateTicks > 2) {
@@ -181,8 +181,8 @@ public final class ClimbController {
 
     // ------------------------------------------------------------------ climb jump
 
-    private static void startJump(Player p, ClimbData d) {
-        d.plan = JumpPlanner.plan(p.level(), p, p.position(), d.dir);
+    private static void startJump(Player p, ClimbData d, int side) {
+        d.plan = JumpPlanner.plan(p.level(), p, p.position(), d.dir, side);
         d.jumpStart = p.position();
         d.jumpTick = 0;
         d.setState(ClimbState.CLIMB_JUMP);

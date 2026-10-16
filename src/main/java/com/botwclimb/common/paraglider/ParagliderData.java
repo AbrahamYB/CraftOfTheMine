@@ -5,6 +5,7 @@ import net.minecraft.world.phys.Vec3;
 /** Per-player paraglider state (non-persistent attachment; client and server keep separate copies). */
 public final class ParagliderData {
     public boolean gliding;
+    public int fabric;               // index into FabricRegistry (not saved: back to ordinary after a relog)
     public int groundTicks;          // server: consecutive ticks on the ground while gliding
     public boolean fresh;            // client: just opened, take the starting velocity from the player
     public Vec3 prevPos = Vec3.ZERO; // client: position at the previous glide step
