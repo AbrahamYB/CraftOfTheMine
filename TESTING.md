@@ -135,11 +135,11 @@ champion, majora, demon_king.
     one table row there + one `add(...)` line in `FabricRegistry`.
 
 ## Fabric picker (inventory)
-21. Put an Elytra in your inventory (or wear it) and open the inventory. Middle-click (the pick-block bind) the Elytra:
+21. Put an Elytra in your inventory (or wear it) and open the inventory. Hover the Elytra and press the Fabric key (default Y, own entry under Controls > BOTW Climb > "Choose Paraglider Fabric"):
     a translucent panel with all 16 fabrics appears next to the mouse. The current fabric has a gold outline; hovering
     a fabric shows its name.
 22. Left-click a fabric: it becomes yours at once (open the glider to see it), the panel closes, the Elytra item is
     unchanged. Another player wearing that same Elytra does not get your fabric, and other players see YOUR glider in
     your fabric. It is saved with your character (relog, death).
 23. The panel closes on: a click outside it (that click still works normally), Esc, or closing the inventory.
-    Middle-clicking anything that is not an Elytra does nothing special (creative still clones it).
+    The Fabric key over anything that is not an Elytra does nothing. Middle-click (pick block) is NOT used, so creative never clones items because of this.

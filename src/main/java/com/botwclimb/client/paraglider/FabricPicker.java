@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.List;
 
 /**
- * The fabric chooser: pick-block (middle click) on an Elytra in any inventory screen opens a small translucent panel
+ * The fabric chooser: the Fabric key (default Y) while hovering an Elytra in any inventory screen opens a small translucent panel
  * with every fabric. The choice belongs to the player, not to the item, and closes with the inventory or on a click
  * outside the panel.
  */
@@ -70,6 +70,21 @@ public final class FabricPicker {
     }
 
     @SubscribeEvent
+    public static void onKey(ScreenEvent.KeyPressed.Pre event) {
+        if (open || !(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
+        if (!ParagliderKeys.FABRIC.matches(event.getKeyCode(), event.getScanCode())) return;
+        Slot slot = screen.getSlotUnderMouse();
+        if (slot == null || !isElytra(slot.getItem())) return;
+        var win = Minecraft.getInstance().getWindow();
+        double mx = Minecraft.getInstance().mouseHandler.xpos() * win.getGuiScaledWidth() / win.getScreenWidth();
+        double my = Minecraft.getInstance().mouseHandler.ypos() * win.getGuiScaledHeight() / win.getScreenHeight();
+        open = true;
+        px = (int) Math.max(2, Math.min(mx + 6, screen.width - panelW() - 2));
+        py = (int) Math.max(2, Math.min(my - panelH() / 2.0, screen.height - panelH() - 2));
+        event.setCanceled(true); // the key is used up by the picker: nothing else reacts to this press
+    }
+
+    @SubscribeEvent
     public static void onClick(ScreenEvent.MouseButtonPressed.Pre event) {
         if (!(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
         double mx = event.getMouseX(), my = event.getMouseY();
@@ -88,13 +103,6 @@ public final class FabricPicker {
             event.setCanceled(true);
             return;
         }
-        if (!Minecraft.getInstance().options.keyPickItem.matchesMouse(event.getButton())) return;
-        Slot slot = screen.getSlotUnderMouse();
-        if (slot == null || !isElytra(slot.getItem())) return;
-        open = true;
-        px = (int) Math.max(2, Math.min(mx + 6, screen.width - panelW() - 2));
-        py = (int) Math.max(2, Math.min(my - panelH() / 2.0, screen.height - panelH() - 2));
-        event.setCanceled(true); // do not also clone the stack (creative)
     }
 
     @SubscribeEvent
