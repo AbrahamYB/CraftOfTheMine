@@ -22,6 +22,9 @@ public final class NetworkHandler {
         r.playToServer(ParagliderTogglePayload.TYPE, ParagliderTogglePayload.CODEC, (p, ctx) -> {
             if (ctx.player() instanceof ServerPlayer sp) ParagliderController.serverToggle(sp, p.open());
         });
+        r.playToServer(ParagliderFabricPayload.TYPE, ParagliderFabricPayload.CODEC, (p, ctx) -> {
+            if (ctx.player() instanceof ServerPlayer sp) ParagliderController.setFabric(sp, p.index());
+        });
         r.playToClient(ParagliderStatePayload.TYPE, ParagliderStatePayload.CODEC, NetworkHandler::onGlideState);
     }
 

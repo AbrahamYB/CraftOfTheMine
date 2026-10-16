@@ -105,6 +105,32 @@ public final class ParagliderController {
         PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, payload);
     }
 
+    /** Stores the player's own fabric choice (not tied to any item) and tells everyone who can see them. */
+    public static void setFabric(ServerPlayer p, int index) {
+        if (index < 0 || index >= FabricRegistry.all().size()) return;
+        p.setData(BotwClimb.FABRIC, index);
+        ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
+        g.fabric = index;
+        broadcast(p, g.gliding, false);
+    }
+
+    @SubscribeEvent
+    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer p) {
+            ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
+            g.fabric = p.getData(BotwClimb.FABRIC);
+            broadcast(p, false, false);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer p) {
+            p.getData(BotwClimb.PARAGLIDER).fabric = p.getData(BotwClimb.FABRIC);
+            broadcast(p, false, false);
+        }
+    }
+
     /** Handles a client toggle request. Closing is always fine; opening must pass the same checks as the client. */
     public static void serverToggle(ServerPlayer p, boolean open) {
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
@@ -151,9 +177,7 @@ public final class ParagliderController {
                                 return 0;
                             }
                             ServerPlayer p = ctx.getSource().getPlayerOrException();
-                            ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
-                            g.fabric = index;
-                            broadcast(p, g.gliding, false);
+                            setFabric(p, index);
                             ctx.getSource().sendSuccess(() -> Component.literal("Paraglider fabric: " + id), false);
                             return 1;
                         })))));
@@ -161,9 +185,9 @@ public final class ParagliderController {
 
     @SubscribeEvent
     public static void onStartTracking(PlayerEvent.StartTracking event) {
-        if (event.getEntity() instanceof ServerPlayer viewer && event.getTarget() instanceof ServerPlayer target
-                && target.getData(BotwClimb.PARAGLIDER).gliding) {
-            PacketDistributor.sendToPlayer(viewer, new ParagliderStatePayload(target.getId(), true, false, target.getData(BotwClimb.PARAGLIDER).fabric));
+        if (event.getEntity() instanceof ServerPlayer viewer && event.getTarget() instanceof ServerPlayer target) {
+            ParagliderData g = target.getData(BotwClimb.PARAGLIDER);
+            PacketDistributor.sendToPlayer(viewer, new ParagliderStatePayload(target.getId(), g.gliding, false, g.fabric));
         }
     }
 }

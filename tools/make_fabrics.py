@@ -11,6 +11,7 @@ UV layout of the sheet (must match ParagliderModel):
   centre  net at (0,0)   top (16..31, 0..15)  bottom (32..47, 0..15)
   left    net at (64,0)  top (80..91, 0..15)  bottom (92..103, 0..15)     (wing on the player's left, +x)
   right   net at (0,17)  top (16..27,17..32)  bottom (28..39,17..32)
+  flat preview of the canopy (0..39, 46..61), used by the inventory picker
   edge strip (0..83, 34..37)   tassel (0..3, 40..44)   ribbon net (64..107, 40..60)   strut net (110..113, 40..53)
 """
 import os, sys, zlib, struct, math
@@ -271,15 +272,22 @@ def yiga():
 
 
 def cece():
-    cv = Canvas('#644f5b')
-    cv.scatter('#4d4543', [(3, 3), (4, 3), (8, 6), (9, 6), (6, 11), (7, 11), (14, 5), (15, 5), (23, 9), (24, 9),
-                           (17, 12), (18, 12), (11, 2), (12, 2), (10, 9), (11, 9)])
-    cv.scatter('#6f5a66', [(5, 7), (6, 7), (2, 12), (13, 8), (14, 8), (9, 13), (16, 3)])
-    cv.rect(0, 11, 5, 15, '#977e22')                 # gold-olive patch at one corner
+    # grey-violet canopy, cream tab at the front, two plum blobs mid-way, a gold-brown patch at one edge
+    cv = Canvas('#534953')
+    cv.rect(0, 0, 11, 15, '#4a414a')
+    cv.rect(28, 0, 39, 15, '#3e3641')
+    cv.scatter('#6a5e5e', [(4, 3), (5, 3), (9, 6), (10, 6), (7, 11), (8, 11), (14, 9), (15, 9), (24, 12), (25, 12),
+                           (12, 4), (13, 4), (17, 13), (18, 13), (3, 8), (11, 13)])
+    cv.scatter('#32281a', [(6, 5), (2, 10), (13, 11), (10, 2), (16, 6)])
+    cv.rect(0, 9, 3, 15, '#8c6f24')
+    cv.rect(0, 0, 0, 8, '#8c6f24')
     cv.frame('#cbba88')
-    cv.rect(15, 0, 24, 3, '#cbba88')                 # the cream tab at the front
-    cv.rect(17, 4, 22, 4, '#cbba88')
-    cv.rect(19, 5, 20, 6, '#cbba88')
+    cv.rect(14, 1, 25, 2, '#cbba88')                 # cream shape at the front
+    cv.rect(15, 3, 24, 4, '#cbba88')
+    cv.rect(17, 5, 22, 6, '#cbba88')
+    cv.rect(18, 7, 21, 7, '#cbba88')
+    for cx in (15, 24):                              # plum blobs
+        cv.ellipse(cx, 10.5, 3.2, 2.2, '#7c3a59')
     return cv
 
 
@@ -341,44 +349,54 @@ def korok():
 
 
 def champion():
-    cv = Canvas('#0ea1d1')
+    # plain bright blue field, small tan Hylian crest near the front, darker blue triangle at the rear
+    cv = Canvas('#0fa1d0')
     cv.rect(0, 0, 11, 15, '#0b86b0')
-    cv.rect(28, 0, 39, 15, '#094664')
-    cv.frame('#cdbb89')
+    cv.rect(28, 0, 39, 15, '#0d4b68')
+    tri2(cv, 8, 8, '#0d6f94', up=False)              # rear shading triangle
+    cv.frame('#d4bf8a')
     for x in (12, 27):
-        cv.rect(x, 1, x, 14, '#cdbb89')
-    hyrule_crest(cv, 2, '#cdbb89')
+        cv.rect(x, 1, x, 14, '#9e8e6b')
+    # crest near the front: wings, triforce, tail
+    for t in range(2):
+        cv.line(17, 2 + t * 2, 13, 1 + t * 2, '#d4bf8a', sym=True)
+        cv.line(17, 3 + t * 2, 14, 3 + t * 2, '#d4bf8a', sym=True)
+    tri2(cv, 1, 2, '#d4bf8a')
+    tri2(cv, 3, 3, '#d4bf8a')
+    cv.rect(19, 6, 20, 7, '#d4bf8a')
     return cv
 
 
 def majora():
-    cv = Canvas('#524a66')
-    cv.rect(0, 0, 11, 15, '#473f5a')
-    cv.rect(28, 0, 39, 15, '#3b344b')
-    cv.frame('#cdb780')
-    spike = '#eda700'
-    cv.tri(19, 1, 3, spike)                         # spikes of the mask
-    cv.tri(19, 12, 3, spike, up=False)
-    cv.tri(13, 8, 3, spike)
-    cv.rect(12, 6, 27, 10, '#92472b')                # face
-    cv.rect(14, 4, 25, 12, '#92472b')
-    cv.rect(15, 5, 18, 8, '#eda700')                 # big eyes
-    cv.rect(21, 5, 24, 8, '#eda700')
-    cv.rect(16, 6, 17, 7, '#1a1b2b'); cv.rect(22, 6, 23, 7, '#1a1b2b')
-    cv.rect(17, 10, 22, 10, '#cdb780')               # mouth
+    # purple-grey canopy, two big amber eyes with olive pupils, red-brown stripe above and a red-brown mouth band below
+    cv = Canvas('#5a5371')
+    cv.rect(0, 0, 11, 15, '#4d4763')
+    cv.rect(28, 0, 39, 15, '#423b55')
+    cv.frame('#bca97a')
+    cv.rect(19, 1, 20, 6, '#97523e')                 # stripe from the front
+    cv.rect(18, 5, 21, 6, '#97523e')
+    for cx in (14, 25):
+        cv.ellipse(cx, 8, 4.5, 3.4, '#694626')       # brown ring
+        cv.ellipse(cx, 8, 3.8, 2.8, '#e9a001')       # amber eye
+        cv.rect(cx - 1, 7, cx, 9, '#8d7316')         # olive pupil
+    cv.rect(10, 12, 29, 13, '#97523e')               # mouth band
+    for x in range(11, 29, 3):
+        cv.rect(x, 12, x, 13, '#bca97a')
     return cv
 
 
 def demon():
-    cv = Canvas('#54544b')
-    cv.rect(0, 0, 11, 15, '#4a4a42')
-    cv.rect(28, 0, 39, 15, '#3f3d2f')
-    cv.frame('#aa9c62')
-    cv.tri(19, 2, 7, '#aa9c62')                      # horned diamond emblem
-    cv.tri(19, 8, 6, '#aa9c62', up=False)
-    cv.tri(19, 4, 3, '#54544b')
-    cv.line(13, 2, 16, 6, '#aa9c62', sym=True)       # horns
-    cv.line(12, 1, 13, 2, '#aa9c62', sym=True)
+    # dark grey canopy, big khaki oval/diamond emblem in the middle, khaki trim
+    cv = Canvas('#51524a')
+    cv.rect(0, 0, 11, 15, '#474840')
+    cv.rect(28, 0, 39, 15, '#3a3b34')
+    cv.frame('#ac9d64')
+    cv.ellipse(C, 8, 7.5, 5.2, '#ac9d64')
+    cv.ellipse(C, 8, 5.8, 3.8, '#51524a')
+    tri2(cv, 5, 5, '#ac9d64')                        # inner gem
+    tri2(cv, 9, 3, '#d7be87', up=False)
+    cv.line(13, 1, 15, 3, '#8b7d57', sym=True)       # small marks above the emblem
+    cv.rect(18, 1, 21, 1, '#8b7d57')
     return cv
 
 
@@ -392,14 +410,14 @@ FABRICS = {
     'zora':     (zora, '#d0bc8b', '#2c5a6c', '#d0bc8b', '#d0bc8b', True),
     'goron':    (goron, '#c8b281', '#835f35', '#c8b281', '#c8b281', True),
     'yiga':     (yiga, '#c5b386', '#732d18', '#c5b386', '#c5b386', True),
-    'cece':     (cece, '#cbba88', '#644f5b', '#cbba88', '#cbba88', True),
+    'cece':     (cece, '#cbba88', '#534953', '#cbba88', '#cbba88', True),
     'addison':  (addison, '#3f9c82', '#b69114', '#3f9c82', '#ceb37b', False),
     'chuchu':   (chuchu, '#ac5f0c', '#10a3bc', '#ac5f0c', '#ceb985', True),
     'aerocuda': (aerocuda, '#775023', '#8b7234', '#775023', '#cfbb85', True),
     'korok':    (korok, '#9c791a', '#4f944c', '#9c791a', '#d7be84', True),
-    'champion': (champion, '#cdbb89', '#cdbb89', '#0ea1d1', '#cdbb89', True),
-    'majora':   (majora, '#eda700', '#eda700', '#92472b', '#cdb780', True),
-    'demon_king': (demon, '#aa9c62', '#aa9c62', '#54544b', '#aa9c62', True),
+    'champion': (champion, '#d4bf8a', '#0d4b68', '#d4bf8a', '#d4bf8a', True),
+    'majora':   (majora, '#e9a001', '#e9a001', '#97523e', '#bca97a', True),
+    'demon_king': (demon, '#ac9d64', '#ac9d64', '#51524a', '#ac9d64', True),
 }
 
 STRUT = '#b09a6e'
@@ -437,6 +455,9 @@ def sheet(cv, tassel, ribbon, tip, trim):
     for y in range(40, 54):
         for x in range(110, 114):
             put(x, y, STRUT)
+    for y in range(16):                       # flat canopy preview strip used by the inventory fabric picker
+        for x in range(40):
+            put(x, 46 + y, C_[y][x])
     return img
 
 
