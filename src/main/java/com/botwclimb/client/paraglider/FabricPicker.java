@@ -18,19 +18,25 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.List;
 
 /**
- * Side menu for the paraglider fabric. While an inventory screen is open and the player has an Elytra in it, a narrow
- * panel as tall as the screen sits beside the inventory. Scroll it to see every fabric and click one to use it. The
- * choice is saved on the player only: the Elytra item and other players' view of it are not changed.
+ * Side menu for the paraglider fabric, drawn to the left of the inventory in the vanilla panel style and no taller than
+ * the inventory itself. Shown while an inventory screen is open and the player has an Elytra in it. Hover a swatch for
+ * its name, scroll for more, click to use it. The choice is saved on the player only.
  */
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
 public final class FabricPicker {
-    private static final int PANEL_W = 104, ROW_H = 24, PAD = 4, HEADER_H = 16, MARGIN = 4;
+    private static final int PANEL_W = 50, ROW_H = 20, PAD = 4, HEADER_H = 12, INV_H = 166;
+    // vanilla GUI colours
+    private static final int PANEL = 0xFFC6C6C6, DARK = 0xFF373737, LIGHT = 0xFFFFFFFF, TEXT = 0xFF404040;
     private static int scroll; // index of the first visible row
 
     private FabricPicker() {}
 
+    private static int panelH(AbstractContainerScreen<?> screen) {
+        return Math.min(INV_H, screen.height - 8);
+    }
+
     private static int visibleRows(AbstractContainerScreen<?> screen) {
-        return Math.max(1, (screen.height - 2 * MARGIN - HEADER_H - PAD) / ROW_H);
+        return Math.max(1, (panelH(screen) - HEADER_H - PAD * 2) / ROW_H);
     }
 
     private static int maxScroll(AbstractContainerScreen<?> screen) {
@@ -38,8 +44,11 @@ public final class FabricPicker {
     }
 
     private static int panelX(AbstractContainerScreen<?> screen) {
-        // beside the inventory when there is room, otherwise on the right edge
-        return Math.min(screen.getGuiLeft() + 184, screen.width - PANEL_W - MARGIN);
+        return Math.max(2, screen.getGuiLeft() - PANEL_W - 4); // left of the inventory, never off screen
+    }
+
+    private static int panelY(AbstractContainerScreen<?> screen) {
+        return Math.max(2, Math.min(screen.getGuiTop(), screen.height - panelH(screen) - 2));
     }
 
     private static boolean hasElytra(Player player) {
@@ -52,16 +61,26 @@ public final class FabricPicker {
     }
 
     private static boolean inside(AbstractContainerScreen<?> screen, double mx, double my) {
-        return mx >= panelX(screen) && mx < panelX(screen) + PANEL_W && my >= MARGIN && my < screen.height - MARGIN;
+        int x = panelX(screen), y = panelY(screen);
+        return mx >= x && mx < x + PANEL_W && my >= y && my < y + panelH(screen);
     }
 
     /** Index of the fabric row under the mouse, or -1. */
     private static int rowAt(AbstractContainerScreen<?> screen, double my) {
-        double y = my - MARGIN - HEADER_H;
+        double y = my - panelY(screen) - HEADER_H - PAD;
         if (y < 0) return -1;
-        int row = scroll + (int) (y / ROW_H);
-        return row < FabricRegistry.all().size() && (y % ROW_H) < ROW_H - 2 && row - scroll < visibleRows(screen)
-                ? row : -1;
+        int r = (int) (y / ROW_H);
+        if (r >= visibleRows(screen) || y % ROW_H > ROW_H - 2) return -1;
+        int row = scroll + r;
+        return row < FabricRegistry.all().size() ? row : -1;
+    }
+
+    private static void bevel(GuiGraphics g, int x, int y, int w, int h, boolean sunken) {
+        int tl = sunken ? DARK : LIGHT, br = sunken ? LIGHT : DARK;
+        g.fill(x, y, x + w, y + 1, tl);
+        g.fill(x, y, x + 1, y + h, tl);
+        g.fill(x, y + h - 1, x + w, y + h, br);
+        g.fill(x + w - 1, y, x + w, y + h, br);
     }
 
     @SubscribeEvent
@@ -70,32 +89,30 @@ public final class FabricPicker {
         var screen = (AbstractContainerScreen<?>) event.getScreen();
         GuiGraphics g = event.getGuiGraphics();
         var mc = Minecraft.getInstance();
-        int x = panelX(screen), top = MARGIN, h = screen.height - 2 * MARGIN;
+        int x = panelX(screen), y = panelY(screen), h = panelH(screen);
         int selected = mc.player.getData(BotwClimb.PARAGLIDER).fabric;
         int mx = event.getMouseX(), my = event.getMouseY();
         List<FabricDefinition> all = FabricRegistry.all();
 
         g.pose().pushPose();
         g.pose().translate(0, 0, 400);
-        g.fill(x, top, x + PANEL_W, top + h, 0xC0101018);
-        g.renderOutline(x, top, PANEL_W, h, 0xFF8A8A9A);
-        g.drawString(mc.font, Component.translatable("gui.botwclimb.fabric_picker"), x + PAD, top + 4, 0xFFFFFF, false);
+        g.fill(x, y, x + PANEL_W, y + h, PANEL);
+        bevel(g, x, y, PANEL_W, h, false);
+        g.drawString(mc.font, Component.translatable("gui.botwclimb.fabric_picker_short"), x + PAD, y + PAD, TEXT, false);
 
-        int hover = rowAt(screen, my);
+        int hover = inside(screen, mx, my) ? rowAt(screen, my) : -1;
         int rows = visibleRows(screen);
         for (int r = 0; r < rows && scroll + r < all.size(); r++) {
             int i = scroll + r;
-            int ry = top + HEADER_H + PAD + r * ROW_H;
-            if (i == hover && inside(screen, mx, my)) g.fill(x + 2, ry - 1, x + PANEL_W - 2, ry + ROW_H - 3, 0x50FFFFFF);
-            if (i == selected) g.renderOutline(x + 2, ry - 1, PANEL_W - 4, ROW_H - 2, 0xFFFFD35A);
-            // flat preview of the canopy (40x16 at texture (0,46)), then the name
-            g.blit(all.get(i).texture(), x + PAD + 2, ry + 2, 40, 16, 0f, 46f, 40, 16, 128, 64);
-            g.drawString(mc.font, Component.translatable("fabric.botwclimb." + all.get(i).id()),
-                    x + PAD + 46, ry + 6, 0xFFFFFF, false);
+            int ry = y + HEADER_H + PAD + r * ROW_H;
+            int rx = x + PAD;
+            bevel(g, rx - 1, ry - 1, 42, 18, true); // vanilla slot frame around the swatch
+            g.blit(all.get(i).texture(), rx, ry, 40, 16, 0f, 46f, 40, 16, 128, 64);
+            if (i == selected) g.renderOutline(rx - 2, ry - 2, 44, 20, 0xFFFFFFFF);
+            if (i == hover) g.fill(rx, ry, rx + 40, ry + 16, 0x80FFFFFF);
         }
-        if (all.size() > rows) { // scroll hint
-            g.drawString(mc.font, (scroll + 1) + "-" + Math.min(all.size(), scroll + rows) + "/" + all.size(),
-                    x + PAD, top + h - 10, 0x9A9AA5, false);
+        if (hover >= 0) {
+            g.renderTooltip(mc.font, Component.translatable("fabric.botwclimb." + all.get(hover).id()), mx, my);
         }
         g.pose().popPose();
     }
@@ -112,7 +129,7 @@ public final class FabricPicker {
     public static void onClick(ScreenEvent.MouseButtonPressed.Pre event) {
         if (!shown(event) || !(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
         if (!inside(screen, event.getMouseX(), event.getMouseY())) return;
-        event.setCanceled(true); // clicks in the menu never reach the inventory slots behind it
+        event.setCanceled(true); // clicks in the menu never reach the inventory slots
         int row = rowAt(screen, event.getMouseY());
         if (row < 0 || event.getButton() != 0) return;
         PacketDistributor.sendToServer(new ParagliderFabricPayload(row));
