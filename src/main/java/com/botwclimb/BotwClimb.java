@@ -30,6 +30,11 @@ public class BotwClimb {
             ATTACHMENTS.register("paraglider",
                     () -> AttachmentType.builder(com.botwclimb.common.paraglider.ParagliderData::new).build());
 
+    /** The player's chosen paraglider fabric (index into FabricRegistry). Saved with the player. */
+    public static final Supplier<AttachmentType<Integer>> FABRIC =
+            ATTACHMENTS.register("fabric", () -> AttachmentType.builder(() -> 0)
+                    .serialize(com.mojang.serialization.Codec.INT).copyOnDeath().build());
+
     public BotwClimb(IEventBus modBus) {
         ATTACHMENTS.register(modBus);
         modBus.addListener(NetworkHandler::register);

@@ -1,5 +1,22 @@
 {
   "key.categories.botwclimb": "BOTW Climb",
   "key.botwclimb.climb": "Hold to Climb Wall",
-  "key.botwclimb.paraglide": "Toggle Paraglider (hold modifier, then press)"
+  "key.botwclimb.paraglide": "Toggle Paraglider (hold modifier, then press)",
+  "fabric.botwclimb.ordinary": "Ordinary Fabric",
+  "fabric.botwclimb.zonai": "Zonai Fabric",
+  "fabric.botwclimb.royal_hyrulean": "Royal Hyrulean Fabric",
+  "fabric.botwclimb.sheikah": "Sheikah Fabric",
+  "fabric.botwclimb.gerudo": "Gerudo Fabric",
+  "fabric.botwclimb.zora": "Zora Fabric",
+  "fabric.botwclimb.goron": "Goron Fabric",
+  "fabric.botwclimb.yiga": "Yiga Fabric",
+  "fabric.botwclimb.cece": "Cece Fabric",
+  "fabric.botwclimb.addison": "Addison's Fabric",
+  "fabric.botwclimb.chuchu": "Chuchu Fabric",
+  "fabric.botwclimb.aerocuda": "Aerocuda Fabric",
+  "fabric.botwclimb.korok": "Korok Fabric",
+  "fabric.botwclimb.champion": "Champion's Leathers Fabric",
+  "fabric.botwclimb.majora": "Majora's Mask Fabric",
+  "fabric.botwclimb.demon_king": "Demon King Fabric",
+  "gui.botwclimb.fabric_picker": "Paraglider Fabric (only you)"
 }
