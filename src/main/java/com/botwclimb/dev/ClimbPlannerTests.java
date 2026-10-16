@@ -294,7 +294,11 @@ public class ClimbPlannerTests {
         if (ParagliderController.canDeploy(p)) h.fail("no paraglider during a climb jump");
         p.getData(BotwClimb.CLIMB).state = ClimbState.NONE;
         p.startFallFlying();
-        if (ParagliderController.canDeploy(p)) h.fail("no paraglider while Elytra flying");
+        if (ParagliderController.canDeploy(p)) h.fail("a plain deploy is not for Elytra flight");
+        if (!ParagliderController.canSwitchFromElytra(p)) h.fail("Elytra flight can switch to the glider");
+        p.stopFallFlying();
+        if (p.isFallFlying()) h.fail("stopFallFlying must end the Elytra state");
+        if (ParagliderController.canSwitchFromElytra(p)) h.fail("nothing to switch from once the Elytra stopped");
         h.succeed();
     }
 

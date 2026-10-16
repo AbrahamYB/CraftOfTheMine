@@ -104,7 +104,9 @@ catch from a fast fall, smooth acceleration, cruise speed, gradual deceleration.
    Keep Space held for a second, then release Shift, then Space: still no Elytra. The next separate Space press behaves
    like vanilla (it starts the Elytra while falling).
 7. Elytra not worn: step 6 behaves the same; plain Space while gliding does nothing special.
-8. Start flying with the Elytra (plain Space while falling), then press Shift+Space: nothing changes, Elytra keeps flying.
+8. Start flying with the Elytra (plain Space while falling, also with a firework rocket boost), then press Shift+Space:
+   it switches to the paraglider on the press (no 0.4 s wait), the Elytra and the rocket boost stop, momentum is kept
+   and bleeds off to glide speed. The glider must stay open (no short animation then back to Elytra).
 9. Glide with no keys: slow, almost straight-down descent (~3 blocks/s). W: gradual acceleration to ~5 blocks/s, no climbing
    even when looking up. Release W: speed fades gradually. A/D/S steer relative to the camera.
 10. Turn: the canopy and body bank into the turn (max ~15 degrees), the body lags slightly, a very small passive sway is visible.

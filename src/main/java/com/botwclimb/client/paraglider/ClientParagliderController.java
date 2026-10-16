@@ -47,8 +47,16 @@ public final class ClientParagliderController {
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
         InputChord chord = ChordInputHandler.PARAGLIDE;
         chord.clearIfKeyUp(ChordInputHandler.keyPhysicallyDown());
-        if (chord.takePending() && (g.gliding || canOpen(p))) {
-            chord.begin(); // swallow this Space press at once (no jump, no Elytra) and start the 0.4 s hold
+        if (chord.takePending()) {
+            if (ParagliderController.canSwitchFromElytra(p)) {
+                // flying on an Elytra (rockets or not): switch to the glider on the spot, keeping the momentum
+                p.stopFallFlying();
+                setGliding(g, true);
+                g.fresh = true;
+                chord.consume();
+            } else if (g.gliding || canOpen(p)) {
+                chord.begin(); // swallow this Space press at once (no jump, no Elytra) and start the 0.4 s hold
+            }
         }
         if (chord.holding()) {
             boolean held = ChordInputHandler.keyPhysicallyDown()
