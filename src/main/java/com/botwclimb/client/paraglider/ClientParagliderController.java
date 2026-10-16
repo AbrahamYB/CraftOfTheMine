@@ -13,6 +13,8 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -54,6 +56,12 @@ public final class ClientParagliderController {
                 setGliding(g, true);
                 g.fresh = true;
                 chord.consume();
+            } else if (g.gliding && canResumeElytra(p)) {
+                // gliding with an Elytra equipped: Shift + Space hands the flight back to the Elytra, momentum intact
+                setGliding(g, false);
+                p.startFallFlying();
+                p.connection.send(new ServerboundPlayerCommandPacket(p, ServerboundPlayerCommandPacket.Action.START_FALL_FLYING));
+                chord.consume();
             } else if (g.gliding || canOpen(p)) {
                 chord.begin(); // swallow this Space press at once (no jump, no Elytra) and start the 0.4 s hold
             }
@@ -73,6 +81,10 @@ public final class ClientParagliderController {
         if (chord.consumed() && ParagliderKeys.PARAGLIDE.getKey().equals(Minecraft.getInstance().options.keyJump.getKey())) {
             in.jumping = false; // consumed press: stays false until the key is released
         }
+    }
+
+    private static boolean canResumeElytra(LocalPlayer p) {
+        return !p.onGround() && !p.isInWater() && p.getItemBySlot(EquipmentSlot.CHEST).canElytraFly(p);
     }
 
     private static boolean canOpen(LocalPlayer p) {
