@@ -1,0 +1,57 @@
+package com.botwclimb.common.climb;
+
+/** All tuning numbers live here. Distances are blocks, speeds are blocks/tick. */
+public final class ClimbConstants {
+    private ClimbConstants() {}
+
+    // --- normal climbing ---
+    public static final double CLIMB_SPEED = 0.11;
+    public static final double SIDE_SPEED = 0.095;
+    /** Wanted distance between the player's wall-side face and the wall. */
+    public static final double ADHESION_GAP = 0.02;
+    public static final double ADHESION_MAX_PULL = 0.12;
+
+    // --- surface sampling (offsets from the feet; the player is 1.8 tall) ---
+    public static final double PROBE_DEPTH = 0.45;
+    public static final double[][] BANDS = {{0.1, 0.6}, {0.7, 1.2}, {1.3, 1.7}}; // legs, torso, head
+    public static final double ATTACH_GAP = 0.30;
+    public static final double HOLD_GAP = 0.40;
+    public static final double REGRAB_GAP = 0.45;
+    /** Hold the climb key this long (ticks, 8 = 0.4 s) next to a wall to start climbing. */
+    public static final int CLIMB_HOLD_TICKS = 8;
+
+    // --- climb jump ---
+    public static final int JUMP_WINDUP_TICKS = 2;
+    public static final int JUMP_COOLDOWN = 8;
+    public static final int ATTACH_COOLDOWN = 8;
+    public static final int JUMP_SEARCH_TICKS = 3;
+    /** Vertical reach of one jump, and how far outward (from the flush position) it may swing to clear a lip. */
+    public static final double JUMP_MAX_RISE = 3.5;
+    /** Height of a jump up a plain wall (3.5 before, -20%). Clearing a lip may still use the full JUMP_MAX_RISE. */
+    public static final double JUMP_OPEN_RISE = 2.8;
+    public static final double JUMP_MAX_OUT = 1.5;
+    /** Total path length budget (out + up + back). Keeps the jump from crawling across big geometry. */
+    public static final double JUMP_MAX_PATH = 6.4;
+    public static final double JUMP_MIN_GAIN = 0.75;
+    /** Only wall faces this close to the original wall plane count as "the wall"; no clinging to a lip's outer face. */
+    public static final double JUMP_MAX_WALL_OUT = 0.5;
+    public static final double JUMP_GRID = 0.25;
+    public static final double JUMP_CLEARANCE = 0.04;
+    public static final double JUMP_AVG_SPEED = 0.48;
+    public static final int JUMP_MIN_TICKS = 6;
+    public static final int JUMP_MAX_TICKS = 13;
+    /** Without any climbable goal the jump is just a hop this high (still collision limited). */
+    public static final double HOP_RISE = 1.6;
+    public static final double HOP_OUT = 0.15;
+
+    // --- ledge / corner ---
+    public static final double LEDGE_RISE_SPEED = 0.2;
+    public static final double LEDGE_FORWARD_SPEED = 0.16;
+    public static final int LEDGE_MAX_TICKS = 24;
+    public static final double CORNER_SPEED = 0.14;
+    public static final int CORNER_MAX_TICKS = 7;
+
+    // --- server validation ---
+    public static final int SERVER_GRACE_TICKS = 6;
+    public static final double SERVER_EXTRA_GAP = 0.2;
+}
