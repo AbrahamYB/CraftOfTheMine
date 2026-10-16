@@ -134,12 +134,12 @@ champion, majora, demon_king.
     `python tools/make_fabrics.py [preview.png]` (preview.png = all canopies flat). Adding a fabric = one draw function +
     one table row there + one `add(...)` line in `FabricRegistry`.
 
-## Fabric picker (inventory)
-21. Put an Elytra in your inventory (or wear it) and open the inventory. Hover the Elytra and press the Fabric key (default Y, own entry under Controls > BOTW Climb > "Choose Paraglider Fabric"):
-    a translucent panel with all 16 fabrics appears next to the mouse. The current fabric has a gold outline; hovering
-    a fabric shows its name.
-22. Left-click a fabric: it becomes yours at once (open the glider to see it), the panel closes, the Elytra item is
-    unchanged. Another player wearing that same Elytra does not get your fabric, and other players see YOUR glider in
-    your fabric. It is saved with your character (relog, death).
-23. The panel closes on: a click outside it (that click still works normally), Esc, or closing the inventory.
+## Fabric side menu (inventory)
+21. Carry or wear an Elytra and open the inventory. A panel as tall as the screen sits beside the inventory with all 16
+    fabrics, each with a small canopy picture and its name. The current fabric has a gold outline.
+22. Scroll the mouse wheel over the panel to see every fabric; clicks in the panel never reach the slots behind it.
+    Left-click a fabric: it becomes yours at once (the panel stays open), and the glider uses it when you open it.
+    The Elytra item is unchanged and other players wearing the same Elytra keep their own fabric. Your fabric is saved
+    with your character (relog, death). There is no keybind and no middle-click; creative cannot clone items from it.
+23. The panel only shows while an inventory-style screen is open and you have an Elytra in it; it disappears otherwise.
     The Fabric key over anything that is not an Elytra does nothing. Middle-click (pick block) is NOT used, so creative never clones items because of this.

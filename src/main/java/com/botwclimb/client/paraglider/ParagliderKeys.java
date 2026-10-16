@@ -18,8 +18,6 @@ import org.lwjgl.glfw.GLFW;
  */
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ParagliderKeys {
-    public static final KeyMapping FABRIC = new KeyMapping("key.botwclimb.fabric", KeyConflictContext.IN_GAME,
-            InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_Y, "key.categories.botwclimb");
     public static final KeyMapping PARAGLIDE = new KeyMapping("key.botwclimb.paraglide", KeyConflictContext.IN_GAME,
             KeyModifier.SHIFT, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_SPACE, "key.categories.botwclimb");
 
@@ -28,6 +26,5 @@ public final class ParagliderKeys {
     @SubscribeEvent
     public static void register(RegisterKeyMappingsEvent event) {
         event.register(PARAGLIDE);
-        event.register(FABRIC);
     }
 }

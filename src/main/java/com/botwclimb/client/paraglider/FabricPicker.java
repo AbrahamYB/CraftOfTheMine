@@ -8,8 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -19,122 +18,110 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.List;
 
 /**
- * The fabric chooser: the Fabric key (default Y) while hovering an Elytra in any inventory screen opens a small translucent panel
- * with every fabric. The choice belongs to the player, not to the item, and closes with the inventory or on a click
- * outside the panel.
+ * Side menu for the paraglider fabric. While an inventory screen is open and the player has an Elytra in it, a narrow
+ * panel as tall as the screen sits beside the inventory. Scroll it to see every fabric and click one to use it. The
+ * choice is saved on the player only: the Elytra item and other players' view of it are not changed.
  */
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
 public final class FabricPicker {
-    private static final int COLS = 4, PAD = 4, CELL_W = 44, CELL_H = 20, TITLE_H = 14;
-
-    private static boolean open;
-    private static int px, py;
+    private static final int PANEL_W = 104, ROW_H = 24, PAD = 4, HEADER_H = 16, MARGIN = 4;
+    private static int scroll; // index of the first visible row
 
     private FabricPicker() {}
 
-    private static int rows() {
-        return (FabricRegistry.all().size() + COLS - 1) / COLS;
+    private static int visibleRows(AbstractContainerScreen<?> screen) {
+        return Math.max(1, (screen.height - 2 * MARGIN - HEADER_H - PAD) / ROW_H);
     }
 
-    private static int panelW() {
-        return COLS * CELL_W + (COLS + 1) * PAD;
+    private static int maxScroll(AbstractContainerScreen<?> screen) {
+        return Math.max(0, FabricRegistry.all().size() - visibleRows(screen));
     }
 
-    private static int panelH() {
-        return TITLE_H + rows() * CELL_H + (rows() + 1) * PAD;
+    private static int panelX(AbstractContainerScreen<?> screen) {
+        // beside the inventory when there is room, otherwise on the right edge
+        return Math.min(screen.getGuiLeft() + 184, screen.width - PANEL_W - MARGIN);
     }
 
-    private static int cellX(int i) {
-        return px + PAD + (i % COLS) * (CELL_W + PAD);
+    private static boolean hasElytra(Player player) {
+        return player.getInventory().contains(stack -> stack.canElytraFly(player));
     }
 
-    private static int cellY(int i) {
-        return py + TITLE_H + PAD + (i / COLS) * (CELL_H + PAD);
+    private static boolean shown(ScreenEvent event) {
+        var mc = Minecraft.getInstance();
+        return event.getScreen() instanceof AbstractContainerScreen<?> && mc.player != null && hasElytra(mc.player);
     }
 
-    /** @return index of the fabric cell under the mouse, or -1 */
-    private static int cellAt(double mx, double my) {
-        for (int i = 0; i < FabricRegistry.all().size(); i++) {
-            if (mx >= cellX(i) && mx < cellX(i) + CELL_W && my >= cellY(i) && my < cellY(i) + CELL_H) return i;
-        }
-        return -1;
+    private static boolean inside(AbstractContainerScreen<?> screen, double mx, double my) {
+        return mx >= panelX(screen) && mx < panelX(screen) + PANEL_W && my >= MARGIN && my < screen.height - MARGIN;
     }
 
-    private static boolean inside(double mx, double my) {
-        return mx >= px && mx < px + panelW() && my >= py && my < py + panelH();
-    }
-
-    private static boolean isElytra(ItemStack stack) {
-        var player = Minecraft.getInstance().player;
-        return !stack.isEmpty() && player != null && stack.canElytraFly(player);
-    }
-
-    @SubscribeEvent
-    public static void onKey(ScreenEvent.KeyPressed.Pre event) {
-        if (open || !(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
-        if (!ParagliderKeys.FABRIC.matches(event.getKeyCode(), event.getScanCode())) return;
-        Slot slot = screen.getSlotUnderMouse();
-        if (slot == null || !isElytra(slot.getItem())) return;
-        var win = Minecraft.getInstance().getWindow();
-        double mx = Minecraft.getInstance().mouseHandler.xpos() * win.getGuiScaledWidth() / win.getScreenWidth();
-        double my = Minecraft.getInstance().mouseHandler.ypos() * win.getGuiScaledHeight() / win.getScreenHeight();
-        open = true;
-        px = (int) Math.max(2, Math.min(mx + 6, screen.width - panelW() - 2));
-        py = (int) Math.max(2, Math.min(my - panelH() / 2.0, screen.height - panelH() - 2));
-        event.setCanceled(true); // the key is used up by the picker: nothing else reacts to this press
-    }
-
-    @SubscribeEvent
-    public static void onClick(ScreenEvent.MouseButtonPressed.Pre event) {
-        if (!(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
-        double mx = event.getMouseX(), my = event.getMouseY();
-        if (open) {
-            if (!inside(mx, my)) { // a click anywhere else closes the panel and goes on to do its normal thing
-                open = false;
-                return;
-            }
-            int cell = cellAt(mx, my);
-            if (cell >= 0 && event.getButton() == 0) {
-                PacketDistributor.sendToServer(new ParagliderFabricPayload(cell));
-                var player = Minecraft.getInstance().player;
-                if (player != null) player.getData(BotwClimb.PARAGLIDER).fabric = cell; // show it at once
-                open = false;
-            }
-            event.setCanceled(true);
-            return;
-        }
+    /** Index of the fabric row under the mouse, or -1. */
+    private static int rowAt(AbstractContainerScreen<?> screen, double my) {
+        double y = my - MARGIN - HEADER_H;
+        if (y < 0) return -1;
+        int row = scroll + (int) (y / ROW_H);
+        return row < FabricRegistry.all().size() && (y % ROW_H) < ROW_H - 2 && row - scroll < visibleRows(screen)
+                ? row : -1;
     }
 
     @SubscribeEvent
     public static void onRender(ScreenEvent.Render.Post event) {
-        if (!open || !(event.getScreen() instanceof AbstractContainerScreen<?>)) return;
+        if (!shown(event)) return;
+        var screen = (AbstractContainerScreen<?>) event.getScreen();
         GuiGraphics g = event.getGuiGraphics();
         var mc = Minecraft.getInstance();
+        int x = panelX(screen), top = MARGIN, h = screen.height - 2 * MARGIN;
+        int selected = mc.player.getData(BotwClimb.PARAGLIDER).fabric;
         int mx = event.getMouseX(), my = event.getMouseY();
         List<FabricDefinition> all = FabricRegistry.all();
-        int selected = mc.player != null ? mc.player.getData(BotwClimb.PARAGLIDER).fabric : 0;
 
         g.pose().pushPose();
-        g.pose().translate(0, 0, 400); // above items and tooltips of the screen underneath
-        g.fill(px, py, px + panelW(), py + panelH(), 0xB0101018);
-        g.renderOutline(px, py, panelW(), panelH(), 0xFF8A8A9A);
-        g.drawString(mc.font, Component.translatable("gui.botwclimb.fabric_picker"), px + PAD, py + 3, 0xFFFFFF, false);
-        int hover = cellAt(mx, my);
-        for (int i = 0; i < all.size(); i++) {
-            int x = cellX(i), y = cellY(i);
-            if (i == hover) g.fill(x - 1, y - 1, x + CELL_W + 1, y + CELL_H + 1, 0x60FFFFFF);
-            if (i == selected) g.renderOutline(x - 1, y - 1, CELL_W + 2, CELL_H + 2, 0xFFFFD35A);
-            // the flat canopy design strip stored in every fabric texture at (0,46), 40x16
-            g.blit(all.get(i).texture(), x + 2, y + 2, 40, 16, 0f, 46f, 40, 16, 128, 64);
+        g.pose().translate(0, 0, 400);
+        g.fill(x, top, x + PANEL_W, top + h, 0xC0101018);
+        g.renderOutline(x, top, PANEL_W, h, 0xFF8A8A9A);
+        g.drawString(mc.font, Component.translatable("gui.botwclimb.fabric_picker"), x + PAD, top + 4, 0xFFFFFF, false);
+
+        int hover = rowAt(screen, my);
+        int rows = visibleRows(screen);
+        for (int r = 0; r < rows && scroll + r < all.size(); r++) {
+            int i = scroll + r;
+            int ry = top + HEADER_H + PAD + r * ROW_H;
+            if (i == hover && inside(screen, mx, my)) g.fill(x + 2, ry - 1, x + PANEL_W - 2, ry + ROW_H - 3, 0x50FFFFFF);
+            if (i == selected) g.renderOutline(x + 2, ry - 1, PANEL_W - 4, ROW_H - 2, 0xFFFFD35A);
+            // flat preview of the canopy (40x16 at texture (0,46)), then the name
+            g.blit(all.get(i).texture(), x + PAD + 2, ry + 2, 40, 16, 0f, 46f, 40, 16, 128, 64);
+            g.drawString(mc.font, Component.translatable("fabric.botwclimb." + all.get(i).id()),
+                    x + PAD + 46, ry + 6, 0xFFFFFF, false);
         }
-        if (hover >= 0) {
-            g.renderTooltip(mc.font, Component.translatable("fabric.botwclimb." + all.get(hover).id()), mx, my);
+        if (all.size() > rows) { // scroll hint
+            g.drawString(mc.font, (scroll + 1) + "-" + Math.min(all.size(), scroll + rows) + "/" + all.size(),
+                    x + PAD, top + h - 10, 0x9A9AA5, false);
         }
         g.pose().popPose();
     }
 
     @SubscribeEvent
-    public static void onClose(ScreenEvent.Closing event) {
-        open = false;
+    public static void onScroll(ScreenEvent.MouseScrolled.Pre event) {
+        if (!shown(event) || !(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
+        if (!inside(screen, event.getMouseX(), event.getMouseY())) return;
+        scroll = Math.max(0, Math.min(maxScroll(screen), scroll - (int) Math.signum(event.getScrollDeltaY())));
+        event.setCanceled(true); // scrolling the menu must not also scroll anything under it
+    }
+
+    @SubscribeEvent
+    public static void onClick(ScreenEvent.MouseButtonPressed.Pre event) {
+        if (!shown(event) || !(event.getScreen() instanceof AbstractContainerScreen<?> screen)) return;
+        if (!inside(screen, event.getMouseX(), event.getMouseY())) return;
+        event.setCanceled(true); // clicks in the menu never reach the inventory slots behind it
+        int row = rowAt(screen, event.getMouseY());
+        if (row < 0 || event.getButton() != 0) return;
+        PacketDistributor.sendToServer(new ParagliderFabricPayload(row));
+        var player = Minecraft.getInstance().player;
+        if (player != null) player.getData(BotwClimb.PARAGLIDER).fabric = row; // show it straight away
+    }
+
+    @SubscribeEvent
+    public static void onInit(ScreenEvent.Init.Post event) {
+        if (event.getScreen() instanceof AbstractContainerScreen<?>) scroll = 0;
     }
 }
