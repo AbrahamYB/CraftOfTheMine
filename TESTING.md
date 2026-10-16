@@ -117,3 +117,7 @@ catch from a fast fall, smooth acceleration, cruise speed, gradual deceleration.
 14. Fly into a wall: you stop (no noclip). Enter water: the glider closes.
 15. While climbing: Shift+Space does not open the glider. After falling off the wall it works again.
 16. Dedicated server, two players: the other player sees the glider open, the hanging pose, the heading, bank and close.
+
+17. Gliding (opened from an Elytra flight or a fall) with an Elytra equipped: Shift + Space in the air hands the flight back
+    to the Elytra on the press, speed kept. Repeating it swaps again; each swap needs a fresh press.
+18. Switch from a rocket-boosted Elytra: the glider starts at the rocket speed and bleeds off to cruise (~6 blocks/s) over a few seconds.

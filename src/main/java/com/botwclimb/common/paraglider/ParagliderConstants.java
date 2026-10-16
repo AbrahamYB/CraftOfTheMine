@@ -5,9 +5,11 @@ public final class ParagliderConstants {
     private ParagliderConstants() {}
 
     public static final double DESCENT_SPEED = -0.145;        // BOTW ~3.2 m/s
-    public static final double MAX_HORIZONTAL_SPEED = 0.26;
-    public static final double HORIZONTAL_ACCELERATION = 0.025;
-    public static final double HORIZONTAL_DECELERATION = 0.018;
+    public static final double MAX_HORIZONTAL_SPEED = 0.312;   // 20% faster than the first tuning (0.26)
+    public static final double HORIZONTAL_ACCELERATION = 0.03;
+    public static final double HORIZONTAL_DECELERATION = 0.0216;
+    /** Speed above the cruise limit (Elytra / rocket momentum) is kept and bleeds off by this fraction per tick. */
+    public static final double EXCESS_DRAG = 0.04;
     /** How fast a fast fall is caught when the canopy opens (-2.5 -> -0.145 in about 5 ticks). */
     public static final double CATCH_RATE = 0.5;
     /** How fast an upward velocity settles back onto the descent speed. */

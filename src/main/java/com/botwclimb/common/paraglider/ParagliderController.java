@@ -63,7 +63,10 @@ public final class ParagliderController {
             wx /= len;
             wz /= len;
         }
-        double tx = wish ? wx * MAX_HORIZONTAL_SPEED : 0, tz = wish ? wz * MAX_HORIZONTAL_SPEED : 0;
+        // momentum from an Elytra / rocket switch above the cruise limit is carried along (and bleeds off slowly)
+        double speed = Math.hypot(cur.x, cur.z);
+        double cap = Math.max(MAX_HORIZONTAL_SPEED, speed);
+        double tx = wish ? wx * cap : 0, tz = wish ? wz * cap : 0;
 
         double vx = cur.x, vz = cur.z;
         double ex = tx - vx, ez = tz - vz, dist = Math.hypot(ex, ez);
@@ -74,6 +77,13 @@ public final class ParagliderController {
         } else {
             vx += ex / dist * accel;
             vz += ez / dist * accel;
+        }
+
+        double over = Math.hypot(vx, vz) - MAX_HORIZONTAL_SPEED;
+        if (over > 0) { // coast: shed a fraction of the excess every tick
+            double keep = 1 - over * EXCESS_DRAG / Math.hypot(vx, vz);
+            vx *= keep;
+            vz *= keep;
         }
 
         double vy = cur.y;

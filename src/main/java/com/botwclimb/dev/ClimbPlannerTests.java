@@ -325,7 +325,7 @@ public class ClimbPlannerTests {
             p.move(MoverType.SELF, p.getDeltaMovement());
         }
         double early = Math.hypot(p.getDeltaMovement().x, p.getDeltaMovement().z);
-        if (early > 0.14 || early <= 0) h.fail("must accelerate smoothly, speed after 5 ticks " + early);
+        if (early > 0.17 || early <= 0) h.fail("must accelerate smoothly, speed after 5 ticks " + early);
         for (int i = 0; i < 25; i++) {
             ParagliderController.step(p, g, 1, 0);
             p.move(MoverType.SELF, p.getDeltaMovement());
@@ -341,6 +341,35 @@ public class ClimbPlannerTests {
         double mid = Math.hypot(p.getDeltaMovement().x, p.getDeltaMovement().z);
         if (mid >= top || mid <= 0.05) h.fail("momentum should decay gradually, got " + mid);
         System.out.printf("[botwclimb-test] glide early=%.3f top=%.3f afterRelease=%.3f%n", early, top, mid);
+        h.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void gliderKeepsElytraMomentum(GameTestHelper h) {
+        Player p = h.makeMockPlayer(GameType.SURVIVAL);
+        p.setPos(h.absoluteVec(new Vec3(5.5, 60, 5.5)));
+        ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
+        g.gliding = true;
+        g.fresh = true;
+        p.setDeltaMovement(0, 0.6, 1.2); // rocket-boosted Elytra: 1.2 b/tick forward, climbing
+        ParagliderController.step(p, g, 0, 0);
+        if (Math.abs(p.getDeltaMovement().z - 1.2) > 0.06) h.fail("first glide tick must keep the Elytra speed: " + p.getDeltaMovement());
+        double prevZ = p.getDeltaMovement().z, prevY = p.getDeltaMovement().y;
+        for (int i = 0; i < 12; i++) {
+            p.move(MoverType.SELF, p.getDeltaMovement());
+            ParagliderController.step(p, g, 1, 0);
+            if (p.getDeltaMovement().z > prevZ + 1e-9) h.fail("speed must only bleed off");
+            if (p.getDeltaMovement().y > prevY + 1e-9) h.fail("rise must only fade");
+            prevZ = p.getDeltaMovement().z;
+            prevY = p.getDeltaMovement().y;
+        }
+        if (prevZ < 0.6) h.fail("momentum drained too quickly: " + prevZ);
+        for (int i = 0; i < 120; i++) {
+            p.move(MoverType.SELF, p.getDeltaMovement());
+            ParagliderController.step(p, g, 1, 0);
+        }
+        if (Math.abs(Math.hypot(p.getDeltaMovement().x, p.getDeltaMovement().z) - ParagliderConstants.MAX_HORIZONTAL_SPEED) > 0.01)
+            h.fail("must settle on the cruise speed");
         h.succeed();
     }
 }
