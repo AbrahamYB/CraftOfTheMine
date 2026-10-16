@@ -22,10 +22,19 @@ public final class ParagliderController {
 
     /** Conditions that must hold for as long as the glider is open. */
     public static boolean stateAllows(Player p) {
+        return !p.isFallFlying() && baseAllows(p);
+    }
+
+    private static boolean baseAllows(Player p) {
         ClimbData c = p.getData(BotwClimb.CLIMB);
         return p.isAlive() && !p.isSpectator() && !p.isSleeping() && !p.isPassenger() && !p.isSwimming()
-                && !p.isUnderWater() && !p.isInWater() && !p.isInLava() && !p.isFallFlying()
+                && !p.isUnderWater() && !p.isInWater() && !p.isInLava()
                 && !p.getAbilities().flying && c.state == ClimbState.NONE;
+    }
+
+    /** Shift + Space while Elytra-flying (rocket boost or not) swaps straight over to the paraglider. */
+    public static boolean canSwitchFromElytra(Player p) {
+        return p.isFallFlying() && !p.onGround() && baseAllows(p);
     }
 
     public static boolean canDeploy(Player p) {
@@ -86,8 +95,10 @@ public final class ParagliderController {
     public static void serverToggle(ServerPlayer p, boolean open) {
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
         if (open == g.gliding) return;
+        boolean fromElytra = open && canSwitchFromElytra(p);
+        if (fromElytra) p.stopFallFlying(); // ends the rocket boost too: fireworks only push a fall-flying player
         // fallDistance > 0: the player just left the ground and the position packet saying so is still on its way
-        if (open && !(canDeploy(p) || (stateAllows(p) && p.fallDistance > 0))) {
+        if (open && !(fromElytra || canDeploy(p) || (stateAllows(p) && p.fallDistance > 0))) {
             broadcast(p, false, true);
             return;
         }
