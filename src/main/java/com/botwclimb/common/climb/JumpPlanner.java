@@ -27,6 +27,11 @@ public final class JumpPlanner {
     private static final int NY = (int) Math.round(JUMP_MAX_RISE / JUMP_GRID) + 1;
 
     public static JumpPlan plan(Level level, Entity e, Vec3 feet, Direction dir) {
+        return plan(level, e, feet, dir, 0);
+    }
+
+    /** @param side -1 / 0 / +1: jump sideways towards the player's right / straight up / left (A or D held). */
+    public static JumpPlan plan(Level level, Entity e, Vec3 feet, Direction dir, int side) {
         AABB start = e.getDimensions(Pose.STANDING).makeBoundingBox(feet);
         Vec3 out = new Vec3(-dir.getStepX(), 0, -dir.getStepZ());
 
@@ -107,10 +112,38 @@ public final class JumpPlanner {
             }
             Vec3[] steps = resample(poly);
             if (verify(level, e, start, steps)) {
-                return new JumpPlan(steps, bestIsLedge ? JumpPlan.Goal.LEDGE : JumpPlan.Goal.WALL, bestLedge);
+                JumpPlan.Goal goal = bestIsLedge ? JumpPlan.Goal.LEDGE : JumpPlan.Goal.WALL;
+                if (side != 0) steps = withSide(level, e, start, dir, steps, side, goal);
+                return new JumpPlan(steps, goal, bestLedge);
             }
         }
         return hop(level, e, start, out);
+    }
+
+    /**
+     * Drifts the finished jump sideways along the wall (the eased progress of each tick decides how much), as far as
+     * the geometry allows: every tick must stay free and the end must still be on a wall / ledge.
+     */
+    private static Vec3[] withSide(Level level, Entity e, AABB start, Direction dir, Vec3[] steps, int side,
+                                   JumpPlan.Goal goal) {
+        Direction left = dir.getCounterClockWise();
+        for (double scale : new double[]{1.0, 0.6, 0.3}) {
+            double reach = side * JUMP_SIDE_REACH * scale;
+            Vec3[] out = new Vec3[steps.length];
+            boolean ok = true;
+            for (int k = 0; k < steps.length && ok; k++) {
+                double frac = 1 - Math.pow(1 - (double) (k + 1) / steps.length, 1.6);
+                out[k] = steps[k].add(left.getStepX() * reach * frac, 0, left.getStepZ() * reach * frac);
+                ok = !SurfaceSampler.blocked(level, e, start.move(out[k]).deflate(0.01));
+            }
+            if (!ok) continue;
+            AABB end = start.move(out[out.length - 1]);
+            boolean grab = goal == JumpPlan.Goal.LEDGE
+                    ? !Double.isNaN(SurfaceSampler.findLedge(level, e, end, dir))
+                    : SurfaceSampler.sample(level, e, end, dir).holds(REGRAB_GAP);
+            if (grab) return out;
+        }
+        return steps; // nothing to hold on to sideways: jump straight up instead
     }
 
     private static boolean isFree(Level level, Entity e, AABB[] cell, byte[] free, int i) {

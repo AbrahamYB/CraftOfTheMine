@@ -4,7 +4,12 @@ import com.botwclimb.BotwClimb;
 import com.botwclimb.common.climb.ClimbData;
 import com.botwclimb.common.climb.ClimbState;
 import com.botwclimb.network.ParagliderStatePayload;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -96,9 +101,8 @@ public final class ParagliderController {
     // ------------------------------------------------------------------ server
 
     public static void broadcast(ServerPlayer p, boolean gliding, boolean correction) {
-        var payload = new ParagliderStatePayload(p.getId(), gliding, correction);
-        if (correction) PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, payload);
-        else PacketDistributor.sendToPlayersTrackingEntity(p, payload);
+        var payload = new ParagliderStatePayload(p.getId(), gliding, correction, p.getData(BotwClimb.PARAGLIDER).fabric);
+        PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, payload);
     }
 
     /** Handles a client toggle request. Closing is always fine; opening must pass the same checks as the client. */
@@ -132,11 +136,34 @@ public final class ParagliderController {
         }
     }
 
+    /** Development command: /botwclimb paraglider fabric ID picks the fabric of the player running it. */
+    @SubscribeEvent
+    public static void onCommands(RegisterCommandsEvent event) {
+        event.getDispatcher().register(Commands.literal(BotwClimb.MOD_ID).then(Commands.literal("paraglider")
+                .then(Commands.literal("fabric").then(Commands.argument("id", StringArgumentType.word())
+                        .suggests((c, b) -> SharedSuggestionProvider.suggest(
+                                FabricRegistry.all().stream().map(FabricDefinition::id), b))
+                        .executes(ctx -> {
+                            String id = StringArgumentType.getString(ctx, "id");
+                            int index = FabricRegistry.indexOf(id);
+                            if (index < 0) {
+                                ctx.getSource().sendFailure(Component.literal("Unknown fabric: " + id));
+                                return 0;
+                            }
+                            ServerPlayer p = ctx.getSource().getPlayerOrException();
+                            ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
+                            g.fabric = index;
+                            broadcast(p, g.gliding, false);
+                            ctx.getSource().sendSuccess(() -> Component.literal("Paraglider fabric: " + id), false);
+                            return 1;
+                        })))));
+    }
+
     @SubscribeEvent
     public static void onStartTracking(PlayerEvent.StartTracking event) {
         if (event.getEntity() instanceof ServerPlayer viewer && event.getTarget() instanceof ServerPlayer target
                 && target.getData(BotwClimb.PARAGLIDER).gliding) {
-            PacketDistributor.sendToPlayer(viewer, new ParagliderStatePayload(target.getId(), true, false));
+            PacketDistributor.sendToPlayer(viewer, new ParagliderStatePayload(target.getId(), true, false, target.getData(BotwClimb.PARAGLIDER).fabric));
         }
     }
 }

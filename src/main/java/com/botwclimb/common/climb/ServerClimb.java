@@ -145,7 +145,7 @@ public final class ServerClimb {
         Direction dir = d.dir;
         double out = -(rel.x * dir.getStepX() + rel.z * dir.getStepZ());
         double lateral = Math.abs(rel.x * dir.getStepZ() - rel.z * dir.getStepX());
-        return out < -0.6 || out > JUMP_MAX_OUT + 0.6 || lateral > 0.8
+        return out < -0.6 || out > JUMP_MAX_OUT + 0.6 || lateral > JUMP_SIDE_REACH + 0.8
                 || rel.y < -1.0 || rel.y > JUMP_MAX_RISE + 1.6; // plan rise + ledge climb + position lag
     }
 
