@@ -78,6 +78,13 @@ public final class ClientParagliderController {
                 }
             }
         }
+        // a plain Space press after falling off a ledge opens the glider instead of vanilla's Elytra start
+        if (in.jumping && !g.gliding && p.fallDistance >= ParagliderConstants.OPEN_AFTER_FALL
+                && !p.isFallFlying() && canOpen(p)) {
+            setGliding(g, true);
+            g.fresh = true;
+            in.jumping = false;
+        }
         if (chord.consumed() && ParagliderKeys.PARAGLIDE.getKey().equals(Minecraft.getInstance().options.keyJump.getKey())) {
             in.jumping = false; // consumed press: stays false until the key is released
         }
