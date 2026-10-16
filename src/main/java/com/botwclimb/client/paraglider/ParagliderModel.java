@@ -12,6 +12,7 @@ import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.util.Mth;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -24,13 +25,18 @@ public final class ParagliderModel extends Model {
             new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "paraglider"), "main");
 
     private final ModelPart root;
-    private final ModelPart ribbonLeft, ribbonRight;
+    private final ModelPart ribbonLeft, ribbonRight, wingL, wingR;
+    private final ModelPart[] tassels = new ModelPart[7];
 
     public ParagliderModel(ModelPart root) {
         super(RenderType::entityCutoutNoCull);
         this.root = root;
         this.ribbonLeft = root.getChild("ribbon_l");
         this.ribbonRight = root.getChild("ribbon_r");
+        ModelPart canopy = root.getChild("canopy");
+        this.wingL = canopy.getChild("wing_l");
+        this.wingR = canopy.getChild("wing_r");
+        for (int i = 0; i < tassels.length; i++) tassels[i] = canopy.getChild("tassel_" + i);
     }
 
     /**
@@ -66,6 +72,26 @@ public final class ParagliderModel extends Model {
         root.addOrReplaceChild("strut_r", CubeListBuilder.create()
                 .texOffs(110, 40).addBox(-0.5f, 0, -0.5f, 1, 13, 1), PartPose.offset(-5, -22, -1));
         return LayerDefinition.create(mesh, 128, 64);
+    }
+
+    /**
+     * Pose the loose parts for the air rushing past: windF / windR in -1..1 (+ = air from the front / from the right).
+     * Wing tips lift and yaw a little, tassels and ribbons trail backwards, and everything flutters slowly.
+     */
+    public void flutter(float windF, float windR, float age) {
+        float wobble = 0.05f * Mth.sin(age * 0.3f);
+        wingL.zRot = 0.28f + wobble - 0.10f * windF;
+        wingR.zRot = -0.28f - wobble + 0.10f * windF;
+        wingL.yRot = 0.12f * windR;
+        wingR.yRot = 0.12f * windR;
+        for (int i = 0; i < tassels.length; i++) {
+            tassels[i].xRot = 0.10f + 0.70f * windF + 0.10f * Mth.sin(age * 0.45f + i * 1.7f);
+            tassels[i].zRot = 0.45f * windR + 0.08f * Mth.sin(age * 0.5f + i);
+        }
+        ribbonLeft.xRot = -0.45f + 0.50f * windF + 0.08f * Mth.sin(age * 0.4f);
+        ribbonRight.xRot = -0.45f + 0.50f * windF + 0.08f * Mth.sin(age * 0.4f + 1f);
+        ribbonLeft.zRot = 0.35f * windR;
+        ribbonRight.zRot = 0.35f * windR;
     }
 
     public void setRibbons(boolean visible) {

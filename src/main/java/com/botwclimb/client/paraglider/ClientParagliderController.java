@@ -130,6 +130,8 @@ public final class ClientParagliderController {
         g.pitchO = g.pitch;
         g.lagFO = g.lagF;
         g.lagRO = g.lagR;
+        g.windFO = g.windF;
+        g.windRO = g.windR;
 
         Vec3 vel = pos.subtract(g.lastPos);
         Vec3 acc = vel.subtract(g.lastVel);
@@ -140,7 +142,7 @@ public final class ClientParagliderController {
         g.deploy = g.gliding ? Math.min(1f, g.deploy + 1f / ParagliderConstants.DEPLOY_DURATION_TICKS)
                 : Math.max(0f, g.deploy - 1f / ParagliderConstants.CLOSE_DURATION_TICKS);
         if (g.deploy <= 0f) {
-            g.bank = g.pitch = g.lagF = g.lagR = 0;
+            g.bank = g.pitch = g.lagF = g.lagR = g.windF = g.windR = 0;
             return;
         }
         double hs = Math.hypot(vel.x, vel.z);
@@ -162,6 +164,11 @@ public final class ClientParagliderController {
         double accR = acc.x * -fz + acc.z * fx;               // right = forward rotated clockwise
         g.lagF += (Mth.clamp((float) (accF * 12), -1f, 1f) - g.lagF) * 0.2f;
         g.lagR += (Mth.clamp((float) (accR * 12), -1f, 1f) - g.lagR) * 0.2f;
+        // the air moves against the glider: wind = -velocity, scaled so cruise is about 1
+        double windF = -(vel.x * fx + vel.z * fz) / ParagliderConstants.MAX_HORIZONTAL_SPEED;
+        double windR = -(vel.x * -fz + vel.z * fx) / ParagliderConstants.MAX_HORIZONTAL_SPEED;
+        g.windF += (Mth.clamp((float) windF, -1f, 1f) - g.windF) * 0.15f;
+        g.windR += (Mth.clamp((float) windR, -1f, 1f) - g.windR) * 0.15f;
     }
 
     // ------------------------------------------------------------------ rendering
