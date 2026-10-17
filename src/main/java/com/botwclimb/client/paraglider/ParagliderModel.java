@@ -58,15 +58,15 @@ public final class ParagliderModel extends Model {
                         .texOffs(0, 34).addBox(-8, -2, -10, 16, 2, 2),
                 PartPose.offset(0, -22, 0));
         PartDefinition wingL = canopy.addOrReplaceChild("wing_l", CubeListBuilder.create()
-                .texOffs(64, 0).addBox(-1, -1, -8, 13, 1, 16)
-                .texOffs(0, 34).addBox(-1, -2, -10, 13, 2, 2), PartPose.offsetAndRotation(8, 0, 0, 0, 0, 0.28f));
+                .texOffs(64, 0).addBox(0, -1, -8, 12, 1, 16)
+                .texOffs(0, 34).addBox(0, -2, -10, 12, 2, 2), PartPose.offsetAndRotation(8, 0, 0, 0, 0, 0.28f));
         wingL.addOrReplaceChild("shade_l", CubeListBuilder.create()
-                .texOffs(64, 0).addBox(-1, 0.01f, -8, 13, 0.01f, 16), PartPose.ZERO);
+                .texOffs(64, 0).addBox(0, 0.01f, -8, 12, 0.01f, 16), PartPose.ZERO);
         PartDefinition wingR = canopy.addOrReplaceChild("wing_r", CubeListBuilder.create()
-                .texOffs(0, 17).addBox(-12, -1, -8, 13, 1, 16)
-                .texOffs(0, 34).addBox(-12, -2, -10, 13, 2, 2), PartPose.offsetAndRotation(-8, 0, 0, 0, 0, -0.28f));
+                .texOffs(0, 17).addBox(-12, -1, -8, 12, 1, 16)
+                .texOffs(0, 34).addBox(-12, -2, -10, 12, 2, 2), PartPose.offsetAndRotation(-8, 0, 0, 0, 0, -0.28f));
         wingR.addOrReplaceChild("shade_r", CubeListBuilder.create()
-                .texOffs(0, 17).addBox(-12, 0.01f, -8, 13, 0.01f, 16), PartPose.ZERO);
+                .texOffs(0, 17).addBox(-12, 0.01f, -8, 12, 0.01f, 16), PartPose.ZERO);
         // the whole underside of the centre panel, just under the canopy
         canopy.addOrReplaceChild("shade", CubeListBuilder.create()
                 .texOffs(0, 0).addBox(-8, 0.01f, -8, 16, 0.01f, 16), PartPose.ZERO);

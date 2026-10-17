@@ -9,8 +9,8 @@ id to FabricRegistry.java.
 
 UV layout of the sheet (must match ParagliderModel):
   centre  net at (0,0)   top (16..31, 0..15)  bottom (32..47, 0..15)
-  left    net at (64,0)  top (80..92, 0..15)  bottom (93..105, 0..15)     (13-wide wing on the player's left, +x)
-  right   net at (0,17)  top (16..28,17..32)  bottom (29..41,17..32)
+  left    net at (64,0)  top (80..91, 0..15)  bottom (92..103, 0..15)     (wing on the player's left, +x)
+  right   net at (0,17)  top (16..27,17..32)  bottom (28..39,17..32)
   flat preview of the canopy (0..39, 46..61), used by the inventory picker
   edge strip (0..83, 34..37)   tassel (0..3, 40..44)   ribbon net (64..107, 40..60)   strut net (110..113, 40..53)
 """
@@ -441,14 +441,14 @@ def sheet(cv, tassel, ribbon, tip, trim):
     for j in range(16):
         for i in range(16):    # centre
             put(16 + i, j, C_[15 - j][27 - i]); put(32 + i, j, C_[15 - j][12 + i])
-        for i in range(13):    # the wings are 13 wide (one pixel overlaps the centre panel)
-            put(80 + i, j, C_[15 - j][12 - i]); put(93 + i, j, C_[15 - j][27 + i])   # left wing: top, bottom
-            put(16 + i, 17 + j, C_[15 - j][39 - i]); put(29 + i, 17 + j, C_[15 - j][i])  # right wing: top, bottom
+        for i in range(12):
+            put(80 + i, j, C_[15 - j][11 - i]); put(92 + i, j, C_[15 - j][28 + i])   # left wing
+            put(16 + i, 17 + j, C_[15 - j][39 - i]); put(28 + i, 17 + j, C_[15 - j][i])  # right wing
     for x in range(0, 64):
         put(x, 16, trim)                      # centre side strips
-    for x in range(64, 122):
+    for x in range(64, 120):
         put(x, 16, trim)
-    for x in range(0, 58):
+    for x in range(0, 56):
         put(x, 33, trim)
     for y in range(34, 38):
         for x in range(0, 84):
