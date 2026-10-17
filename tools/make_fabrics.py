@@ -166,11 +166,10 @@ def ordinary():
 
 def zonai():
     cv = Canvas('#d1c49a')
-    cv.rect(28, 0, 39, 15, '#5d6559')          # slate panel on the right wing, cream on the left (as in the render)
     for i in range(0, 11, 3):                   # triangle pattern on both wings
         for j in range(2, 14, 4):
             cv.tri(1 + i, j, 2, '#b09561')
-            cv.tri(29 + i, j, 2, '#4b5247')
+            cv.tri(29 + i, j, 2, '#b09561')
     cv.frame('#9d6b11')
     ink, ink2 = '#9d6b11', '#523f27'
     for x0 in (14, 22):                          # eye bars of the totem
@@ -185,8 +184,6 @@ def zonai():
 
 def royal():
     cv = Canvas('#81433e')
-    cv.rect(0, 0, 11, 15, '#435753')
-    cv.rect(28, 0, 39, 15, '#1d2c3d')
     cv.rect(12, 0, 27, 15, '#81433e')
     cv.frame('#ae9257')
     for x in (12, 27):
@@ -197,8 +194,6 @@ def royal():
 
 def sheikah():
     cv = Canvas('#5e6060')
-    cv.rect(28, 0, 39, 15, '#1d2a3a')
-    cv.rect(26, 0, 27, 15, '#2c3a4a')
     cv.frame('#844f1f')
     cv.rect(0, 1, W - 1, 1, '#cfbd8a')
     sheikah_eye(cv, 4, '#cfbd8a', '#5e6060')
@@ -212,6 +207,7 @@ def gerudo():
     for x in range(0, W, 2):
         cv.set(x, 3, '#c4940f')
     cv.rect(0, 0, 1, H - 1, '#c4940f')
+    cv.rect(W - 2, 0, W - 1, H - 1, '#c4940f')
     cv.frame('#cbb480', front=False, sides=False)
     cv.disc(C, 8, 4.5, '#7c5637', ring='#cbb480')   # terracotta shield with a crescent
     cv.disc(C - 1, 7.5, 2.6, '#cbb480')
