@@ -459,7 +459,7 @@ def sheet(cv, tassel, ribbon, tip, trim):
         v = math.sin(x * 0.42 + math.sin(y * 0.55 + x * 0.12) * 1.6) + math.sin((x - y) * 0.30 + 1.0) * 0.8
         return cols[2] if v > 0.9 else (cols[1] if v > 0.0 else cols[0])
 
-    orange = ('#d9822a', '#ac5f0c', '#8a4608')
+    orange = ('#ffb347', '#f58a1f', '#dd6a0c')
     for y in range(40, 45):
         for x in range(0, 4):
             put(x, y, wave(x * 2, y, orange) if wavy else tassel)
@@ -470,11 +470,12 @@ def sheet(cv, tassel, ribbon, tip, trim):
             for x in range(8):
                 if wavy:                      # Chuchu: waves flowing along the whole ribbon
                     along = seg * 2 + y
-                    v = math.sin(along * 0.9 + math.sin(x * 1.7 + along * 0.4) * 1.3) + math.sin(along * 0.45 + x) * 0.6
-                    cols = orange if seg >= 8 else blue
-                    put(ox + x, oy + y, cols[2] if v > 0.8 else (cols[1] if v > -0.1 else cols[0]))
+                    f = 1.5 if seg >= 7 else 1.0
+                    v = math.sin(along * 0.9 * f + math.sin(x * 1.7 + along * 0.4) * 1.3) + math.sin(along * 0.45 + x) * 0.6
+                    cols = orange if seg >= 7 else blue
+                    put(ox + x, oy + y, cols[2] if v > 0.55 else (cols[1] if v > -0.35 else cols[0]))
                 else:
-                    put(ox + x, oy + y, tip if seg >= 8 else ribbon)
+                    put(ox + x, oy + y, tip if seg >= 7 else ribbon)
     for y in range(40, 54):
         for x in range(110, 114):
             put(x, y, STRUT)
