@@ -154,3 +154,4 @@ champion, majora, demon_king.
     the same at the start (right at the switch you keep the Elytra speed, not a slower one); flight 1 fades in about 6 s,
     flight 2 in about 8.4 s, flight 3 in about 10.7 s.
     Turns and steering still work during the fade.
+27. The whole underside of the glider (canopy and both wings) is uniformly dark; no bright patches show through.
