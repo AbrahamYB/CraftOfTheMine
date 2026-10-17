@@ -54,13 +54,13 @@ public final class ParagliderModel extends Model {
                 PartPose.offset(0, -22, 0));
         // a sliver just under the canopy: drawn darker, so the underside reads as shaded
         canopy.addOrReplaceChild("shade", CubeListBuilder.create()
-                .texOffs(0, 0).addBox(-8, 0.01f, -8, 16, 0.01f, 16), PartPose.ZERO);
+                .texOffs(0, 0).addBox(-5, 0.01f, -6, 10, 0.01f, 12), PartPose.ZERO);
         canopy.addOrReplaceChild("wing_l", CubeListBuilder.create()
-                .texOffs(64, 0).addBox(0, -1, -8, 12, 1, 16)
-                .texOffs(0, 34).addBox(0, -2, -10, 12, 2, 2), PartPose.offsetAndRotation(8, 0, 0, 0, 0, 0.28f));
+                .texOffs(64, 0).addBox(-1, -1, -8, 13, 1, 16)
+                .texOffs(0, 34).addBox(-1, -2, -10, 13, 2, 2), PartPose.offsetAndRotation(8, 0, 0, 0, 0, 0.28f));
         canopy.addOrReplaceChild("wing_r", CubeListBuilder.create()
-                .texOffs(0, 17).addBox(-12, -1, -8, 12, 1, 16)
-                .texOffs(0, 34).addBox(-12, -2, -10, 12, 2, 2), PartPose.offsetAndRotation(-8, 0, 0, 0, 0, -0.28f));
+                .texOffs(0, 17).addBox(-12, -1, -8, 13, 1, 16)
+                .texOffs(0, 34).addBox(-12, -2, -10, 13, 2, 2), PartPose.offsetAndRotation(-8, 0, 0, 0, 0, -0.28f));
         // tassels along the trailing edge (the outer ones follow the drooping wings)
         float[][] tassels = {{0, 0}, {6, 0}, {-6, 0}, {11.8f, 1.1f}, {-11.8f, 1.1f}, {17.6f, 2.8f}, {-17.6f, 2.8f}};
         for (int i = 0; i < tassels.length; i++) {
@@ -84,11 +84,11 @@ public final class ParagliderModel extends Model {
      * Wing tips lift and yaw a little, tassels and ribbons trail backwards, and everything flutters slowly.
      */
     public void flutter(float windF, float windR, float age) {
-        float wobble = 0.05f * Mth.sin(age * 0.3f);
-        wingL.zRot = 0.28f + wobble - 0.10f * windF;
-        wingR.zRot = -0.28f - wobble + 0.10f * windF;
-        wingL.yRot = 0.12f * windR;
-        wingR.yRot = 0.12f * windR;
+        float wobble = 0.02f * Mth.sin(age * 0.3f);
+        wingL.zRot = 0.28f + wobble - 0.04f * windF;
+        wingR.zRot = -0.28f - wobble + 0.04f * windF;
+        wingL.yRot = 0f;
+        wingR.yRot = 0f;
         for (int i = 0; i < tassels.length; i++) {
             tassels[i].xRot = 0.10f + 0.70f * windF + 0.10f * Mth.sin(age * 0.45f + i * 1.7f);
             tassels[i].zRot = 0.45f * windR + 0.08f * Mth.sin(age * 0.5f + i);
@@ -107,7 +107,7 @@ public final class ParagliderModel extends Model {
     /** The underside shade, drawn after the canopy with a dark tint. */
     public void renderShade(PoseStack poseStack, VertexConsumer buffer, int packedLight) {
         shade.visible = true;
-        shade.render(poseStack, buffer, packedLight, OverlayTexture.NO_OVERLAY, 0xFF5A5A5A);
+        shade.render(poseStack, buffer, packedLight, OverlayTexture.NO_OVERLAY, 0xFF262626);
         shade.visible = false;
     }
 
