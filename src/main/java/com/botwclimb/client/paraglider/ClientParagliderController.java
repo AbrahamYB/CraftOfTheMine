@@ -11,6 +11,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.Input;
+import net.minecraft.core.component.DataComponents;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket;
@@ -88,6 +90,14 @@ public final class ClientParagliderController {
         if (chord.consumed() && ParagliderKeys.PARAGLIDE.getKey().equals(Minecraft.getInstance().options.keyJump.getKey())) {
             in.jumping = false; // consumed press: stays false until the key is released
         }
+    }
+
+    /** The rocket used while Elytra-flying sets how long its momentum lasts (the most recent one counts). */
+    @SubscribeEvent
+    public static void onRocket(PlayerInteractEvent.RightClickItem event) {
+        var rocket = event.getItemStack().get(DataComponents.FIREWORKS);
+        if (rocket == null || !event.getEntity().isFallFlying()) return;
+        event.getEntity().getData(BotwClimb.PARAGLIDER).rocketTier = rocket.flightDuration();
     }
 
     private static boolean canResumeElytra(LocalPlayer p) {
