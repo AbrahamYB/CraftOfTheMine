@@ -12,6 +12,7 @@ import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 import net.minecraft.resources.ResourceLocation;
 
@@ -26,6 +27,7 @@ public final class ParagliderModel extends Model {
 
     private final ModelPart root;
     private final ModelPart ribbonLeft, ribbonRight, wingL, wingR;
+    private final ModelPart canopy, shadeCenter, shadeL, shadeR;
     private final ModelPart[] tassels = new ModelPart[7];
 
     public ParagliderModel(ModelPart root) {
@@ -36,6 +38,11 @@ public final class ParagliderModel extends Model {
         ModelPart canopy = root.getChild("canopy");
         this.wingL = canopy.getChild("wing_l");
         this.wingR = canopy.getChild("wing_r");
+        this.canopy = canopy;
+        this.shadeCenter = canopy.getChild("shade");
+        this.shadeL = wingL.getChild("shade_l");
+        this.shadeR = wingR.getChild("shade_r");
+        setShade(false);
         for (int i = 0; i < tassels.length; i++) tassels[i] = canopy.getChild("tassel_" + i);
     }
 
@@ -50,12 +57,19 @@ public final class ParagliderModel extends Model {
                         .texOffs(0, 0).addBox(-8, -1, -8, 16, 1, 16)
                         .texOffs(0, 34).addBox(-8, -2, -10, 16, 2, 2),
                 PartPose.offset(0, -22, 0));
-        canopy.addOrReplaceChild("wing_l", CubeListBuilder.create()
+        PartDefinition wingL = canopy.addOrReplaceChild("wing_l", CubeListBuilder.create()
                 .texOffs(64, 0).addBox(-1, -1, -8, 13, 1, 16)
                 .texOffs(0, 34).addBox(-1, -2, -10, 13, 2, 2), PartPose.offsetAndRotation(8, 0, 0, 0, 0, 0.28f));
-        canopy.addOrReplaceChild("wing_r", CubeListBuilder.create()
+        wingL.addOrReplaceChild("shade_l", CubeListBuilder.create()
+                .texOffs(64, 0).addBox(-1, 0.01f, -8, 13, 0.01f, 16), PartPose.ZERO);
+        PartDefinition wingR = canopy.addOrReplaceChild("wing_r", CubeListBuilder.create()
                 .texOffs(0, 17).addBox(-12, -1, -8, 13, 1, 16)
                 .texOffs(0, 34).addBox(-12, -2, -10, 13, 2, 2), PartPose.offsetAndRotation(-8, 0, 0, 0, 0, -0.28f));
+        wingR.addOrReplaceChild("shade_r", CubeListBuilder.create()
+                .texOffs(0, 17).addBox(-12, 0.01f, -8, 13, 0.01f, 16), PartPose.ZERO);
+        // the whole underside of the centre panel, just under the canopy
+        canopy.addOrReplaceChild("shade", CubeListBuilder.create()
+                .texOffs(0, 0).addBox(-8, 0.01f, -8, 16, 0.01f, 16), PartPose.ZERO);
         // tassels along the trailing edge (the outer ones follow the drooping wings)
         float[][] tassels = {{0, 0}, {6, 0}, {-6, 0}, {11.8f, 1.1f}, {-11.8f, 1.1f}, {17.6f, 2.8f}, {-17.6f, 2.8f}};
         for (int i = 0; i < tassels.length; i++) {
@@ -97,6 +111,34 @@ public final class ParagliderModel extends Model {
     public void setRibbons(boolean visible) {
         ribbonLeft.visible = visible;
         ribbonRight.visible = visible;
+    }
+
+    private void setShade(boolean on) {
+        shadeCenter.visible = on;
+        shadeL.visible = on;
+        shadeR.visible = on;
+    }
+
+    /**
+     * The underside, drawn after the canopy in a dark tint. Each shade plane is drawn inside its part's own
+     * transform, so it moves and bends with the wing or panel it belongs to.
+     */
+    public void renderShade(PoseStack poseStack, VertexConsumer buffer, int packedLight) {
+        final int tint = 0xFF333333;
+        setShade(true);
+        poseStack.pushPose();
+        canopy.translateAndRotate(poseStack);
+        shadeCenter.render(poseStack, buffer, packedLight, OverlayTexture.NO_OVERLAY, tint);
+        poseStack.pushPose();
+        wingL.translateAndRotate(poseStack);
+        shadeL.render(poseStack, buffer, packedLight, OverlayTexture.NO_OVERLAY, tint);
+        poseStack.popPose();
+        poseStack.pushPose();
+        wingR.translateAndRotate(poseStack);
+        shadeR.render(poseStack, buffer, packedLight, OverlayTexture.NO_OVERLAY, tint);
+        poseStack.popPose();
+        poseStack.popPose();
+        setShade(false);
     }
 
     @Override
