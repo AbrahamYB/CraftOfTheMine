@@ -145,7 +145,7 @@ champion, majora, demon_king.
     The Fabric key over anything that is not an Elytra does nothing. Middle-click (pick block) is NOT used, so creative never clones items because of this.
 
 ## Falling and the glider
-24. Falls are 20% slower than before (gravity -20% for everyone, including other players).
+24. Falls are 35% slower than before (gravity -35% for everyone, including other players).
 25. Walk off a ledge of 2+ blocks and press Space once: the paraglider opens (not the Elytra). A plain jump on the
     ground or a small step does not open it. The Shift+Space chord still switches Elytra <-> glider as before.
 
