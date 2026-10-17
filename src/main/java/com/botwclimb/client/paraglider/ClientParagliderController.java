@@ -190,6 +190,7 @@ public final class ClientParagliderController {
         boolean rocketBoost = g.boostAge < g.boostDuration && g.boostSpeed > ParagliderConstants.MAX_HORIZONTAL_SPEED;
         float gustTarget = (float) Math.max(0, Math.min(1, -vel.y / 0.3)) * 0.5f + (rocketBoost ? 0.6f : 0f);
         g.gust += (Math.min(1f, gustTarget) - g.gust) * 0.1f;
+        g.rocketGust += ((rocketBoost ? 1f : 0f) - g.rocketGust) * 0.1f;
     }
 
     // ------------------------------------------------------------------ rendering
