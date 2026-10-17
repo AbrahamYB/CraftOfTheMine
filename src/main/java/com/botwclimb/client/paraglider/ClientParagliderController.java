@@ -147,6 +147,7 @@ public final class ClientParagliderController {
         g.pitchO = g.pitch;
         g.lagFO = g.lagF;
         g.lagRO = g.lagR;
+        g.rocketGustO = g.rocketGust;
         g.windFO = g.windF;
         g.windRO = g.windR;
 
@@ -191,7 +192,7 @@ public final class ClientParagliderController {
         float gustTarget = (float) Math.max(0, Math.min(1, -vel.y / 0.3)) * 0.5f + (rocketBoost ? 0.6f : 0f);
         g.gust += (Math.min(1f, gustTarget) - g.gust) * 0.1f;
         // follows the actual speed above cruise, so it calms as the carried momentum bleeds off
-        g.rocketGust += (Mth.clamp((float) ((hs - 0.4) / 0.5), 0f, 1f) - g.rocketGust) * 0.1f;
+        g.rocketGust += (Mth.clamp((float) ((hs - 0.4) / 0.5), 0f, 1f) - g.rocketGust) * 0.06f;
     }
 
     // ------------------------------------------------------------------ rendering
