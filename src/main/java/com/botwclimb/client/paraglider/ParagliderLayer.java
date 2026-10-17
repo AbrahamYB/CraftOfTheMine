@@ -36,7 +36,7 @@ public final class ParagliderLayer extends RenderLayer<AbstractClientPlayer, Pla
         ps.scale(sx, sy, sx);
         ps.translate(0, 10 / 16f, 0);
         model.flutter(Mth.lerp(partialTick, g.windFO, g.windF), Mth.lerp(partialTick, g.windRO, g.windR),
-                p.tickCount + partialTick, g.gust, g.rocketGust);
+                p.tickCount + partialTick, g.gust, Mth.lerp(partialTick, g.rocketGustO, g.rocketGust));
         FabricDefinition fabric = FabricRegistry.byIndex(g.fabric);
         model.setRibbons(fabric.hasLongRibbons());
         model.renderToBuffer(ps, buffer.getBuffer(model.renderType(fabric.texture())), light,

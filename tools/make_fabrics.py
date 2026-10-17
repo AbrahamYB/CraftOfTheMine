@@ -458,7 +458,11 @@ def sheet(cv, tassel, ribbon, tip, trim):
             put(x, y, tassel)
     for y in range(40, 61):                   # ribbon net: body colour, tip (far end) in the first rows
         for x in range(64, 108):
-            put(x, y, tip if y < 44 else ribbon)
+            if y >= 44 and getattr(cv, "no_gradient", False):   # Chuchu: the same liquid waves as the canopy
+                v = math.sin(x * 0.42 + math.sin(y * 0.55 + x * 0.12) * 1.6) + math.sin((x - y) * 0.30 + 1.0) * 0.8
+                put(x, y, '#1675c8' if v > 0.9 else ('#1fa0e2' if v > 0.0 else '#35c6f2'))
+            else:
+                put(x, y, tip if y < 44 else ribbon)
     for y in range(40, 54):
         for x in range(110, 114):
             put(x, y, STRUT)
