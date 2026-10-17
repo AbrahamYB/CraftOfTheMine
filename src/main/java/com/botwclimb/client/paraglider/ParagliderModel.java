@@ -12,6 +12,7 @@ import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 import net.minecraft.resources.ResourceLocation;
 
@@ -25,7 +26,7 @@ public final class ParagliderModel extends Model {
             new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "paraglider"), "main");
 
     private final ModelPart root;
-    private final ModelPart ribbonLeft, ribbonRight, wingL, wingR;
+    private final ModelPart ribbonLeft, ribbonRight, wingL, wingR, shade;
     private final ModelPart[] tassels = new ModelPart[7];
 
     public ParagliderModel(ModelPart root) {
@@ -36,6 +37,7 @@ public final class ParagliderModel extends Model {
         ModelPart canopy = root.getChild("canopy");
         this.wingL = canopy.getChild("wing_l");
         this.wingR = canopy.getChild("wing_r");
+        this.shade = canopy.getChild("shade");
         for (int i = 0; i < tassels.length; i++) tassels[i] = canopy.getChild("tassel_" + i);
     }
 
@@ -50,6 +52,9 @@ public final class ParagliderModel extends Model {
                         .texOffs(0, 0).addBox(-8, -1, -8, 16, 1, 16)
                         .texOffs(0, 34).addBox(-8, -2, -10, 16, 2, 2),
                 PartPose.offset(0, -22, 0));
+        // a sliver just under the canopy: drawn darker, so the underside reads as shaded
+        canopy.addOrReplaceChild("shade", CubeListBuilder.create()
+                .texOffs(0, 0).addBox(-8, 0.01f, -8, 16, 0.01f, 16), PartPose.ZERO);
         canopy.addOrReplaceChild("wing_l", CubeListBuilder.create()
                 .texOffs(64, 0).addBox(0, -1, -8, 12, 1, 16)
                 .texOffs(0, 34).addBox(0, -2, -10, 12, 2, 2), PartPose.offsetAndRotation(8, 0, 0, 0, 0, 0.28f));
@@ -99,8 +104,16 @@ public final class ParagliderModel extends Model {
         ribbonRight.visible = visible;
     }
 
+    /** The underside shade, drawn after the canopy with a dark tint. */
+    public void renderShade(PoseStack poseStack, VertexConsumer buffer, int packedLight) {
+        shade.visible = true;
+        shade.render(poseStack, buffer, packedLight, OverlayTexture.NO_OVERLAY, 0xFF5A5A5A);
+        shade.visible = false;
+    }
+
     @Override
     public void renderToBuffer(PoseStack poseStack, VertexConsumer buffer, int packedLight, int packedOverlay, int color) {
+        shade.visible = false; // drawn separately, darker
         root.render(poseStack, buffer, packedLight, packedOverlay, color);
     }
 }

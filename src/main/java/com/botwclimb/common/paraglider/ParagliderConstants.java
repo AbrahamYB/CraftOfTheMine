@@ -8,8 +8,13 @@ public final class ParagliderConstants {
     public static final double MAX_HORIZONTAL_SPEED = 0.312;   // 20% faster than the first tuning (0.26)
     public static final double HORIZONTAL_ACCELERATION = 0.03;
     public static final double HORIZONTAL_DECELERATION = 0.0216;
-    /** Speed above the cruise limit (Elytra / rocket momentum) is kept and bleeds off by this fraction per tick. */
-    public static final double EXCESS_DRAG = 0.04;
+    /**
+     * How long momentum carried over from Elytra flight lasts, by rocket flight duration 1 / 2 / 3. Vanilla average
+     * rocket lifetimes are 25.5 : 35.5 : 45.5 ticks; stretched so tier 1 = 6 s. Tier sets TIME, not speed.
+     */
+    public static final int[] ROCKET_MOMENTUM_TICKS = {120, 167, 214};
+    /** Highest speed carried over from the Elytra. shortcut: a plain cap, not tuned in play yet. */
+    public static final double BOOST_SPEED_CAP = 1.2;
     /** How fast a fast fall is caught when the canopy opens (-2.5 -> -0.145 in about 5 ticks). */
     public static final double CATCH_RATE = 0.5;
     /** How fast an upward velocity settles back onto the descent speed. */

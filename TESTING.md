@@ -148,3 +148,9 @@ champion, majora, demon_king.
 24. Falls are 20% slower than before (gravity -20% for everyone, including other players).
 25. Walk off a ledge of 2+ blocks and press Space once: the paraglider opens (not the Elytra). A plain jump on the
     ground or a small step does not open it. The Shift+Space chord still switches Elytra <-> glider as before.
+
+## Rocket momentum (paraglider)
+26. Fly Elytra with a rocket (flight 1, then 2, then 3), open the glider with Space while falling: the speed carries over
+    the same at the start for all three; flight 1 fades in about 6 s, flight 2 in about 8.4 s, flight 3 in about 10.7 s.
+    Turns and steering still work during the fade.
+27. The underside of the glider (between the canopy and your head) is darker than the top.

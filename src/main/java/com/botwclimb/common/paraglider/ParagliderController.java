@@ -71,6 +71,11 @@ public final class ParagliderController {
     public static void step(Player p, ParagliderData g, float forward, float strafe) {
         Vec3 pos = p.position();
         Vec3 cur = g.fresh ? p.getDeltaMovement() : pos.subtract(g.prevPos);
+        if (g.fresh) { // just opened: carry the Elytra speed; the rocket tier decides how long it lasts
+            g.boostAge = 0;
+            g.boostSpeed = Math.min(Math.hypot(cur.x, cur.z), BOOST_SPEED_CAP);
+            g.boostDuration = ROCKET_MOMENTUM_TICKS[Math.max(1, Math.min(3, g.rocketTier)) - 1];
+        }
         g.fresh = false;
         g.prevPos = pos;
 
@@ -83,10 +88,18 @@ public final class ParagliderController {
             wx /= len;
             wz /= len;
         }
-        // momentum from an Elytra / rocket switch above the cruise limit is carried along (and bleeds off slowly)
-        double speed = Math.hypot(cur.x, cur.z);
-        double cap = Math.max(MAX_HORIZONTAL_SPEED, speed);
-        double tx = wish ? wx * cap : 0, tz = wish ? wz * cap : 0;
+        // the speed allowed right now: the carried-over speed eases down to cruise over the retention time (smoothstep)
+        double allowance = MAX_HORIZONTAL_SPEED;
+        if (g.boostAge < g.boostDuration) {
+            double t = Math.max(0, Math.min(1, g.boostAge / (double) g.boostDuration));
+            allowance = Math.max(MAX_HORIZONTAL_SPEED,
+                    g.boostSpeed + (MAX_HORIZONTAL_SPEED - g.boostSpeed) * (t * t * (3 - 2 * t)));
+            g.boostAge++;
+        }
+        // steering aims at the allowance but never above the speed you already have (lost speed is not restored),
+        // except up to cruise, which is ordinary paraglider acceleration
+        double target = Math.min(allowance, Math.max(Math.hypot(cur.x, cur.z), MAX_HORIZONTAL_SPEED));
+        double tx = wish ? wx * target : 0, tz = wish ? wz * target : 0;
 
         double vx = cur.x, vz = cur.z;
         double ex = tx - vx, ez = tz - vz, dist = Math.hypot(ex, ez);
@@ -99,11 +112,11 @@ public final class ParagliderController {
             vz += ez / dist * accel;
         }
 
-        double over = Math.hypot(vx, vz) - MAX_HORIZONTAL_SPEED;
-        if (over > 0) { // coast: shed a fraction of the excess every tick
-            double keep = 1 - over * EXCESS_DRAG / Math.hypot(vx, vz);
-            vx *= keep;
-            vz *= keep;
+        // never above the allowance; speed lost to collisions or turns is not put back
+        double sp = Math.hypot(vx, vz);
+        if (sp > allowance) {
+            vx *= allowance / sp;
+            vz *= allowance / sp;
         }
 
         double vy = cur.y;

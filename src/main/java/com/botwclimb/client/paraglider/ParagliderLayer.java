@@ -41,6 +41,7 @@ public final class ParagliderLayer extends RenderLayer<AbstractClientPlayer, Pla
         model.setRibbons(fabric.hasLongRibbons());
         model.renderToBuffer(ps, buffer.getBuffer(model.renderType(fabric.texture())), light,
                 OverlayTexture.NO_OVERLAY, -1);
+        model.renderShade(ps, buffer.getBuffer(model.renderType(fabric.texture())), light);
         ps.popPose();
     }
 }
