@@ -123,8 +123,8 @@ public final class ParagliderModel extends Model {
         ribbonRight.xRot = droop;
         ribbonLeft.zRot = 0.12f * windR;
         ribbonRight.zRot = 0.12f * windR;
-        float pitchAmp = 0.12f + 0.55f * rocket, yawAmp = 0.10f + 0.30f * rocket;
-        float speed = 0.35f + 0.55f * rocket;
+        float pitchAmp = 0.10f + 0.12f * rocket, yawAmp = 0.10f + 0.18f * rocket;
+        float speed = 0.35f + 0.30f * rocket;
         for (int i = 0; i < 4; i++) {
             float w = RIBBON_WEIGHT[i];
             float phase = age * speed - i * 0.9f;
