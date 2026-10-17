@@ -282,14 +282,32 @@ def addison():
     return cv
 
 
+def chuchu_eye(cv, cx, cy, opens_right):
+    """Orange ring, yellow iris and an open grey moon for the pupil (the moon opens to one side)."""
+    ex, ey = cx + 0.5, cy + 0.5
+    cv.disc(ex, ey, 4.6, '#c96a1a')
+    cv.disc(ex, ey, 3.6, '#f0c34a')
+    d = 1.5 if opens_right else -1.5
+    for y in range(H):
+        for x in range(W):
+            outer = math.hypot(x + 0.5 - ex, y + 0.5 - ey) <= 2.7
+            carve = math.hypot(x + 0.5 - (ex + d), y + 0.5 - ey) <= 2.3
+            if outer and not carve:
+                cv.set(x, y, '#6b7c92')
+
+
 def chuchu():
-    # flat cyan canopy; two big amber-ringed eyes with pupils and a smiling mouth
-    cv = Canvas('#10a3bc')
+    # liquid-wave blues like the in-game fabric (no linear gradient), two eyes: the left one higher, the right lower
+    cv = Canvas('#35c6f2')
+    cv.no_gradient = True
+    light, mid, deep = '#35c6f2', '#1fa0e2', '#1675c8'
+    for y in range(H):
+        for x in range(W):
+            v = math.sin(x * 0.42 + math.sin(y * 0.55 + x * 0.12) * 1.6) + math.sin((x - y) * 0.30 + 1.0) * 0.8
+            cv.set(x, y, deep if v > 0.9 else (mid if v > 0.0 else light))
     cv.frame('#ceb985')
-    for cx in (13, 26):
-        cv.disc(cx + 0.5, 7.5, 4.6, '#ac5f0c')       # amber ring
-        cv.disc(cx + 0.5, 7.5, 3.4, '#e8b431')       # yellow iris
-        cv.disc(cx + 0.5, 7.5, 1.7, '#2b2318')       # pupil
+    chuchu_eye(cv, 12, 6, True)
+    chuchu_eye(cv, 27, 9, False)
     return cv
 
 
@@ -402,6 +420,8 @@ def apply_gradient(cv):
     towards the wing tips and the trailing edge. Smooth and the same on both sides, so it never reads as
     light coming from one direction (the fake shadow the reference renders have baked in). The border stays flat.
     """
+    if getattr(cv, "no_gradient", False):
+        return
     for y in range(1, H - 1):
         for x in range(1, W - 1):
             r, g, b, a = cv.p[y][x]
