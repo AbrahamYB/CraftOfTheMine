@@ -12,7 +12,7 @@ UV layout of the sheet (must match ParagliderModel):
   left    net at (64,0)  top (80..91, 0..15)  bottom (92..103, 0..15)     (wing on the player's left, +x)
   right   net at (0,17)  top (16..27,17..32)  bottom (28..39,17..32)
   flat preview of the canopy (0..39, 46..61), used by the inventory picker
-  edge strip (0..83, 34..37)   tassel (0..3, 40..44)   ribbon net (64..107, 40..60)   strut net (110..113, 40..53)
+  edge strip (0..83, 34..37)   tassel (0..3, 40..44)   ribbon net (64..103, 40..45)   strut net (110..113, 40..53)
 """
 import os, sys, zlib, struct, math
 
@@ -463,12 +463,18 @@ def sheet(cv, tassel, ribbon, tip, trim):
     for y in range(40, 45):
         for x in range(0, 4):
             put(x, y, wave(x * 2, y, orange) if wavy else tassel)
-    for y in range(40, 61):                   # ribbon net: body colour, tip (far end) in the first rows
-        for x in range(64, 108):
-            if wavy:
-                put(x, y, wave(x, y, orange if y < 44 else ('#35c6f2', '#1fa0e2', '#1675c8')))
-            else:
-                put(x, y, tip if y < 44 else ribbon)
+    blue = ('#35c6f2', '#1fa0e2', '#1675c8')
+    for seg in range(10):                     # ribbon net: one 8x3 cell per 2-long segment, the last two are the tip
+        ox, oy = 64 + 8 * (seg % 5), 40 + 3 * (seg // 5)
+        for y in range(3):
+            for x in range(8):
+                if wavy:                      # Chuchu: waves flowing along the whole ribbon
+                    along = seg * 2 + y
+                    v = math.sin(along * 0.9 + math.sin(x * 1.7 + along * 0.4) * 1.3) + math.sin(along * 0.45 + x) * 0.6
+                    cols = orange if seg >= 8 else blue
+                    put(ox + x, oy + y, cols[2] if v > 0.8 else (cols[1] if v > -0.1 else cols[0]))
+                else:
+                    put(ox + x, oy + y, tip if seg >= 8 else ribbon)
     for y in range(40, 54):
         for x in range(110, 114):
             put(x, y, STRUT)

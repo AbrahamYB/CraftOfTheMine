@@ -32,6 +32,15 @@ public final class JumpPlanner {
 
     /** @param side -1 / 0 / +1: jump sideways towards the player's right / straight up / left (A or D held). */
     public static JumpPlan plan(Level level, Entity e, Vec3 feet, Direction dir, int side) {
+        return plan(level, e, feet, dir, side, false);
+    }
+
+    /** @param sideOnly A / D without W: leap along the wall instead of up it (falls back to the normal jump). */
+    public static JumpPlan plan(Level level, Entity e, Vec3 feet, Direction dir, int side, boolean sideOnly) {
+        if (sideOnly && side != 0) {
+            JumpPlan leap = sideLeap(level, e, e.getDimensions(Pose.STANDING).makeBoundingBox(feet), dir, side);
+            if (leap != null) return leap;
+        }
         AABB start = e.getDimensions(Pose.STANDING).makeBoundingBox(feet);
         Vec3 out = new Vec3(-dir.getStepX(), 0, -dir.getStepZ());
 
@@ -144,6 +153,29 @@ public final class JumpPlanner {
             if (grab) return out;
         }
         return steps; // nothing to hold on to sideways: jump straight up instead
+    }
+
+    /** A low arc along the wall: JUMP_SIDE_LEAP blocks sideways, a little up, ending on the wall again. */
+    private static JumpPlan sideLeap(Level level, Entity e, AABB start, Direction dir, int side) {
+        Direction left = dir.getCounterClockWise();
+        Vec3 out = new Vec3(-dir.getStepX(), 0, -dir.getStepZ());
+        int ticks = 8;
+        for (double scale : new double[]{1.0, 0.67, 0.33}) {
+            Vec3[] steps = new Vec3[ticks];
+            boolean ok = true;
+            for (int k = 1; k <= ticks && ok; k++) {
+                double u = (double) k / ticks;
+                double lat = side * JUMP_SIDE_LEAP * scale * (1 - Math.pow(1 - u, 1.6));
+                double up = JUMP_SIDE_RISE * Math.sin(Math.PI * u); // a flat slide along the wall, not a hop
+                double o = 0.12 * Math.sin(Math.PI * u);
+                steps[k - 1] = new Vec3(left.getStepX() * lat + out.x * o, up, left.getStepZ() * lat + out.z * o);
+                ok = !SurfaceSampler.blocked(level, e, start.move(steps[k - 1]).deflate(0.01));
+            }
+            if (ok && SurfaceSampler.sample(level, e, start.move(steps[ticks - 1]), dir).holds(REGRAB_GAP)) {
+                return new JumpPlan(steps, JumpPlan.Goal.WALL, Double.NaN);
+            }
+        }
+        return null;
     }
 
     private static boolean isFree(Level level, Entity e, AABB[] cell, byte[] free, int i) {
