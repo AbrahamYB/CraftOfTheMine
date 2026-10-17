@@ -13,8 +13,8 @@ public final class ParagliderConstants {
      * rocket lifetimes are 25.5 : 35.5 : 45.5 ticks; stretched so tier 1 = 6 s. Tier sets TIME, not speed.
      */
     public static final int[] ROCKET_MOMENTUM_TICKS = {120, 167, 214};
-    /** Highest speed carried over from the Elytra. shortcut: a plain cap, not tuned in play yet. */
-    public static final double BOOST_SPEED_CAP = 1.2;
+    /** Highest speed carried over from the Elytra. shortcut: a plain safety cap, not tuned in play yet. */
+    public static final double BOOST_SPEED_CAP = 3.0;
     /** How fast a fast fall is caught when the canopy opens (-2.5 -> -0.145 in about 5 ticks). */
     public static final double CATCH_RATE = 0.5;
     /** How fast an upward velocity settles back onto the descent speed. */
