@@ -29,16 +29,22 @@ public final class ParagliderModel extends Model {
     private final ModelPart ribbonLeft, ribbonRight, wingL, wingR;
     private final ModelPart canopy, shadeCenter, shadeL, shadeR;
     private final ModelPart[] tassels = new ModelPart[7];
-    private final ModelPart[] segL = new ModelPart[4], segR = new ModelPart[4]; // ribbon segments, root to tip
-    /** How much each ribbon segment sways: almost nothing at the root and the middle, most at the end. */
-    private static final float[] RIBBON_WEIGHT = {0.05f, 0.30f, 0.70f, 1.00f};
+    private final ModelPart[] segL = new ModelPart[SEGS], segR = new ModelPart[SEGS]; // ribbon segments, root to tip
+    private static final int SEGS = 10; // 2 px each, so the ribbon bends as one smooth curve
+    /** Share of the ribbon's bend taken by each segment: the root barely bends, the end bends most. */
+    private static final float[] BEND = new float[SEGS];
+    static {
+        float sum = 0;
+        for (int i = 0; i < SEGS; i++) sum += BEND[i] = 0.05f + (float) Math.pow(i / (SEGS - 1f), 1.6);
+        for (int i = 0; i < SEGS; i++) BEND[i] /= sum;
+    }
 
     public ParagliderModel(ModelPart root) {
         super(RenderType::entityCutoutNoCull);
         this.root = root;
         this.ribbonLeft = root.getChild("ribbon_l");
         this.ribbonRight = root.getChild("ribbon_r");
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < SEGS; i++) {
             segL[i] = (i == 0 ? ribbonLeft : segL[i - 1]).getChild("seg_l" + (i + 1));
             segR[i] = (i == 0 ? ribbonRight : segR[i - 1]).getChild("seg_r" + (i + 1));
         }
@@ -83,15 +89,15 @@ public final class ParagliderModel extends Model {
             canopy.addOrReplaceChild("tassel_" + i, CubeListBuilder.create()
                     .texOffs(0, 40).addBox(-0.5f, 0, -0.5f, 1, 4, 1), PartPose.offset(tassels[i][0], tassels[i][1], 8));
         }
-        // two long ribbons trailing behind and below the canopy, each four linked 5-long segments so they can wave
+        // two long ribbons trailing behind and below the canopy, each ten linked 2-long segments so they bend smoothly
         for (String side : new String[]{"l", "r"}) {
             float x = side.equals("l") ? 5 : -5;
             PartDefinition seg = root.addOrReplaceChild("ribbon_" + side, CubeListBuilder.create(),
                     PartPose.offsetAndRotation(x, -22, 8, -0.45f, 0, 0));
-            for (int i = 1; i <= 4; i++) {
+            for (int i = 1; i <= SEGS; i++) {
                 seg = seg.addOrReplaceChild("seg_" + side + i, CubeListBuilder.create()
-                                .texOffs(64, i == 4 ? 40 : 48).addBox(-1, 0, 0, 2, 1, 5),
-                        i == 1 ? PartPose.ZERO : PartPose.offset(0, 0, 5));
+                                .texOffs(64, i > SEGS - 2 ? 40 : 48).addBox(-1, 0, 0, 2, 1, 2),
+                        i == 1 ? PartPose.ZERO : PartPose.offset(0, 0, 2));
             }
         }
         root.addOrReplaceChild("strut_l", CubeListBuilder.create()
@@ -123,15 +129,17 @@ public final class ParagliderModel extends Model {
         ribbonRight.xRot = droop;
         ribbonLeft.zRot = 0.12f * windR;
         ribbonRight.zRot = 0.12f * windR;
-        float pitchAmp = 0.10f + 0.12f * rocket, yawAmp = 0.10f + 0.18f * rocket;
-        float speed = 0.35f + 0.30f * rocket;
-        for (int i = 0; i < 4; i++) {
-            float w = RIBBON_WEIGHT[i];
-            float phase = age * speed - i * 0.9f;
-            segL[i].xRot = pitchAmp * w * Mth.sin(phase);
-            segL[i].zRot = yawAmp * w * Mth.sin(phase * 0.8f + 0.7f);
-            segR[i].xRot = pitchAmp * w * Mth.sin(phase + 1.9f);
-            segR[i].zRot = -yawAmp * w * Mth.sin(phase * 0.8f + 0.7f);
+        // the wind pushes the whole ribbon upward as speed climbs (rocket = 0..1 follows speed), curving it toward
+        // the end; one slow travelling wave rides on top, the same function for every segment so it stays connected
+        float lift = 1.2f * rocket * rocket + 0.12f * level, wave = 0.10f + 0.10f * rocket, side = 0.08f + 0.08f * rocket;
+        float t = age * (0.30f + 0.25f * rocket);
+        for (int i = 0; i < SEGS; i++) {
+            float w = BEND[i] * SEGS;
+            float p = t - i * 0.25f;
+            segL[i].xRot = lift * BEND[i] + wave * w * 0.35f * Mth.sin(p) / SEGS * 3f;
+            segR[i].xRot = lift * BEND[i] + wave * w * 0.35f * Mth.sin(p + 1.9f) / SEGS * 3f;
+            segL[i].zRot = side * w * 0.3f * Mth.sin(p * 0.8f + 0.7f);
+            segR[i].zRot = -side * w * 0.3f * Mth.sin(p * 0.8f + 0.7f);
         }
     }
 
