@@ -92,7 +92,7 @@ public final class ParagliderModel extends Model {
      * Pose the loose parts for the air rushing past: windF / windR in -1..1 (+ = air from the front / from the right).
      * Wing tips lift and yaw a little, tassels and ribbons trail backwards, and everything flutters slowly.
      */
-    public void flutter(float windF, float windR, float age, float gust) {
+    public void flutter(float windF, float windR, float age, float gust, float rocket) {
         float wobble = (0.02f + 0.04f * gust) * Mth.sin(age * 0.3f);
         wingL.zRot = 0.28f + wobble - 0.04f * windF;
         wingR.zRot = -0.28f - wobble + 0.04f * windF;
@@ -102,10 +102,15 @@ public final class ParagliderModel extends Model {
             tassels[i].xRot = 0.10f + 0.70f * windF + (0.10f + 0.25f * gust) * Mth.sin(age * 0.45f + i * 1.7f);
             tassels[i].zRot = 0.45f * windR + (0.08f + 0.20f * gust) * Mth.sin(age * 0.5f + i);
         }
-        ribbonLeft.xRot = -0.45f + 0.50f * windF + (0.08f + 0.20f * gust) * Mth.sin(age * 0.4f);
-        ribbonRight.xRot = -0.45f + 0.50f * windF + (0.08f + 0.20f * gust) * Mth.sin(age * 0.4f + 1f);
-        ribbonLeft.zRot = 0.35f * windR;
-        ribbonRight.zRot = 0.35f * windR;
+        // ribbons: hang down when slow, trail out level at cruise speed with a gentle side sway, and whip up and
+        // down hard (plus a wilder side sway) while a rocket boost lasts
+        float level = Math.max(0f, Math.min(1f, windF));
+        float pitchSway = (0.04f + 0.60f * rocket) * Mth.sin(age * (0.35f + 0.55f * rocket));
+        float yawSway = (0.06f + 0.30f * rocket) * Mth.sin(age * (0.30f + 0.40f * rocket) + 0.7f);
+        ribbonLeft.xRot = -0.45f * (1f - level) + pitchSway;
+        ribbonRight.xRot = -0.45f * (1f - level) + (0.04f + 0.60f * rocket) * Mth.sin(age * (0.35f + 0.55f * rocket) + 1.9f);
+        ribbonLeft.zRot = 0.35f * windR + yawSway;
+        ribbonRight.zRot = 0.35f * windR - yawSway;
     }
 
     public void setRibbons(boolean visible) {
