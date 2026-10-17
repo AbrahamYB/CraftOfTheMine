@@ -151,8 +151,6 @@ def sheikah_eye(cv, top, c, c2):
 # ---------------------------------------------------------------- fabrics
 def ordinary():
     cv = Canvas('#5c4d56')
-    cv.rect(0, 0, 11, 15, '#4f424a')
-    cv.rect(28, 0, 39, 15, '#4f424a')
     cv.rect(12, 0, 27, 15, '#665663')
     for x in (12, 27):
         cv.rect(x, 1, x, 14, '#c0ae84')
@@ -210,13 +208,10 @@ def sheikah():
 
 def gerudo():
     cv = Canvas('#445444')
-    cv.rect(0, 0, 11, 15, '#3c4a3c')
-    cv.rect(28, 0, 39, 15, '#2c3a34')
     cv.rect(0, 0, W - 1, 2, '#c4940f')           # gold band across the front
     for x in range(0, W, 2):
         cv.set(x, 3, '#c4940f')
     cv.rect(0, 0, 1, H - 1, '#c4940f')
-    cv.rect(W - 2, 0, W - 1, H - 1, '#7a5f1a')
     cv.frame('#cbb480', front=False, sides=False)
     cv.disc(C, 8, 4.5, '#7c5637', ring='#cbb480')   # terracotta shield with a crescent
     cv.disc(C - 1, 7.5, 2.6, '#cbb480')
@@ -229,8 +224,6 @@ def gerudo():
 
 def zora():
     cv = Canvas('#1e809c')
-    cv.rect(0, 0, 11, 15, '#2c5a6c')
-    cv.rect(28, 0, 39, 15, '#0e2e41')
     for k in range(-20, 64, 8):                     # scale lattice
         for y in range(16):
             cv.set(k + y, y, '#87a4a5')
@@ -244,8 +237,6 @@ def zora():
 
 def goron():
     cv = Canvas('#ab5436')
-    cv.rect(0, 0, 11, 15, '#9a4a30')
-    cv.rect(28, 0, 39, 15, '#8a432b')
     cv.frame('#c8b281')
     cv.ring(C, 8, 6.5, '#c8b281', w=1.2)             # big ring with the Goron emblem
     cv.rect(18, 5, 21, 10, '#c8b281')                # rock face / spike
@@ -259,8 +250,6 @@ def goron():
 
 def yiga():
     cv = Canvas('#af8912')
-    cv.rect(0, 0, 9, 15, '#732d18')
-    cv.rect(30, 0, 39, 15, '#3d301c')
     cv.frame('#c5b386')
     cv.disc(C, 8, 7, '#c5b386')
     cv.disc(C, 8, 5, '#af8912')
@@ -278,8 +267,6 @@ def cece():
         for y in range(H):
             if ((x + y) // 4) % 2 == 0:
                 cv.set(x, y, '#5e4f5e')
-    cv.rect(0, 9, 3, 15, '#8c6f24')
-    cv.rect(36, 9, 39, 15, '#8c6f24')
     cv.frame('#cbba88')
     cv.rect(14, 1, 25, 2, '#cbba88')
     cv.rect(16, 3, 23, 4, '#cbba88')
@@ -295,7 +282,6 @@ def addison():
         for bx in range(10):
             c = cols[(bx + by) % 3]
             cv.rect(bx * 4, by * 4, bx * 4 + 3, by * 4 + 3, c)
-    cv.rect(31, 0, 39, 15, '#282736')
     cv.frame('#ceb37b')
     return cv
 
@@ -303,25 +289,17 @@ def addison():
 def chuchu():
     # flat cyan canopy; two big amber-ringed eyes with pupils and a smiling mouth
     cv = Canvas('#10a3bc')
-    cv.rect(0, 0, 8, 15, '#0b7c96')
-    cv.rect(31, 0, 39, 15, '#08445b')
     cv.frame('#ceb985')
     for cx in (13, 26):
         cv.disc(cx + 0.5, 7.5, 4.6, '#ac5f0c')       # amber ring
         cv.disc(cx + 0.5, 7.5, 3.4, '#e8b431')       # yellow iris
         cv.disc(cx + 0.5, 7.5, 1.7, '#2b2318')       # pupil
-    cv.line(15, 12, 19, 13, '#ceb985')              # smiling mouth
-    cv.line(19, 13, 24, 12, '#ceb985')
-    cv.line(14, 11, 15, 12, '#ceb985')
-    cv.line(24, 11, 25, 12, '#ceb985')
     return cv
 
 
 def aerocuda():
     # flat olive-gold with dark chevrons across the front and two round eyes
     cv = Canvas('#b2a43c')
-    cv.rect(0, 0, 8, 15, '#8b7234')
-    cv.rect(31, 0, 39, 15, '#775023')
     cv.frame('#cfbb85')
     for k in range(3):
         y = 4 + k * 4
@@ -336,8 +314,6 @@ def aerocuda():
 def korok():
     # flat cream canopy with simple green leaves and small brown pinwheels
     cv = Canvas('#bfba8f')
-    cv.rect(31, 0, 39, 15, '#4f5449')
-    cv.rect(0, 0, 3, 15, '#a8a27a')
     cv.frame('#d7be84')
     leaf, brown = '#4f944c', '#9c791a'
     for (cx, cy) in ((14, 4), (24, 3), (19, 10), (9, 10)):
@@ -355,8 +331,6 @@ def korok():
 def champion():
     # plain bright blue field, small tan Hylian crest near the front, darker blue triangle at the rear
     cv = Canvas('#0fa1d0')
-    cv.rect(0, 0, 11, 15, '#0b86b0')
-    cv.rect(28, 0, 39, 15, '#0d4b68')
     tri2(cv, 8, 8, '#0d6f94', up=False)              # rear shading triangle
     cv.frame('#d4bf8a')
     for x in (12, 27):
@@ -374,8 +348,6 @@ def champion():
 def majora():
     # flat purple-grey mask: crisp amber eyes with dark pupils, spikes on top, a stitched mouth band
     cv = Canvas('#4d4763')
-    cv.rect(0, 0, 11, 15, '#423b55')
-    cv.rect(28, 0, 39, 15, '#3a334c')
     cv.frame('#bca97a')
     cv.tri(19, 1, 3, '#eda700')
     cv.tri(13, 6, 3, '#eda700')
@@ -393,8 +365,6 @@ def majora():
 def demon():
     # flat dark canopy with an outlined khaki diamond emblem and a bar of marks below it
     cv = Canvas('#51524a')
-    cv.rect(0, 0, 11, 15, '#474840')
-    cv.rect(28, 0, 39, 15, '#3a3b34')
     cv.frame('#ac9d64')
     cv.line(19, 2, 13, 8, '#ac9d64')
     cv.line(13, 8, 19, 14, '#ac9d64')
