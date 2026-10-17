@@ -33,9 +33,9 @@ public final class WindTrails {
     private static final double SIDE = 0.85, BACK = 0.55, HEIGHT = 2.70;
     /** Horizontal speed (blocks/tick) -> strength and length. Cruise is 0.312, rocket momentum goes far past it. */
     private static final float[] SPEED = {0.22f, 0.30f, 0.65f};
-    private static final float[] ALPHA = {0.0f, 0.45f, 0.85f};
+    private static final float[] ALPHA = {0.0f, 0.55f, 0.9f};
     private static final float[] LENGTH = {0.4f, 1.1f, 2.3f};
-    private static final float HALF_WIDTH = 0.05f;
+    private static final float HALF_WIDTH = 0.07f;
 
     private static final Map<UUID, Trail> TRAILS = new HashMap<>();
 
@@ -101,7 +101,7 @@ public final class WindTrails {
         Vec3 cam = event.getCamera().getPosition();
         PoseStack ps = event.getPoseStack();
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
-        VertexConsumer vc = buffers.getBuffer(RenderType.lightning());
+        VertexConsumer vc = buffers.getBuffer(RenderType.debugQuads());
         boolean any = false;
         for (Player p : mc.level.players()) {
             Trail t = TRAILS.get(p.getUUID());
@@ -114,7 +114,7 @@ public final class WindTrails {
                 any |= ribbon(vc, ps, cam, t, s, live ? emitter(base, heading, s) : null);
             }
         }
-        if (any) buffers.endBatch(RenderType.lightning());
+        if (any) buffers.endBatch(RenderType.debugQuads());
     }
 
     /** Draws one streak from the (optional) live head back through the stored points, cut off at the trail length. */
@@ -142,7 +142,7 @@ public final class WindTrails {
             if (w.lengthSqr() < 1.0e-8) { a = b; dist = end; continue; }
             w = w.normalize();
             float k = end / t.length;
-            float alphaB = strength * (1f - k) * (1f - k), widthB = HALF_WIDTH * (1f - 0.85f * k);
+            float alphaB = strength * (1f - k), widthB = HALF_WIDTH * (1f - 0.85f * k);
             if (sideA == null) sideA = w;
             quad(vc, ps, cam, a, b, sideA, w, widthA, widthB, alphaA, alphaB);
             sideA = w;
@@ -160,8 +160,8 @@ public final class WindTrails {
         var m = ps.last().pose();
         Vec3 a1 = a.add(wa.scale(widthA)), a2 = a.subtract(wa.scale(widthA));
         Vec3 b1 = b.add(wb.scale(widthB)), b2 = b.subtract(wb.scale(widthB));
-        // both windings, since the strip faces the camera whichever way it was built (halved so they sum to one)
-        float aa = alphaA * 0.5f, ab = alphaB * 0.5f;
+        // both windings, since the strip faces the camera whichever way it was built 
+        float aa = alphaA, ab = alphaB;
         vert(vc, m, cam, a1, aa); vert(vc, m, cam, a2, aa); vert(vc, m, cam, b2, ab); vert(vc, m, cam, b1, ab);
         vert(vc, m, cam, b1, ab); vert(vc, m, cam, b2, ab); vert(vc, m, cam, a2, aa); vert(vc, m, cam, a1, aa);
     }
