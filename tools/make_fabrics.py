@@ -453,14 +453,20 @@ def sheet(cv, tassel, ribbon, tip, trim):
     for y in range(34, 38):
         for x in range(0, 84):
             put(x, y, trim)
+    wavy = getattr(cv, "no_gradient", False)     # Chuchu: liquid waves everywhere, orange ones on tassels and tips
+
+    def wave(x, y, cols):
+        v = math.sin(x * 0.42 + math.sin(y * 0.55 + x * 0.12) * 1.6) + math.sin((x - y) * 0.30 + 1.0) * 0.8
+        return cols[2] if v > 0.9 else (cols[1] if v > 0.0 else cols[0])
+
+    orange = ('#d9822a', '#ac5f0c', '#8a4608')
     for y in range(40, 45):
         for x in range(0, 4):
-            put(x, y, tassel)
+            put(x, y, wave(x * 2, y, orange) if wavy else tassel)
     for y in range(40, 61):                   # ribbon net: body colour, tip (far end) in the first rows
         for x in range(64, 108):
-            if y >= 44 and getattr(cv, "no_gradient", False):   # Chuchu: the same liquid waves as the canopy
-                v = math.sin(x * 0.42 + math.sin(y * 0.55 + x * 0.12) * 1.6) + math.sin((x - y) * 0.30 + 1.0) * 0.8
-                put(x, y, '#1675c8' if v > 0.9 else ('#1fa0e2' if v > 0.0 else '#35c6f2'))
+            if wavy:
+                put(x, y, wave(x, y, orange if y < 44 else ('#35c6f2', '#1fa0e2', '#1675c8')))
             else:
                 put(x, y, tip if y < 44 else ribbon)
     for y in range(40, 54):
