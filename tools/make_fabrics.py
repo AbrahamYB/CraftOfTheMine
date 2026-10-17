@@ -272,79 +272,83 @@ def yiga():
 
 
 def cece():
-    # grey-violet canopy, cream tab at the front, two plum blobs mid-way, a gold-brown patch at one edge
+    # flat grey-violet with diagonal two-tone bands, a cream tab at the front and a flat gold corner
     cv = Canvas('#534953')
-    cv.rect(0, 0, 11, 15, '#4a414a')
-    cv.rect(28, 0, 39, 15, '#3e3641')
-    cv.scatter('#6a5e5e', [(4, 3), (5, 3), (9, 6), (10, 6), (7, 11), (8, 11), (14, 9), (15, 9), (24, 12), (25, 12),
-                           (12, 4), (13, 4), (17, 13), (18, 13), (3, 8), (11, 13)])
-    cv.scatter('#32281a', [(6, 5), (2, 10), (13, 11), (10, 2), (16, 6)])
+    for x in range(W):
+        for y in range(H):
+            if ((x + y) // 4) % 2 == 0:
+                cv.set(x, y, '#5e4f5e')
     cv.rect(0, 9, 3, 15, '#8c6f24')
-    cv.rect(0, 0, 0, 8, '#8c6f24')
+    cv.rect(36, 9, 39, 15, '#8c6f24')
     cv.frame('#cbba88')
-    cv.rect(14, 1, 25, 2, '#cbba88')                 # cream shape at the front
-    cv.rect(15, 3, 24, 4, '#cbba88')
-    cv.rect(17, 5, 22, 6, '#cbba88')
-    cv.rect(18, 7, 21, 7, '#cbba88')
-    for cx in (15, 24):                              # plum blobs
-        cv.ellipse(cx, 10.5, 3.2, 2.2, '#7c3a59')
+    cv.rect(14, 1, 25, 2, '#cbba88')
+    cv.rect(16, 3, 23, 4, '#cbba88')
+    cv.rect(18, 5, 21, 6, '#cbba88')
     return cv
 
 
 def addison():
+    # flat quilt of 4x4 blocks in three colours, cream stitching on the border
     cv = Canvas('#775273')
+    cols = ['#775273', '#3f9c82', '#b69114']
+    for by in range(4):
+        for bx in range(10):
+            c = cols[(bx + by) % 3]
+            cv.rect(bx * 4, by * 4, bx * 4 + 3, by * 4 + 3, c)
     cv.rect(31, 0, 39, 15, '#282736')
-    gold, teal = '#b69114', '#3f9c82'
-    for (x, y, w, h, c) in [(3, 3, 3, 2, gold), (8, 8, 2, 3, teal), (13, 2, 3, 3, teal), (15, 9, 3, 2, gold),
-                            (21, 4, 3, 3, gold), (24, 10, 3, 3, teal), (7, 12, 3, 2, gold), (27, 6, 2, 3, teal),
-                            (19, 6, 2, 2, '#ceb37b'), (11, 5, 2, 2, '#ceb37b'), (30, 12, 3, 2, gold)]:
-        cv.rect(x, y, x + w - 1, y + h - 1, c)
     cv.frame('#ceb37b')
     return cv
 
 
 def chuchu():
+    # flat cyan canopy; two big amber-ringed eyes with pupils and a smiling mouth
     cv = Canvas('#10a3bc')
     cv.rect(0, 0, 8, 15, '#0b7c96')
     cv.rect(31, 0, 39, 15, '#08445b')
     cv.frame('#ceb985')
-    for cx in (12, 27):                              # the two big eyes
-        cv.ellipse(cx, 7, 4, 4.6, '#ac5f0c')
-        cv.ellipse(cx, 7, 3.2, 3.8, '#b8a421')
-        cv.disc(cx + (1 if cx < 20 else -1), 7.5, 1.8, '#2b2318')
-        cv.rect(cx - 2, 4, cx - 1, 5, '#ceb985')
-    cv.rect(18, 11, 21, 11, '#ceb985')               # little mouth
+    for cx in (13, 26):
+        cv.disc(cx + 0.5, 7.5, 4.6, '#ac5f0c')       # amber ring
+        cv.disc(cx + 0.5, 7.5, 3.4, '#e8b431')       # yellow iris
+        cv.disc(cx + 0.5, 7.5, 1.7, '#2b2318')       # pupil
+    cv.line(15, 12, 19, 13, '#ceb985')              # smiling mouth
+    cv.line(19, 13, 24, 12, '#ceb985')
+    cv.line(14, 11, 15, 12, '#ceb985')
+    cv.line(24, 11, 25, 12, '#ceb985')
     return cv
 
 
 def aerocuda():
+    # flat olive-gold with dark chevrons across the front and two round eyes
     cv = Canvas('#b2a43c')
-    cv.rect(0, 0, 8, 15, '#666250')
-    cv.rect(31, 0, 39, 15, '#555142')
-    for (x, y) in [(4, 4), (3, 9), (10, 11), (13, 6), (16, 12), (9, 2), (14, 14), (6, 13)]:
-        cv.sym(x + 4, y, '#775023'); cv.sym(x + 5, y, '#775023'); cv.sym(x + 4, y + 1, '#8b7234')
+    cv.rect(0, 0, 8, 15, '#8b7234')
+    cv.rect(31, 0, 39, 15, '#775023')
     cv.frame('#cfbb85')
-    for x in (15, 23):                               # the two ring "eyes"
-        cv.ring(x + 0.5, 3.5, 2.5, '#775023', w=1.2)
-        cv.set(x, 3, '#cfbb85'); cv.set(x + 1, 3, '#cfbb85')
-    cv.tri(19, 6, 5, '#8b7234')
+    for k in range(3):
+        y = 4 + k * 4
+        cv.line(10, y + 2, 19, y, '#775023')
+        cv.line(19, y, 28, y + 2, '#775023')
+    for cx in (15, 24):
+        cv.disc(cx + 0.5, 3.5, 2.2, '#775023')
+        cv.disc(cx + 0.5, 3.5, 1.0, '#cfbb85')
     return cv
 
 
 def korok():
+    # flat cream canopy with simple green leaves and small brown pinwheels
     cv = Canvas('#bfba8f')
     cv.rect(31, 0, 39, 15, '#4f5449')
     cv.rect(0, 0, 3, 15, '#a8a27a')
     cv.frame('#d7be84')
-    leaf = '#4f944c'
-    for (cx, cy) in ((14, 4), (24, 3), (19, 9), (8, 9)):  # leaves
-        cv.ellipse(cx, cy, 3, 1.8, leaf)
-        cv.line(cx - 2, cy + 1, cx + 2, cy - 1, '#bfba8f')
-    brown = '#9c791a'
-    for (cx, cy) in ((6, 4), (29, 8), (13, 12), (23, 13)):  # pinwheels
-        cv.rect(cx, cy - 1, cx, cy + 1, brown)
-        cv.rect(cx - 1, cy, cx + 1, cy, brown)
-        cv.set(cx + 1, cy - 1, brown); cv.set(cx - 1, cy + 1, brown)
+    leaf, brown = '#4f944c', '#9c791a'
+    for (cx, cy) in ((14, 4), (24, 3), (19, 10), (9, 10)):
+        cv.tri(cx, cy - 2, 3, leaf, up=True)
+        cv.set(cx, cy + 1, leaf)
+    for (cx, cy) in ((6, 5), (30, 9), (13, 13), (25, 13)):
+        cv.set(cx, cy, brown)
+        cv.set(cx - 1, cy, brown)
+        cv.set(cx + 1, cy, brown)
+        cv.set(cx, cy - 1, brown)
+        cv.set(cx, cy + 1, brown)
     return cv
 
 
@@ -368,35 +372,37 @@ def champion():
 
 
 def majora():
-    # purple-grey canopy, two big amber eyes with olive pupils, red-brown stripe above and a red-brown mouth band below
-    cv = Canvas('#5a5371')
-    cv.rect(0, 0, 11, 15, '#4d4763')
-    cv.rect(28, 0, 39, 15, '#423b55')
+    # flat purple-grey mask: crisp amber eyes with dark pupils, spikes on top, a stitched mouth band
+    cv = Canvas('#4d4763')
+    cv.rect(0, 0, 11, 15, '#423b55')
+    cv.rect(28, 0, 39, 15, '#3a334c')
     cv.frame('#bca97a')
-    cv.rect(19, 1, 20, 6, '#97523e')                 # stripe from the front
-    cv.rect(18, 5, 21, 6, '#97523e')
+    cv.tri(19, 1, 3, '#eda700')
+    cv.tri(13, 6, 3, '#eda700')
+    cv.tri(25, 6, 3, '#eda700')
     for cx in (14, 25):
-        cv.ellipse(cx, 8, 4.5, 3.4, '#694626')       # brown ring
-        cv.ellipse(cx, 8, 3.8, 2.8, '#e9a001')       # amber eye
-        cv.rect(cx - 1, 7, cx, 9, '#8d7316')         # olive pupil
-    cv.rect(10, 12, 29, 13, '#97523e')               # mouth band
-    for x in range(11, 29, 3):
-        cv.rect(x, 12, x, 13, '#bca97a')
+        cv.disc(cx + 0.5, 8.5, 3.6, '#694626')
+        cv.disc(cx + 0.5, 8.5, 2.8, '#eda700')
+        cv.disc(cx + 0.5, 8.5, 1.2, '#1a1b2b')
+    cv.rect(10, 12, 29, 13, '#97523e')
+    for x in range(11, 29, 2):
+        cv.set(x, 14, '#cdb780')
     return cv
 
 
 def demon():
-    # dark grey canopy, big khaki oval/diamond emblem in the middle, khaki trim
+    # flat dark canopy with an outlined khaki diamond emblem and a bar of marks below it
     cv = Canvas('#51524a')
     cv.rect(0, 0, 11, 15, '#474840')
     cv.rect(28, 0, 39, 15, '#3a3b34')
     cv.frame('#ac9d64')
-    cv.ellipse(C, 8, 7.5, 5.2, '#ac9d64')
-    cv.ellipse(C, 8, 5.8, 3.8, '#51524a')
-    tri2(cv, 5, 5, '#ac9d64')                        # inner gem
-    tri2(cv, 9, 3, '#d7be87', up=False)
-    cv.line(13, 1, 15, 3, '#8b7d57', sym=True)       # small marks above the emblem
-    cv.rect(18, 1, 21, 1, '#8b7d57')
+    cv.line(19, 2, 13, 8, '#ac9d64')
+    cv.line(13, 8, 19, 14, '#ac9d64')
+    cv.line(19, 14, 26, 8, '#ac9d64')
+    cv.line(26, 8, 19, 2, '#ac9d64')
+    cv.line(19, 5, 16, 8, '#ac9d64')
+    cv.line(19, 5, 22, 8, '#ac9d64')
+    cv.rect(16, 11, 22, 11, '#ac9d64')
     return cv
 
 
