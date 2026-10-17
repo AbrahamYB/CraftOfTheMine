@@ -50,34 +50,33 @@ public final class ClientClimbController {
         float rawForward = in.forwardImpulse, rawStrafe = in.leftImpulse;
         ClientParagliderController.handleChord(p, in); // must run before anything reads in.jumping
 
-        // Sprinting (key held, or the double-tap-forward gesture) lets go of the wall, just like crouching does.
-        boolean sprint = Minecraft.getInstance().options.keySprint.isDown();
-        boolean tap = in.up && !d.forwardWasDown && p.tickCount - d.lastForwardPressTick <= 7;
-        if (in.up && !d.forwardWasDown) d.lastForwardPressTick = p.tickCount;
-        d.forwardWasDown = in.up;
-        sprint |= tap && d.active();
-
-        // Shift / Ctrl that are part of the climb key combo must not count as "let go" while grabbing the wall,
-        // nor afterwards until they have been released once.
+        // Shift that is part of the climb key combo must not count as "let go" while grabbing the wall,
+        // nor afterwards until it has been released once. Sprint is not used at all.
         KeyModifier mod = ClimbKeys.CLIMB.getKeyModifier();
         boolean sneak = in.shiftKeyDown;
-        boolean comboShift = mod == KeyModifier.SHIFT, comboCtrl = mod == KeyModifier.CONTROL;
+        boolean comboShift = mod == KeyModifier.SHIFT;
         if (d.ignoreSneak && !sneak) d.ignoreSneak = false;
-        if (d.ignoreSprint && !sprint) d.ignoreSprint = false;
         if (comboShift && (d.ignoreSneak || !d.active())) sneak = false;
-        if (comboCtrl && (d.ignoreSprint || !d.active())) sprint = false;
 
+        if (d.ragdollTicks > 0) { // knocked off: no control until the fall is over
+            in.forwardImpulse = 0;
+            in.leftImpulse = 0;
+            in.up = in.down = in.left = in.right = false;
+            in.jumping = false;
+            in.shiftKeyDown = false;
+            return;
+        }
         boolean climbKey = ClimbKeys.CLIMB.isDown();
         boolean jump = in.jumping;
         if (!d.active() && climbKey && ClimbKeys.CLIMB.getKey().equals(Minecraft.getInstance().options.keyJump.getKey())) {
-            in.jumping = false; // Space is part of the combo: no hopping while holding it
-            jump = false;
+            in.jumping = false; // Space is part of the combo: no vanilla hop while holding it
+            // `jump` stays true on purpose: the climb tick must see Space as already held, otherwise the moment the
+            // grab succeeds the held Space looks like a brand new press and fires a jump straight away
         }
         boolean wasActive = d.active();
-        ClimbController.stepLocal(p, d, in.forwardImpulse, in.leftImpulse, jump, climbKey, sneak, sprint);
+        ClimbController.stepLocal(p, d, in.forwardImpulse, in.leftImpulse, jump, climbKey, sneak);
         if (!wasActive && d.active()) {
             d.ignoreSneak = comboShift && in.shiftKeyDown;
-            d.ignoreSprint = comboCtrl && Minecraft.getInstance().options.keySprint.isDown();
         }
 
         ClientParagliderController.steer(p, in, rawForward, rawStrafe, d.active());
@@ -131,7 +130,12 @@ public final class ClientClimbController {
         } else if (d.animPrev == ClimbState.CLIMB_JUMP && d.state != ClimbState.CLIMB_JUMP) {
             d.jumpEndAge = 0;
         }
+        if (d.animPrev == ClimbState.NONE && d.state == ClimbState.CLIMBING) d.grabAge = 0; // fresh latch: play the hook
+        if (d.state != d.prevPoseState) d.poseEvent = true; // a state switch is inertialized
+        d.prevPoseState = d.state;
         d.animPrev = d.state;
+        if (d.grabAge < 999) d.grabAge++;
+        if (d.ragdollTicks > 0) { d.ragdollTicks--; d.ragdollAge++; }
         if (d.jumpAge < 999) d.jumpAge++;
         if (d.jumpEndAge < 999 && d.state != ClimbState.CLIMB_JUMP) d.jumpEndAge++;
 
@@ -166,9 +170,11 @@ public final class ClientClimbController {
             if (!Double.isNaN(d.planeCoord)) {
                 lean = step(dir) * (d.planeCoord - faceCoord(box, dir)) - ClimbConstants.ADHESION_GAP;
             }
-            d.lean = (float) Mth.clamp(lean, 0, 2);
+            // the lean eases in and out; while on a shelf the pose itself handles the lean, so the model is not rotated
+            double target = Mth.clamp(lean, 0, 2);
+            d.lean += (float) (target - d.lean) * 0.2f;
         } else {
-            d.blend = Math.max(0f, d.blend - 0.5f); // letting go (crouch/sprint) drops the pose almost at once
+            d.blend = Math.max(0f, d.blend - 0.5f); // letting go (crouch) drops the pose almost at once
             d.lean *= 0.6f;
             d.speedUp *= 0.5;
             d.speedSide *= 0.5;
@@ -213,7 +219,7 @@ public final class ClientClimbController {
         float snug = 0.10f * w;
         ps.translate(dir.getStepX() * snug, 0, dir.getStepZ() * snug);
 
-        float lean = ClimbAnimator.leanDegrees(d, pt) * w;
+        float lean = (ClimbAnimator.leanDegrees(d, pt) + ClimbAnimator.leapDegrees(d, pt)) * w;
         if (lean > 0.01f) {
             Direction t = dir.getClockWise();
             ps.rotateAround(new Quaternionf().rotationAxis(lean * (float) (Math.PI / 180), t.getStepX(), 0, t.getStepZ()),

@@ -56,6 +56,11 @@ public final class NetworkHandler {
             if (p.correction() && d.state != ClimbState.NONE) {
                 d.setState(ClimbState.NONE);
                 d.attachCooldown = ClimbConstants.ATTACH_COOLDOWN * 2;
+                if (self.hurtTime > 0) { // knocked off by damage: fall and flail
+                    d.ragdollTicks = ClimbConstants.RAGDOLL_TICKS;
+                    d.ragdollAge = 0;
+                    d.attachCooldown = ClimbConstants.RAGDOLL_TICKS + ClimbConstants.ATTACH_COOLDOWN;
+                }
             }
             return;
         }

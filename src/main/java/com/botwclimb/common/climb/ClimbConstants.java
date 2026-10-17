@@ -6,7 +6,8 @@ public final class ClimbConstants {
 
     // --- normal climbing ---
     public static final double CLIMB_SPEED = 0.11;
-    public static final double SIDE_SPEED = 0.095;
+    /** Sideways climbing uses the same speed as up/down: one pace in every direction. */
+    public static final double SIDE_SPEED = CLIMB_SPEED;
     /** Wanted distance between the player's wall-side face and the wall. */
     public static final double ADHESION_GAP = 0.02;
     public static final double ADHESION_MAX_PULL = 0.12;
@@ -18,7 +19,7 @@ public final class ClimbConstants {
     public static final double HOLD_GAP = 0.40;
     public static final double REGRAB_GAP = 0.45;
     /** Hold the climb key this long (ticks, 8 = 0.4 s) next to a wall to start climbing. */
-    public static final int CLIMB_HOLD_TICKS = 8;
+    public static final int CLIMB_HOLD_TICKS = 4; // 0.2 s
 
     // --- climb jump ---
     public static final int JUMP_WINDUP_TICKS = 2;
@@ -37,6 +38,9 @@ public final class ClimbConstants {
     public static final double JUMP_MAX_WALL_OUT = 0.5;
     /** How far a jump drifts sideways when A / D is held. */
     public static final double JUMP_SIDE_REACH = 1.5;
+    /** A / D alone: a low leap this far along the wall, arcing this high. */
+    public static final double JUMP_SIDE_LEAP = 3.0;
+    public static final double JUMP_SIDE_RISE = 0.15;
     public static final double JUMP_GRID = 0.25;
     public static final double JUMP_CLEARANCE = 0.04;
     public static final double JUMP_AVG_SPEED = 0.48;
@@ -47,11 +51,14 @@ public final class ClimbConstants {
     public static final double HOP_OUT = 0.15;
 
     // --- ledge / corner ---
-    public static final double LEDGE_RISE_SPEED = 0.2;
+    public static final double LEDGE_RISE_SPEED = 0.16; // 20% lower than before
     public static final double LEDGE_FORWARD_SPEED = 0.16;
-    public static final int LEDGE_MAX_TICKS = 24;
+    public static final int LEDGE_MAX_TICKS = 40;
     public static final double CORNER_SPEED = 0.14;
     public static final int CORNER_MAX_TICKS = 7;
+
+    /** Damage while on a wall: let go, fall and flail for this many ticks (20 = 1 s). */
+    public static final int RAGDOLL_TICKS = 20;
 
     // --- server validation ---
     public static final int SERVER_GRACE_TICKS = 6;

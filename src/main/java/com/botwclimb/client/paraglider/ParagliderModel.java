@@ -96,7 +96,7 @@ public final class ParagliderModel extends Model {
                     PartPose.offsetAndRotation(x, -22, 8, -0.45f, 0, 0));
             for (int i = 1; i <= SEGS; i++) {
                 seg = seg.addOrReplaceChild("seg_" + side + i, CubeListBuilder.create()
-                                .texOffs(64, i > SEGS - 2 ? 40 : 48).addBox(-1, 0, 0, 2, 1, 2),
+                                .texOffs(64 + 8 * ((i - 1) % 5), 40 + 3 * ((i - 1) / 5)).addBox(-1, 0, 0, 2, 1, 2),
                         i == 1 ? PartPose.ZERO : PartPose.offset(0, 0, 2));
             }
         }

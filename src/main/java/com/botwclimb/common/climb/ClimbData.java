@@ -17,11 +17,9 @@ public final class ClimbData {
 
     // ---- local (controlling client) input ----
     public float forward, strafe;
-    public boolean jumpHeld, sneak, sprint;
-    public boolean ignoreSneak, ignoreSprint; // a Shift/Ctrl held as part of the climb key combo is not a 'let go'
+    public boolean jumpHeld, sneak;
+    public boolean ignoreSneak; // a Shift held as part of the climb key combo is not a 'let go'
     public int keyHold; // ticks the climb key has been held next to a wall
-    public int lastForwardPressTick = -100;
-    public boolean forwardWasDown;
 
     // ---- jump / ledge / corner execution ----
     public JumpPlan plan;
@@ -55,6 +53,31 @@ public final class ClimbData {
     public int jumpEndAge = 999;              // ticks since the jump ended (999 = not recently)
     public Vec3 lastPos = Vec3.ZERO;
     public boolean animInit;
+    // pose inertialization (client render): see ClimbAnimator.inertia
+    public final float[] poseOut = new float[12], poseOff = new float[12];
+    public int poseAge = 999;
+    public boolean poseEvent;                 // a pose state switch happened this tick: absorb it
+    public ClimbState prevPoseState = ClimbState.NONE;
+    public float ledgeU;                      // 0..1 progress of the ledge grip pose
+    public double ledgeY0;
+    public int ledgeFwd;
+    public boolean pendingBlockJump;          // attached this tick by Space under a block: the block jump starts next tick
+    public double ledgeBlockMin;              // underside of the block being jumped onto
+    public boolean ledgeGrabbed;              // hands are on the block's edge
+    public int mantleTick;                    // ticks into the climb-up onto the block (0 = not started)
+    public float mantleT, mantleTO;           // 0..1 progress of the climb-up: movement and animation both read this
+    public Vec3 mantleStart = Vec3.ZERO;
+    public float ledgeGap, ledgeGapO;         // how far the shoulders are below the ledge top (render: where the hands must reach)
+    public int ledgeSide;                     // W+A (1) / W+D (-1) into the block jump: it drifts that way; 0 = straight
+    public double ledgeOutSpeed;
+    public double ledgeLat, ledgeLatTotal;    // sideways travel so far / in total over the whole jump (1 block when the block is diagonally above)
+    public int ledgeHang;                     // ticks left of hanging from the edge before the pull-up
+    public double ledgeOutNeed, ledgeOut;     // the jump-onto-block arc: how far out it must go first
+    public int latchTicks;                    // ticks left of the hop when first latching onto a wall
+    public int ragdollTicks;                  // client: ticks left of the fall-and-flail after being hit on a wall (20 = 1 s)
+    public int ragdollAge;
+    public float phaseOffset;                 // shifts the climb cycle (kept for the pose; 0 unless changed)
+    public int grabAge = 999;                 // ticks since this player latched onto a wall from the ground (999 = never)
     public int jumpSide = 1;                  // alternates every jump: which way the body swings
 
     public void setState(ClimbState s) {

@@ -147,7 +147,7 @@ public class ClimbPlannerTests {
     private static boolean climbKey;
 
     private static void tick(Player p, ClimbData d, float fwd, float str, boolean jump, boolean sneak, boolean sprint) {
-        ClimbController.stepLocal(p, d, fwd, str, jump, climbKey, sneak, sprint);
+        ClimbController.stepLocal(p, d, fwd, str, jump, climbKey, sneak);
         if (d.active()) p.move(MoverType.SELF, p.getDeltaMovement()); else p.setDeltaMovement(Vec3.ZERO);
     }
 
@@ -181,35 +181,11 @@ public class ClimbPlannerTests {
         for (int i = 0; i < 10; i++) tick(p, d, 0, 1, false, false, false);
         if (d.state != ClimbState.CLIMBING) h.fail("sideways broke climbing");
         tick(p, d, 0, 0, false, false, true);
-        if (d.state != ClimbState.NONE) h.fail("sprint must release");
         d.attachCooldown = 0;
         grab(p, d);
         if (d.state != ClimbState.CLIMBING) h.fail("could not regrab");
         tick(p, d, 0, 0, false, true, false);
         if (d.state != ClimbState.NONE) h.fail("sneak must release");
-        h.succeed();
-    }
-
-    @GameTest(template = "empty")
-    public static void simLipStopAndJump(GameTestHelper h) {
-        wall(h, 14);
-        h.setBlock(5, 9, 7, Blocks.STONE); // lip, underside at y = 9
-        Player p = sim(h, 4.0, false);
-        ClimbData d = p.getData(BotwClimb.CLIMB);
-        grab(p, d);
-        for (int i = 0; i < 60; i++) tick(p, d, 1, 0, false, false, false);
-        double under = h.absoluteVec(new Vec3(0, 9, 0)).y;
-        if (p.getY() + 1.8 > under + 0.001) h.fail("climbed into the lip");
-        if (d.state != ClimbState.CLIMBING) h.fail("should still hang under the lip, state " + d.state);
-        // jump: press, release, run until it finishes
-        tick(p, d, 0, 0, true, false, false);
-        for (int i = 0; i < 40 && d.state != ClimbState.CLIMBING || i < 3; i++) {
-            tick(p, d, 0, 0, false, false, false);
-            if (d.state == ClimbState.NONE) h.fail("fell off during lip jump at tick " + i);
-        }
-        double top = h.absoluteVec(new Vec3(0, 10, 0)).y;
-        if (p.getY() < top - 0.01) h.fail("did not get above the lip, y=" + p.getY() + " need " + top);
-        System.out.println("[botwclimb-test] lip jump ended state=" + d.state + " y=" + p.getY());
         h.succeed();
     }
 
@@ -380,6 +356,9 @@ public class ClimbPlannerTests {
         Vec3 start = h.absoluteVec(new Vec3(5.5, 4.0, FLUSH_Z));
         JumpPlan left = JumpPlanner.plan(h.getLevel(), p, start, Direction.SOUTH, 1);
         JumpPlan right = JumpPlanner.plan(h.getLevel(), p, start, Direction.SOUTH, -1);
+        JumpPlan leap = JumpPlanner.plan(h.getLevel(), p, start, Direction.SOUTH, 1, true);
+        if (leap.end().x < 2.0 || Math.abs(leap.end().y) > 0.1) h.fail("A alone should slide sideways at the same height: " + leap.end());
+        for (Vec3 st : leap.steps()) if (st.y > 0.2) h.fail("A alone must not rise above 0.2: " + st);
         // facing south, the player's left is +x (east)
         if (left.end().x < 1.0 || right.end().x > -1.0) h.fail("A/D jump should drift ~1.5 blocks: " + left.end() + " " + right.end());
         if (left.end().y < 2.0) h.fail("drifting jump must still rise");
@@ -401,6 +380,154 @@ public class ClimbPlannerTests {
             }
         }
         if (com.botwclimb.common.paraglider.FabricRegistry.indexOf("zonai") < 0) h.fail("zonai registered");
+        h.succeed();
+    }
+
+    /** Grabbing from the ground: a crouch, then a real hop up onto the wall. */
+    @GameTest(template = "empty")
+    public static void latchIsAHop(GameTestHelper h) {
+        wall(h, 14);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        double y0 = p.getY();
+        grab(p, d);
+        if (d.state != ClimbState.CLIMBING) h.fail("did not latch on, state " + d.state);
+        if (p.getY() - y0 < 0.6) h.fail("latch hop too small, rise " + (p.getY() - y0));
+        h.succeed();
+    }
+
+    /** A block directly above the head: Space jumps out past it and grabs its top edge, then you stand up on it. */
+    @GameTest(template = "empty")
+    public static void jumpOntoBlockAbove(GameTestHelper h) {
+        wall(h, 14);
+        h.setBlock(5, 9, 7, Blocks.STONE);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < 8.9; i++) tick(p, d, 1, 0, false, false, false);
+        double top = h.absoluteVec(new Vec3(0, 10.0, 0)).y;
+        tick(p, d, 1, 0, true, false, false); // Space
+        if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("Space under the block did not start the jump onto it, state " + d.state);
+        double best = p.getY();
+        for (int i = 0; i < 60; i++) {
+            tick(p, d, 0, 0, false, false, false);
+            best = Math.max(best, p.getY());
+            if (d.state == ClimbState.NONE && best < top) h.fail("dropped at tick " + i + " y=" + p.getY() + " best=" + best);
+        }
+        if (best <= top) h.fail("did not get up onto the block, best y=" + best);
+        double faceZ = h.absoluteVec(new Vec3(0, 0, 7)).z;
+        if (p.getZ() < faceZ + 0.3) h.fail("did not end up standing over the block, z offset " + (p.getZ() - faceZ));
+        if (p.getY() < top - 0.02) h.fail("ended below the top, y=" + p.getY());
+        h.succeed();
+    }
+
+    /** W+A with the block up and to the left: the whole jump goes diagonally and ends standing on that block. */
+    @GameTest(template = "empty")
+    public static void diagonalJumpOntoBlock(GameTestHelper h) {
+        wall(h, 14);
+        h.setBlock(6, 9, 7, Blocks.STONE); // one column to the left (+x when facing south)
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 6.6, 0)).y; i++) tick(p, d, 1, 0, false, false, false);
+        double top = h.absoluteVec(new Vec3(0, 10.0, 0)).y;
+        double x0 = p.getX();
+        tick(p, d, 1, 1, true, false, false);
+        if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("W+A+Space did not start the diagonal jump, state " + d.state);
+        for (int i = 0; i < 60; i++) tick(p, d, 0, 0, false, false, false);
+        if (p.getY() < top - 0.02) h.fail("did not end on top, y=" + p.getY());
+        if (p.getX() - x0 < 0.8) h.fail("did not travel sideways, dx=" + (p.getX() - x0));
+        h.succeed();
+    }
+
+    /** A 2-deep, 1-thick overhang: a long jump out past its far edge, then up onto it. */
+    @GameTest(template = "empty")
+    public static void longJumpOntoTwoDeepOverhang(GameTestHelper h) {
+        wall(h, 14);
+        h.setBlock(5, 9, 7, Blocks.STONE);
+        h.setBlock(5, 9, 6, Blocks.STONE);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 6.6, 0)).y; i++) tick(p, d, 1, 0, false, false, false);
+        double top = h.absoluteVec(new Vec3(0, 10.0, 0)).y;
+        tick(p, d, 1, 0, true, false, false);
+        if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("Space under a 2-deep overhang did not start the long jump, state " + d.state);
+        for (int i = 0; i < 80; i++) tick(p, d, 0, 0, false, false, false);
+        double faceZ = h.absoluteVec(new Vec3(0, 0, 6)).z; // front face of the far block
+        if (p.getY() < top - 0.02) h.fail("did not end on top, y=" + p.getY());
+        if (p.getZ() < faceZ + 0.3 || p.getZ() > faceZ + 1.0) h.fail("did not end on the far block, z offset " + (p.getZ() - faceZ));
+        h.succeed();
+    }
+
+    /** 2 deep and 2 thick is not climbable: no jump at all. */
+    @GameTest(template = "empty")
+    public static void twoByTwoOverhangIsNotClimbable(GameTestHelper h) {
+        wall(h, 14);
+        for (int z = 6; z <= 7; z++) for (int y = 9; y <= 10; y++) h.setBlock(5, y, z, Blocks.STONE);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 6.6, 0)).y; i++) tick(p, d, 1, 0, false, false, false);
+        tick(p, d, 1, 0, true, false, false);
+        if (d.state == ClimbState.LEDGE_TRANSITION) h.fail("a 2x2 overhang must not start the ledge jump");
+        h.succeed();
+    }
+
+    /** Space well below a block: too far for the ledge jump, so it is the normal wall jump. */
+    @GameTest(template = "empty")
+    public static void spaceBelowBlockIsBlockClimb(GameTestHelper h) {
+        wall(h, 14);
+        h.setBlock(5, 9, 7, Blocks.STONE);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        tick(p, d, 0, 0, true, false, false);
+        if (d.state == ClimbState.LEDGE_TRANSITION) h.fail("block is out of the ledge jump's reach, it should not start");
+        if (d.state != ClimbState.CLIMB_JUMP) h.fail("an overhang far above must not stop the normal wall jump, state " + d.state);
+        h.succeed();
+    }
+
+    /** Plain Space next to a wall with a block over you, not attached yet: the block climb, not the normal jump. */
+    @GameTest(template = "empty")
+    public static void spaceFromGroundUnderBlockClimbs(GameTestHelper h) {
+        wall(h, 14);
+        h.setBlock(5, 9, 7, Blocks.STONE);
+        Player p = sim(h, 6.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        for (int i = 0; i < 3; i++) tick(p, d, 0, 0, i == 0, false, false);
+        if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("Space next to the wall under a block did not climb it, state " + d.state);
+        h.succeed();
+    }
+
+    /** A block high overhead is not a reason to start climbing: plain Space next to a wall is just a jump. */
+    @GameTest(template = "empty")
+    public static void spaceFarBelowOverhangDoesNotClimb(GameTestHelper h) {
+        wall(h, 14);
+        h.setBlock(5, 9, 7, Blocks.STONE);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        for (int i = 0; i < 3; i++) tick(p, d, 0, 0, i == 0, false, false);
+        if (d.state != ClimbState.NONE) h.fail("Space on the ground started a climb, state " + d.state);
+        h.succeed();
+    }
+
+    /** The climb key contains Space. Holding it past the grab must not count as a jump press. */
+    @GameTest(template = "empty")
+    public static void heldSpaceAfterGrabIsNotAJump(GameTestHelper h) {
+        wall(h, 14);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        climbKey = true;
+        for (int i = 0; i < 12; i++) tick(p, d, 0, 0, true, false, false); // Space held the whole time, as part of the combo
+        climbKey = false;
+        if (d.state != ClimbState.CLIMBING) h.fail("did not attach, state " + d.state);
+        for (int i = 0; i < 10; i++) {
+            tick(p, d, 1, 0, true, false, false); // still holding Space after the grab
+            if (d.state == ClimbState.CLIMB_JUMP || d.state == ClimbState.LEDGE_TRANSITION) {
+                h.fail("the held Space fired a jump right after the grab, state " + d.state);
+            }
+        }
         h.succeed();
     }
 }

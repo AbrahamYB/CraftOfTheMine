@@ -9,6 +9,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -24,13 +25,23 @@ import static com.botwclimb.common.climb.ClimbConstants.*;
  */
 @EventBusSubscriber(modid = BotwClimb.MOD_ID)
 public final class ServerClimb {
-    private static final int MAX_BAD_TICKS = 10;
+    private static final int MAX_BAD_TICKS = 70; // shortcut: going round a block leaves the wall for ~2 s; upgrade when the server tracks it
 
     private ServerClimb() {}
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer sp) tick(sp);
+    }
+
+    /** Being hit while on a wall knocks you off. The client plays the fall (see NetworkHandler). */
+    @SubscribeEvent
+    public static void onDamaged(LivingDamageEvent.Post event) {
+        if (event.getEntity() instanceof ServerPlayer p && p.getData(BotwClimb.CLIMB).active()) {
+            ClimbData d = p.getData(BotwClimb.CLIMB);
+            d.claim = ClimbState.NONE;
+            reject(p, d);
+        }
     }
 
     @SubscribeEvent
@@ -123,7 +134,7 @@ public final class ServerClimb {
                     d.ledgeTicks = 0;
                     enter(p, d, ClimbState.LEDGE_TRANSITION);
                 } else if (d.state == ClimbState.LEDGE_TRANSITION) {
-                    if (++d.ledgeTicks > LEDGE_MAX_TICKS + 16) {
+                    if (++d.ledgeTicks > LEDGE_MAX_TICKS + 40) { // shortcut: the block climb-up is longer than a wall ledge; upgrade when the server tracks it
                         reject(p, d);
                     }
                 } else {
@@ -145,7 +156,7 @@ public final class ServerClimb {
         Direction dir = d.dir;
         double out = -(rel.x * dir.getStepX() + rel.z * dir.getStepZ());
         double lateral = Math.abs(rel.x * dir.getStepZ() - rel.z * dir.getStepX());
-        return out < -0.6 || out > JUMP_MAX_OUT + 0.6 || lateral > JUMP_SIDE_REACH + 0.8
+        return out < -0.6 || out > JUMP_MAX_OUT + 0.6 || lateral > JUMP_SIDE_LEAP + 0.8
                 || rel.y < -1.0 || rel.y > JUMP_MAX_RISE + 1.6; // plan rise + ledge climb + position lag
     }
 
