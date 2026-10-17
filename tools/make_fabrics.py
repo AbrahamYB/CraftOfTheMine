@@ -400,7 +400,22 @@ STRUT = '#b09a6e'
 
 
 # ---------------------------------------------------------------- sheet assembly
+def apply_gradient(cv):
+    """
+    Gentle, symmetric colour gradient over the whole canopy: a touch lighter in the middle and at the front, a touch
+    darker towards the wing tips and the trailing edge. Smooth and the same on both sides, so it never reads as
+    light coming from one direction (the fake shadow the reference renders have baked in). The border stays flat.
+    """
+    for y in range(1, H - 1):
+        for x in range(1, W - 1):
+            r, g, b, a = cv.p[y][x]
+            bell = 1.0 - abs(x - 19.5) / 19.5          # 1 in the middle, 0 at the wing tips
+            f = 0.92 + 0.13 * bell + 0.04 * (1.0 - y / (H - 1))
+            cv.p[y][x] = (min(255, int(r * f)), min(255, int(g * f)), min(255, int(b * f)), a)
+
+
 def sheet(cv, tassel, ribbon, tip, trim):
+    apply_gradient(cv)
     img = [[(0, 0, 0, 0)] * 128 for _ in range(64)]
 
     def put(x, y, c):
