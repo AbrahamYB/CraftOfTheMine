@@ -25,8 +25,8 @@ public final class ParagliderConstants {
 
     /** A plain jump after falling this many blocks opens the glider instead of the Elytra. */
     public static final double OPEN_AFTER_FALL = 2.0;
-    /** Gravity is this much weaker on everyone (-0.2 = falls 20% slower). */
-    public static final double GRAVITY_MODIFIER = -0.2;
+    /** Gravity is this much weaker on everyone (-0.35 = falls 35% slower). */
+    public static final double GRAVITY_MODIFIER = -0.35;
 
     public static final int DEPLOY_DURATION_TICKS = 5;
     public static final int CLOSE_DURATION_TICKS = 3;
