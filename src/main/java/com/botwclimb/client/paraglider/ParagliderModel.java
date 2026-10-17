@@ -29,12 +29,19 @@ public final class ParagliderModel extends Model {
     private final ModelPart ribbonLeft, ribbonRight, wingL, wingR;
     private final ModelPart canopy, shadeCenter, shadeL, shadeR;
     private final ModelPart[] tassels = new ModelPart[7];
+    private final ModelPart[] segL = new ModelPart[4], segR = new ModelPart[4]; // ribbon segments, root to tip
+    /** How much each ribbon segment sways: almost nothing at the root and the middle, most at the end. */
+    private static final float[] RIBBON_WEIGHT = {0.05f, 0.30f, 0.70f, 1.00f};
 
     public ParagliderModel(ModelPart root) {
         super(RenderType::entityCutoutNoCull);
         this.root = root;
         this.ribbonLeft = root.getChild("ribbon_l");
         this.ribbonRight = root.getChild("ribbon_r");
+        for (int i = 0; i < 4; i++) {
+            segL[i] = (i == 0 ? ribbonLeft : segL[i - 1]).getChild("seg_l" + (i + 1));
+            segR[i] = (i == 0 ? ribbonRight : segR[i - 1]).getChild("seg_r" + (i + 1));
+        }
         ModelPart canopy = root.getChild("canopy");
         this.wingL = canopy.getChild("wing_l");
         this.wingR = canopy.getChild("wing_r");
@@ -76,11 +83,17 @@ public final class ParagliderModel extends Model {
             canopy.addOrReplaceChild("tassel_" + i, CubeListBuilder.create()
                     .texOffs(0, 40).addBox(-0.5f, 0, -0.5f, 1, 4, 1), PartPose.offset(tassels[i][0], tassels[i][1], 8));
         }
-        // two long ribbons trailing behind and below the canopy
-        root.addOrReplaceChild("ribbon_l", CubeListBuilder.create()
-                .texOffs(64, 40).addBox(-1, 0, 0, 2, 1, 20), PartPose.offsetAndRotation(5, -22, 8, -0.45f, 0, 0));
-        root.addOrReplaceChild("ribbon_r", CubeListBuilder.create()
-                .texOffs(64, 40).addBox(-1, 0, 0, 2, 1, 20), PartPose.offsetAndRotation(-5, -22, 8, -0.45f, 0, 0));
+        // two long ribbons trailing behind and below the canopy, each four linked 5-long segments so they can wave
+        for (String side : new String[]{"l", "r"}) {
+            float x = side.equals("l") ? 5 : -5;
+            PartDefinition seg = root.addOrReplaceChild("ribbon_" + side, CubeListBuilder.create(),
+                    PartPose.offsetAndRotation(x, -22, 8, -0.45f, 0, 0));
+            for (int i = 1; i <= 4; i++) {
+                seg = seg.addOrReplaceChild("seg_" + side + i, CubeListBuilder.create()
+                                .texOffs(64, i == 4 ? 40 : 48).addBox(-1, 0, 0, 2, 1, 5),
+                        i == 1 ? PartPose.ZERO : PartPose.offset(0, 0, 5));
+            }
+        }
         root.addOrReplaceChild("strut_l", CubeListBuilder.create()
                 .texOffs(110, 40).addBox(-0.5f, 0, -0.5f, 1, 13, 1), PartPose.offset(5, -22, -1));
         root.addOrReplaceChild("strut_r", CubeListBuilder.create()
@@ -102,15 +115,24 @@ public final class ParagliderModel extends Model {
             tassels[i].xRot = 0.10f + 0.70f * windF + (0.10f + 0.25f * gust) * Mth.sin(age * 0.45f + i * 1.7f);
             tassels[i].zRot = 0.45f * windR + (0.08f + 0.20f * gust) * Mth.sin(age * 0.5f + i);
         }
-        // ribbons: hang down when slow, trail out level at cruise speed with a gentle side sway, and whip up and
-        // down hard (plus a wilder side sway) while a rocket boost lasts
+        // ribbons: the root only droops (slow) or lies level (cruise); the waving happens along the segments, a wave
+        // that runs down the ribbon, strongest at the tip. A rocket boost makes it whip up and down much harder.
         float level = Math.max(0f, Math.min(1f, windF));
-        float pitchSway = (0.04f + 0.60f * rocket) * Mth.sin(age * (0.35f + 0.55f * rocket));
-        float yawSway = (0.06f + 0.30f * rocket) * Mth.sin(age * (0.30f + 0.40f * rocket) + 0.7f);
-        ribbonLeft.xRot = -0.45f * (1f - level) + pitchSway;
-        ribbonRight.xRot = -0.45f * (1f - level) + (0.04f + 0.60f * rocket) * Mth.sin(age * (0.35f + 0.55f * rocket) + 1.9f);
-        ribbonLeft.zRot = 0.35f * windR + yawSway;
-        ribbonRight.zRot = 0.35f * windR - yawSway;
+        float droop = -0.45f * (1f - level);
+        ribbonLeft.xRot = droop;
+        ribbonRight.xRot = droop;
+        ribbonLeft.zRot = 0.12f * windR;
+        ribbonRight.zRot = 0.12f * windR;
+        float pitchAmp = 0.12f + 0.55f * rocket, yawAmp = 0.10f + 0.30f * rocket;
+        float speed = 0.35f + 0.55f * rocket;
+        for (int i = 0; i < 4; i++) {
+            float w = RIBBON_WEIGHT[i];
+            float phase = age * speed - i * 0.9f;
+            segL[i].xRot = pitchAmp * w * Mth.sin(phase);
+            segL[i].zRot = yawAmp * w * Mth.sin(phase * 0.8f + 0.7f);
+            segR[i].xRot = pitchAmp * w * Mth.sin(phase + 1.9f);
+            segR[i].zRot = -yawAmp * w * Mth.sin(phase * 0.8f + 0.7f);
+        }
     }
 
     public void setRibbons(boolean visible) {

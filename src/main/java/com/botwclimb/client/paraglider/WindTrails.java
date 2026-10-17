@@ -1,0 +1,172 @@
+package com.botwclimb.client.paraglider;
+
+import com.botwclimb.BotwClimb;
+import com.botwclimb.common.paraglider.ParagliderData;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Two pale wind streaks behind the canopy's trailing corners. Each streak is a ribbon through the last few
+ * emitter positions (world space, so a turn leaves an arc), shown only above a speed threshold. Purely client-side:
+ * every client derives it from the glider state and position of each gliding player.
+ */
+@EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
+public final class WindTrails {
+    private static final int POINTS = 12;
+    /** Emitters relative to the player: sideways, behind the travel direction, height above the feet (blocks). */
+    private static final double SIDE = 0.85, BACK = 0.55, HEIGHT = 2.70;
+    /** Horizontal speed (blocks/tick) -> strength and length. Cruise is 0.312, rocket momentum goes far past it. */
+    private static final float[] SPEED = {0.22f, 0.30f, 0.65f};
+    private static final float[] ALPHA = {0.0f, 0.45f, 0.85f};
+    private static final float[] LENGTH = {0.4f, 1.1f, 2.3f};
+    private static final float HALF_WIDTH = 0.05f;
+
+    private static final Map<UUID, Trail> TRAILS = new HashMap<>();
+
+    private static final class Trail {
+        final Vec3[][] pts = new Vec3[2][POINTS]; // [left, right][newest..oldest]
+        int n;
+        Vec3 prev;
+        float alpha, length, fade;
+    }
+
+    private WindTrails() {}
+
+    private static float table(float[] ys, float v) {
+        if (v <= SPEED[0]) return ys[0];
+        for (int i = 1; i < SPEED.length; i++) {
+            if (v <= SPEED[i]) return Mth.lerp((v - SPEED[i - 1]) / (SPEED[i] - SPEED[i - 1]), ys[i - 1], ys[i]);
+        }
+        return ys[ys.length - 1];
+    }
+
+    private static Vec3 emitter(Vec3 base, float heading, int side) {
+        double h = Math.toRadians(heading), fx = -Math.sin(h), fz = Math.cos(h);
+        double s = side == 0 ? -SIDE : SIDE; // left, right of the travel direction
+        return base.add(-fx * BACK + -fz * s, HEIGHT, -fz * BACK + fx * s);
+    }
+
+    @SubscribeEvent
+    public static void onTick(PlayerTickEvent.Post event) {
+        Player p = event.getEntity();
+        if (!p.level().isClientSide || !(p instanceof AbstractClientPlayer) || !p.hasData(BotwClimb.PARAGLIDER)) return;
+        ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
+        Trail t = TRAILS.get(p.getUUID());
+        if (t == null) {
+            if (!g.gliding) return;
+            t = new Trail();
+            TRAILS.put(p.getUUID(), t);
+        }
+        Vec3 pos = p.position();
+        double speed = t.prev == null ? 0 : Math.hypot(pos.x - t.prev.x, pos.z - t.prev.z);
+        t.prev = pos;
+        boolean emit = g.gliding && g.deploy > 0.5f && !p.onGround() && !p.isInWater() && speed >= SPEED[0];
+        if (emit) {
+            for (int s = 0; s < 2; s++) {
+                System.arraycopy(t.pts[s], 0, t.pts[s], 1, POINTS - 1);
+                t.pts[s][0] = emitter(pos, g.heading, s);
+            }
+            t.n = Math.min(t.n + 1, POINTS);
+            t.alpha += (table(ALPHA, (float) speed) - t.alpha) * 0.3f;
+            t.length += (table(LENGTH, (float) speed) - t.length) * 0.3f;
+            t.fade = 1f;
+        } else {
+            t.fade -= 0.2f; // fades out quickly, the points stay where the air was
+            if (t.fade <= 0f) TRAILS.remove(p.getUUID());
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRender(RenderLevelStageEvent event) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES || TRAILS.isEmpty()) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        float pt = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = event.getPoseStack();
+        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
+        VertexConsumer vc = buffers.getBuffer(RenderType.lightning());
+        boolean any = false;
+        for (Player p : mc.level.players()) {
+            Trail t = TRAILS.get(p.getUUID());
+            if (t == null || t.n < 1 || (p == mc.player && mc.options.getCameraType().isFirstPerson())) continue;
+            ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
+            boolean live = g.gliding && t.fade >= 1f;
+            Vec3 base = new Vec3(Mth.lerp(pt, p.xo, p.getX()), Mth.lerp(pt, p.yo, p.getY()), Mth.lerp(pt, p.zo, p.getZ()));
+            float heading = Mth.rotLerp(pt, g.headingO, g.heading);
+            for (int s = 0; s < 2; s++) {
+                any |= ribbon(vc, ps, cam, t, s, live ? emitter(base, heading, s) : null);
+            }
+        }
+        if (any) buffers.endBatch(RenderType.lightning());
+    }
+
+    /** Draws one streak from the (optional) live head back through the stored points, cut off at the trail length. */
+    private static boolean ribbon(VertexConsumer vc, PoseStack ps, Vec3 cam, Trail t, int side, Vec3 head) {
+        float strength = t.alpha * Mth.clamp(t.fade, 0f, 1f);
+        if (strength < 0.01f || t.length <= 0.05f) return false;
+        Vec3 a = head != null ? head : t.pts[side][0];
+        int next = head != null ? 0 : 1;
+        float dist = 0f;
+        Vec3 sideA = null;
+        float alphaA = strength, widthA = HALF_WIDTH;
+        boolean drew = false;
+        for (int i = next; i < t.n && dist < t.length; i++) {
+            Vec3 b = t.pts[side][i];
+            double seg = a.distanceTo(b);
+            if (seg < 1.0e-4) continue;
+            float end = dist + (float) seg;
+            if (end > t.length) { // cut the last segment at the trail length
+                b = a.lerp(b, (t.length - dist) / seg);
+                end = t.length;
+            }
+            Vec3 dir = b.subtract(a).normalize();
+            Vec3 view = a.subtract(cam);
+            Vec3 w = dir.cross(view);
+            if (w.lengthSqr() < 1.0e-8) { a = b; dist = end; continue; }
+            w = w.normalize();
+            float k = end / t.length;
+            float alphaB = strength * (1f - k) * (1f - k), widthB = HALF_WIDTH * (1f - 0.85f * k);
+            if (sideA == null) sideA = w;
+            quad(vc, ps, cam, a, b, sideA, w, widthA, widthB, alphaA, alphaB);
+            sideA = w;
+            a = b;
+            dist = end;
+            alphaA = alphaB;
+            widthA = widthB;
+            drew = true;
+        }
+        return drew;
+    }
+
+    private static void quad(VertexConsumer vc, PoseStack ps, Vec3 cam, Vec3 a, Vec3 b, Vec3 wa, Vec3 wb,
+                             float widthA, float widthB, float alphaA, float alphaB) {
+        var m = ps.last().pose();
+        Vec3 a1 = a.add(wa.scale(widthA)), a2 = a.subtract(wa.scale(widthA));
+        Vec3 b1 = b.add(wb.scale(widthB)), b2 = b.subtract(wb.scale(widthB));
+        // both windings, since the strip faces the camera whichever way it was built (halved so they sum to one)
+        float aa = alphaA * 0.5f, ab = alphaB * 0.5f;
+        vert(vc, m, cam, a1, aa); vert(vc, m, cam, a2, aa); vert(vc, m, cam, b2, ab); vert(vc, m, cam, b1, ab);
+        vert(vc, m, cam, b1, ab); vert(vc, m, cam, b2, ab); vert(vc, m, cam, a2, aa); vert(vc, m, cam, a1, aa);
+    }
+
+    private static void vert(VertexConsumer vc, org.joml.Matrix4f m, Vec3 cam, Vec3 v, float alpha) {
+        vc.addVertex(m, (float) (v.x - cam.x), (float) (v.y - cam.y), (float) (v.z - cam.z)).setColor(0.88f, 0.95f, 1f, alpha);
+    }
+}
