@@ -12,7 +12,6 @@ import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 import net.minecraft.resources.ResourceLocation;
 
@@ -26,7 +25,7 @@ public final class ParagliderModel extends Model {
             new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "paraglider"), "main");
 
     private final ModelPart root;
-    private final ModelPart ribbonLeft, ribbonRight, wingL, wingR, shade;
+    private final ModelPart ribbonLeft, ribbonRight, wingL, wingR;
     private final ModelPart[] tassels = new ModelPart[7];
 
     public ParagliderModel(ModelPart root) {
@@ -37,7 +36,6 @@ public final class ParagliderModel extends Model {
         ModelPart canopy = root.getChild("canopy");
         this.wingL = canopy.getChild("wing_l");
         this.wingR = canopy.getChild("wing_r");
-        this.shade = canopy.getChild("shade");
         for (int i = 0; i < tassels.length; i++) tassels[i] = canopy.getChild("tassel_" + i);
     }
 
@@ -52,9 +50,6 @@ public final class ParagliderModel extends Model {
                         .texOffs(0, 0).addBox(-8, -1, -8, 16, 1, 16)
                         .texOffs(0, 34).addBox(-8, -2, -10, 16, 2, 2),
                 PartPose.offset(0, -22, 0));
-        // a sliver just under the canopy: drawn darker, so the underside reads as shaded
-        canopy.addOrReplaceChild("shade", CubeListBuilder.create()
-                .texOffs(0, 0).addBox(-5, 0.01f, -6, 10, 0.01f, 12), PartPose.ZERO);
         canopy.addOrReplaceChild("wing_l", CubeListBuilder.create()
                 .texOffs(64, 0).addBox(-1, -1, -8, 13, 1, 16)
                 .texOffs(0, 34).addBox(-1, -2, -10, 13, 2, 2), PartPose.offsetAndRotation(8, 0, 0, 0, 0, 0.28f));
@@ -83,18 +78,18 @@ public final class ParagliderModel extends Model {
      * Pose the loose parts for the air rushing past: windF / windR in -1..1 (+ = air from the front / from the right).
      * Wing tips lift and yaw a little, tassels and ribbons trail backwards, and everything flutters slowly.
      */
-    public void flutter(float windF, float windR, float age) {
-        float wobble = 0.02f * Mth.sin(age * 0.3f);
+    public void flutter(float windF, float windR, float age, float gust) {
+        float wobble = (0.02f + 0.04f * gust) * Mth.sin(age * 0.3f);
         wingL.zRot = 0.28f + wobble - 0.04f * windF;
         wingR.zRot = -0.28f - wobble + 0.04f * windF;
         wingL.yRot = 0f;
         wingR.yRot = 0f;
         for (int i = 0; i < tassels.length; i++) {
-            tassels[i].xRot = 0.10f + 0.70f * windF + 0.10f * Mth.sin(age * 0.45f + i * 1.7f);
-            tassels[i].zRot = 0.45f * windR + 0.08f * Mth.sin(age * 0.5f + i);
+            tassels[i].xRot = 0.10f + 0.70f * windF + (0.10f + 0.25f * gust) * Mth.sin(age * 0.45f + i * 1.7f);
+            tassels[i].zRot = 0.45f * windR + (0.08f + 0.20f * gust) * Mth.sin(age * 0.5f + i);
         }
-        ribbonLeft.xRot = -0.45f + 0.50f * windF + 0.08f * Mth.sin(age * 0.4f);
-        ribbonRight.xRot = -0.45f + 0.50f * windF + 0.08f * Mth.sin(age * 0.4f + 1f);
+        ribbonLeft.xRot = -0.45f + 0.50f * windF + (0.08f + 0.20f * gust) * Mth.sin(age * 0.4f);
+        ribbonRight.xRot = -0.45f + 0.50f * windF + (0.08f + 0.20f * gust) * Mth.sin(age * 0.4f + 1f);
         ribbonLeft.zRot = 0.35f * windR;
         ribbonRight.zRot = 0.35f * windR;
     }
@@ -104,16 +99,8 @@ public final class ParagliderModel extends Model {
         ribbonRight.visible = visible;
     }
 
-    /** The underside shade, drawn after the canopy with a dark tint. */
-    public void renderShade(PoseStack poseStack, VertexConsumer buffer, int packedLight) {
-        shade.visible = true;
-        shade.render(poseStack, buffer, packedLight, OverlayTexture.NO_OVERLAY, 0xFF262626);
-        shade.visible = false;
-    }
-
     @Override
     public void renderToBuffer(PoseStack poseStack, VertexConsumer buffer, int packedLight, int packedOverlay, int color) {
-        shade.visible = false; // drawn separately, darker
         root.render(poseStack, buffer, packedLight, packedOverlay, color);
     }
 }

@@ -90,7 +90,8 @@ public final class ParagliderController {
         }
         // the speed allowed right now: the carried-over speed eases down to cruise over the retention time (smoothstep)
         double allowance = MAX_HORIZONTAL_SPEED;
-        if (g.boostAge < g.boostDuration) {
+        boolean boosting = g.boostAge < g.boostDuration;
+        if (boosting) {
             double t = Math.max(0, Math.min(1, g.boostAge / (double) g.boostDuration));
             allowance = Math.max(MAX_HORIZONTAL_SPEED,
                     g.boostSpeed + (MAX_HORIZONTAL_SPEED - g.boostSpeed) * (t * t * (3 - 2 * t)));
@@ -98,8 +99,13 @@ public final class ParagliderController {
         }
         // steering aims at the allowance but never above the speed you already have (lost speed is not restored),
         // except up to cruise, which is ordinary paraglider acceleration
-        double target = Math.min(allowance, Math.max(Math.hypot(cur.x, cur.z), MAX_HORIZONTAL_SPEED));
-        double tx = wish ? wx * target : 0, tz = wish ? wz * target : 0;
+        double hs = Math.hypot(cur.x, cur.z);
+        double target = Math.min(allowance, Math.max(hs, MAX_HORIZONTAL_SPEED));
+        // while the boost lasts, letting go coasts on the same heading; afterwards it bleeds to a stop as before
+        boolean coast = boosting && g.boostSpeed > MAX_HORIZONTAL_SPEED;
+        double dirX = wish ? wx : (coast && hs > 1.0E-6 ? cur.x / hs : 0);
+        double dirZ = wish ? wz : (coast && hs > 1.0E-6 ? cur.z / hs : 0);
+        double tx = dirX * target, tz = dirZ * target;
 
         double vx = cur.x, vz = cur.z;
         double ex = tx - vx, ez = tz - vz, dist = Math.hypot(ex, ez);

@@ -186,6 +186,10 @@ public final class ClientParagliderController {
         double windR = -(vel.x * -fz + vel.z * fx) / ParagliderConstants.MAX_HORIZONTAL_SPEED;
         g.windF += (Mth.clamp((float) windF, -1f, 1f) - g.windF) * 0.15f;
         g.windR += (Mth.clamp((float) windR, -1f, 1f) - g.windR) * 0.15f;
+        // falling air rushes up through the canopy, and a rocket boost adds more
+        boolean rocketBoost = g.boostAge < g.boostDuration && g.boostSpeed > ParagliderConstants.MAX_HORIZONTAL_SPEED;
+        float gustTarget = (float) Math.max(0, Math.min(1, -vel.y / 0.3)) * 0.5f + (rocketBoost ? 0.6f : 0f);
+        g.gust += (Math.min(1f, gustTarget) - g.gust) * 0.1f;
     }
 
     // ------------------------------------------------------------------ rendering

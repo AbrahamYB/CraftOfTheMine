@@ -20,6 +20,7 @@ public final class ParagliderData {
     public float pitch, pitchO;            // degrees, + = tilted forward
     public float lagF, lagFO, lagR, lagRO; // body swing from acceleration (forward / right)
     public float windF, windFO, windR, windRO; // air rushing past the canopy, forward / right (-1..1)
+    public float gust;                         // extra flutter from falling air and rocket boosts (0..1)
     public Vec3 lastPos = Vec3.ZERO;
     public Vec3 lastVel = Vec3.ZERO;
     public boolean animInit;

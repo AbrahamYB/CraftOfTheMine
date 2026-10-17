@@ -151,6 +151,6 @@ champion, majora, demon_king.
 
 ## Rocket momentum (paraglider)
 26. Fly Elytra with a rocket (flight 1, then 2, then 3), open the glider with Space while falling: the speed carries over
-    the same at the start for all three; flight 1 fades in about 6 s, flight 2 in about 8.4 s, flight 3 in about 10.7 s.
+    the same at the start (right at the switch you keep the Elytra speed, not a slower one); flight 1 fades in about 6 s,
+    flight 2 in about 8.4 s, flight 3 in about 10.7 s.
     Turns and steering still work during the fade.
-27. The underside of the glider (between the canopy and your head) is darker than the top.
