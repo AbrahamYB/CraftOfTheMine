@@ -100,7 +100,7 @@ public final class ClimbAnimator {
     }
 
     private static float jumpTime(ClimbData d, float pt) {
-        return Mth.lerp(pt, d.jumpAgeO, d.jumpAge);
+        return Mth.lerp(pt, d.jumpAgeO, d.jumpAge) * (float) d.jumpSpeed; // jump time, so a slower jump plays the whole animation slower
     }
 
     /** 0 = no jump pose, 1 = full jump pose. Fades in on the windup and out after the re-grab. */
@@ -185,23 +185,24 @@ public final class ClimbAnimator {
         float keep = 1f - out;
         float draw = bump(t, 0f, 0.3f); // drawing in before the thrust: arms bend, knees come up, back hunches
         float arm = (armToGap(gap) + 0.7f * draw) * keep;
-        float lean = 0.10f + 0.25f * draw + 0.70f * smooth((t - 0.25f) / 0.3f); // hunched to load, then thrown over the edge
+        float land = bump(t, 0.72f, 1f); // absorbing the landing: knees give, back hunches
+        float lean = 0.10f + 0.25f * draw + 0.70f * smooth((t - 0.25f) / 0.3f) + 0.25f * land; // hunched to load, then thrown over the edge
         lean = Mth.lerp(smooth((t - 0.5f) / 0.35f), lean, 0.25f) * keep;
         float lead = -0.8f * draw - 0.9f * smooth((t - 0.3f) / 0.2f), trail = -0.9f * bump(t, 0.5f, 0.9f);
         boolean leftLeads = d.ledgeSide != 0 ? d.ledgeSide > 0 : d.jumpSide > 0; // diagonal: the leg on the side you came from leads
         float sd = d.ledgeSide;
         float lBase = -0.35f, rBase = -0.25f;
         float leadX = Mth.lerp(smooth((t - 0.62f) / 0.28f), (leftLeads ? lBase : rBase) + lead, -0.3f);
-        float lLeg = (leftLeads ? leadX : lBase + trail - 0.8f * draw) * keep, rLeg = (leftLeads ? rBase + trail - 0.8f * draw : leadX) * keep;
+        float lLeg = (leftLeads ? leadX : lBase + trail - 0.8f * draw) * keep - 0.7f * land, rLeg = (leftLeads ? rBase + trail - 0.8f * draw : leadX) * keep - 0.7f * land;
         // effort: the arms heave in turns, the body sways and twitches; strongest while pulling, gone by the end
         float eff = Mth.sin((float) Math.PI * Mth.clamp(t / 0.8f, 0f, 1f)) * keep;
         float heave = Mth.sin(t * 17f), alt = Mth.sin(t * 17f + 1.9f);
         float twist = Mth.sin(t * 13f + 0.7f);
         float side = Mth.sin((float) Math.PI * t) * keep; // leaning and reaching towards the side being climbed
-        return new float[]{arm - 0.30f * heave * eff - 0.14f * sd * side, 0.15f * keep + 0.14f * alt * eff, 0.18f * twist * eff,
-                arm + 0.30f * heave * eff + 0.14f * sd * side, -0.15f * keep - 0.14f * alt * eff, -0.18f * twist * eff,
-                lLeg + 0.12f * alt * eff, 0, rLeg - 0.12f * alt * eff, 0, lean + 0.07f * heave * eff, 0.10f * Mth.sin(t * 11f + 0.6f) * eff + 0.22f * sd * side,
-                0.3f * sd * keep}; // torso turned into the diagonal (same as the hang, so no pop)
+        return new float[]{arm - 0.30f * heave * eff - 0.26f * sd * side, 0.15f * keep + 0.14f * alt * eff, 0.18f * twist * eff,
+                arm + 0.30f * heave * eff + 0.26f * sd * side, -0.15f * keep - 0.14f * alt * eff, -0.18f * twist * eff,
+                lLeg + 0.12f * alt * eff, 0, rLeg - 0.12f * alt * eff, 0, lean + 0.07f * heave * eff, 0.10f * Mth.sin(t * 11f + 0.6f) * eff + 0.36f * sd * side,
+                0.42f * sd * keep}; // torso turned into the diagonal (same as the hang, so no pop)
     }
 
     private static void applyRagdoll(PlayerModel<?> m, ClimbData d, float pt) {
@@ -296,6 +297,7 @@ public final class ClimbAnimator {
         float bodyX = Mth.lerp(j, cBodyX, k.bodyX);
         float bodyZ = Mth.lerp(j, cBodyZ, 0f);
         float bodyTwist = 0f; // torso turn about its own axis
+        float legSplay = 0f;  // legs spread apart sideways
 
         // ---- first latch: right leg kicks up and hooks its foot onto the wall, right arm reaches up, then climbs ----
         float g = hookWeight(d, pt) * (1f - j);
@@ -331,13 +333,17 @@ public final class ClimbAnimator {
             rLegX = Mth.lerp(grab, rLegX, -0.25f);
             lLegY = Mth.lerp(grab, lLegY, -1.5f * push); rLegY = Mth.lerp(grab, rLegY, 0f);
             bodyX = Mth.lerp(grab, bodyX, 0.10f + 0.28f * push);
-            bodyTwist = 0.3f * d.ledgeSide * grab;
+            bodyTwist = 0.42f * d.ledgeSide * grab;
             float lw = leapWeight(d, pt); // the long dash under a deep overhang: the whole body is tilted in render (leapDegrees), the limbs stretch out along it
             float lq = (float) Mth.clamp((d.ledgeOut + pt * d.ledgeOutSpeed) / Math.max(0.1, d.ledgeOutNeed), 0, 1);
             float lstrA = Mth.sin(lq * 19f), lstrB = Mth.sin(lq * 19f + 2.1f); // effort: the arms reach in alternating bursts, the legs kick unevenly
             lArmX = Mth.lerp(lw, lArmX, -3.0f + 0.25f * lstrA); rArmX = Mth.lerp(lw, rArmX, -3.0f - 0.25f * lstrA);
             lArmZ = Mth.lerp(lw, lArmZ, 0.25f + 0.12f * lstrB); rArmZ = Mth.lerp(lw, rArmZ, -0.25f - 0.12f * lstrB);
-            lLegX = Mth.lerp(lw, lLegX, -0.12f + 0.2f * lstrB); rLegX = Mth.lerp(lw, rLegX, 0.08f - 0.2f * lstrB);
+            // the legs move on their own, not locked to the torso: a wide scissoring stride (one kicks forward while the other trails), knees working, spread apart
+            float scissor = Mth.sin(lq * 3.6f + 0.3f); // one slow, smooth kick across the dash
+            lLegX = Mth.lerp(lw, lLegX, -0.35f + 0.95f * scissor + 0.08f * lstrB);
+            rLegX = Mth.lerp(lw, rLegX, -0.35f - 0.95f * scissor - 0.08f * lstrB);
+            legSplay = 0.35f * lw;
         }
 
         // ---- absorb pose switches (state changes) so they flow ----
@@ -350,8 +356,8 @@ public final class ClimbAnimator {
         limb(m.leftArm, ws, lArmX, lArmZ, lArmY);
         limb(m.rightArm, ws, rArmX, rArmZ, rArmY);
         float legSpread = Mth.lerp(j, -0.25f * ss, 0f); // legs step wide in the travel direction
-        limb(m.leftLeg, ws, lLegX, -0.06f + legSpread, lLegY);
-        limb(m.rightLeg, ws, rLegX, 0.06f + legSpread, rLegY);
+        limb(m.leftLeg, ws, lLegX, -0.06f + legSpread - legSplay, lLegY);
+        limb(m.rightLeg, ws, rLegX, 0.06f + legSpread + legSplay, rLegY);
         m.body.xRot = Mth.lerp(ws, m.body.xRot, bodyX);
         m.body.zRot = Mth.lerp(ws, m.body.zRot, bodyZ);
         m.body.yRot = Mth.lerp(ws, m.body.yRot, bodyTwist);

@@ -127,19 +127,19 @@ public final class ParagliderModel extends Model {
         float droop = -0.45f * (1f - level);
         ribbonLeft.xRot = droop;
         ribbonRight.xRot = droop;
-        ribbonLeft.zRot = 0.12f * windR;
-        ribbonRight.zRot = 0.12f * windR;
+        ribbonLeft.yRot = 0.04f * windR;   // the ribbons run along Z, so sideways sway is a yaw (Y), not a roll (Z)
+        ribbonRight.yRot = 0.04f * windR;
         // the wind pushes the whole ribbon upward as speed climbs (rocket = 0..1 follows speed), curving it toward
         // the end; one slow travelling wave rides on top, the same function for every segment so it stays connected
         float lift = 1.2f * rocket * rocket + 0.12f * level;
-        float wave = 0.25f + 0.25f * rocket, side = 0.35f + 0.35f * rocket; // total angle at the tip (radians)
-        float t = age * (0.30f + 0.25f * rocket);
+        float wave = 0.12f + 0.04f * rocket, side = 0.5f + 0.15f * rocket; // total angle at the tip (radians)
+        float t = age * (0.21f + 0.05f * rocket); // calm at speed: the rocket adds only a little tempo
         for (int i = 0; i < SEGS; i++) {
             float p = t - i * 0.25f;
             segL[i].xRot = BEND[i] * (lift + wave * Mth.sin(p));
             segR[i].xRot = BEND[i] * (lift + wave * Mth.sin(p + 1.9f));
-            segL[i].zRot = BEND[i] * side * Mth.sin(p * 0.8f + 0.7f);
-            segR[i].zRot = -BEND[i] * side * Mth.sin(p * 0.8f + 0.7f);
+            segL[i].yRot = BEND[i] * side * Mth.sin(p * 0.8f + 0.7f);
+            segR[i].yRot = -BEND[i] * side * Mth.sin(p * 0.8f + 0.7f);
         }
     }
 
