@@ -59,6 +59,15 @@ public final class ServerClimb {
         d.stateTicks++;
         if (d.jumpCooldown > 0) d.jumpCooldown--;
         if (d.grace > 0) d.grace--;
+        // the server's own stamina account: moving on a wall and gliding drain it, a modified client cannot cheat it away
+        boolean moved = p.position().distanceToSqr(d.sPos) > 0.0004;
+        d.sPos = p.position();
+        Stamina.serverStep(d, ClimbController.maxStamina(p), d.state == ClimbState.CLIMBING && moved, p.getData(BotwClimb.PARAGLIDER).gliding);
+        if (d.active() && d.sExhausted) { // out of stamina on the server: let go, whatever the client claims
+            d.claim = ClimbState.NONE;
+            reject(p, d);
+            return;
+        }
         if (d.active()) p.fallDistance = 0;
 
         ClimbState claim = d.claim;
@@ -76,6 +85,10 @@ public final class ServerClimb {
         Vec3 pos = p.position();
         double gap = HOLD_GAP + SERVER_EXTRA_GAP;
 
+        if (d.sExhausted) { // no new climb while the server's account is empty
+            reject(p, d);
+            return;
+        }
         if (d.state == ClimbState.NONE) { // any claim starts by hanging on a wall; later states are checked below
             if (SurfaceSampler.sample(level, p, box, d.claimDir).holds(gap)) {
                 d.dir = d.claimDir;
@@ -110,7 +123,7 @@ public final class ServerClimb {
                     }
                     d.dir = d.claimDir;
                     d.jumpStart = pos; // the player holds still during the wind-up, so this is where the client started
-                    d.plan = JumpPlanner.plan(level, p, d.jumpStart, d.dir);
+                    Stamina.serverSpend(d, STAMINA_JUMP_COST);
                     d.jumpTick = 0;
                     d.warned = false;
                     d.jumpCooldown = JUMP_COOLDOWN;
