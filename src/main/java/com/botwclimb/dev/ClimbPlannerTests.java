@@ -369,6 +369,56 @@ public class ClimbPlannerTests {
         h.succeed();
     }
 
+    /** A / D with Space on a 1x1 pillar hops round the corner onto the next face; on a wide wall it stays a hop along the wall. */
+    @GameTest(template = "empty")
+    public static void pillarHopRoundsTheCorner(GameTestHelper h) {
+        for (int y = 1; y <= 10; y++) h.setBlock(5, y, 8, Blocks.STONE);
+        Player p = h.makeMockPlayer(GameType.SURVIVAL);
+        Vec3 start = h.absoluteVec(new Vec3(5.5, 4.0, FLUSH_Z));
+        JumpPlan left = JumpPlanner.plan(h.getLevel(), p, start, Direction.SOUTH, 1, true);
+        JumpPlan right = JumpPlanner.plan(h.getLevel(), p, start, Direction.SOUTH, -1, true);
+        if (left == null || left.around() != Direction.WEST) h.fail("A on a pillar should end holding its east face (wall to the west): " + (left == null ? null : left.around()));
+        if (right == null || right.around() != Direction.EAST) h.fail("D on a pillar should end holding its west face (wall to the east): " + (right == null ? null : right.around()));
+        AABB b0 = p.getDimensions(Pose.STANDING).makeBoundingBox(start);
+        AABB end = b0.move(left.end());
+        if (!SurfaceSampler.sample(h.getLevel(), p, end, Direction.WEST).holds(com.botwclimb.common.climb.ClimbConstants.REGRAB_GAP)) h.fail("the hop must end on the east face");
+        for (int y = 1; y <= 10; y++) for (int x = 0; x < 12; x++) h.setBlock(x, y, 8, Blocks.STONE); // now a wide wall
+        JumpPlan along = JumpPlanner.plan(h.getLevel(), p, start, Direction.SOUTH, 1, true);
+        if (along == null || along.around() != null) h.fail("a wide wall is hopped along, not round");
+        h.succeed();
+    }
+
+    /** Every fabric after the first has a recipe; the first needs none and is always known; unlock bits behave. */
+    @GameTest(template = "empty")
+    public static void everyFabricHasARecipe(GameTestHelper h) {
+        var fabrics = com.botwclimb.common.paraglider.FabricRegistry.all();
+        if (!fabrics.get(0).recipe().isEmpty()) h.fail("the first fabric is free");
+        for (int i = 1; i < fabrics.size(); i++) {
+            if (fabrics.get(i).recipe().size() < 5) h.fail("the recipe of " + fabrics.get(i).id() + " needs wool, string and something of its own");
+        }
+        if (!com.botwclimb.common.paraglider.FabricUnlocks.has(0, 0)) h.fail("the first fabric is always known");
+        if (com.botwclimb.common.paraglider.FabricUnlocks.has(0, 3)) h.fail("nothing else is known at the start");
+        if (!com.botwclimb.common.paraglider.FabricUnlocks.has(1 << 3, 3) || com.botwclimb.common.paraglider.FabricUnlocks.has(1 << 3, 4)) h.fail("one bit per fabric");
+        h.succeed();
+    }
+
+    /** The craft check wants every ingredient of the recipe in the inventory, one item each, and names the stacks to take from. */
+    @GameTest(template = "empty")
+    public static void clothCraftPlanNeedsEverything(GameTestHelper h) {
+        Player p = h.makeMockPlayer(GameType.SURVIVAL);
+        var ingredients = com.botwclimb.common.paraglider.FabricRegistry.byIndex(com.botwclimb.common.paraglider.FabricRegistry.indexOf("korok")).recipe();
+        var inv = p.getInventory();
+        inv.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.WHITE_WOOL, 2));
+        inv.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.STRING, 2));
+        inv.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.GREEN_DYE, 1));
+        if (com.botwclimb.common.paraglider.ClothCrafting.plan(inv, ingredients) != null) h.fail("no plan while the sapling is missing");
+        inv.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.OAK_SAPLING, 1));
+        int[] slots = com.botwclimb.common.paraglider.ClothCrafting.plan(inv, ingredients);
+        if (slots == null || slots.length != ingredients.size()) h.fail("a full inventory should give a plan");
+        for (int k = 0; k < slots.length; k++) if (!inv.items.get(slots[k]).is(ingredients.get(k))) h.fail("each slot must hold its ingredient");
+        h.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void fabricTexturesExist(GameTestHelper h) throws java.io.IOException {
         for (var f : com.botwclimb.common.paraglider.FabricRegistry.all()) {
@@ -460,6 +510,26 @@ public class ClimbPlannerTests {
         h.succeed();
     }
 
+    /** A block stacked on the NEAR block of a 2-deep overhang is not in the way: the long jump climbs onto the far block. */
+    @GameTest(template = "empty")
+    public static void longJumpWithBlockStackedOnTheNearOne(GameTestHelper h) {
+        wall(h, 14);
+        h.setBlock(5, 9, 7, Blocks.STONE);
+        h.setBlock(5, 9, 6, Blocks.STONE);
+        h.setBlock(5, 10, 7, Blocks.STONE); // on top of the near block only
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 6.6, 0)).y; i++) tick(p, d, 1, 0, false, false, false);
+        tick(p, d, 1, 0, true, false, false);
+        if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("the long jump must not be refused because of a block on the near one, state " + d.state);
+        for (int i = 0; i < 80; i++) tick(p, d, 0, 0, false, false, false);
+        double top = h.absoluteVec(new Vec3(0, 10.0, 0)).y, faceZ = h.absoluteVec(new Vec3(0, 0, 6)).z;
+        if (p.getY() < top - 0.02 || p.getY() > top + 0.5) h.fail("should end on the far block (top " + top + "), y=" + p.getY());
+        if (p.getZ() < faceZ + 0.3 || p.getZ() > faceZ + 1.0) h.fail("did not end on the far block, z offset " + (p.getZ() - faceZ));
+        h.succeed();
+    }
+
     /** 2 deep and 2 thick is not climbable: no jump at all. */
     @GameTest(template = "empty")
     public static void twoByTwoOverhangIsNotClimbable(GameTestHelper h) {
@@ -471,6 +541,438 @@ public class ClimbPlannerTests {
         for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 6.6, 0)).y; i++) tick(p, d, 1, 0, false, false, false);
         tick(p, d, 1, 0, true, false, false);
         if (d.state == ClimbState.LEDGE_TRANSITION) h.fail("a 2x2 overhang must not start the ledge jump");
+        h.succeed();
+    }
+
+    /** The wall ends just above with only air past it: Space does the jump, hang and pull-up onto its top edge. */
+    @GameTest(template = "empty")
+    public static void ledgeJumpOntoWallTop(GameTestHelper h) {
+        wall(h, 9);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 7.2, 0)).y; i++) tick(p, d, 1, 0, false, false, false);
+        if (d.state != ClimbState.CLIMBING) h.fail("left the wall before the jump, state " + d.state);
+        float before = d.stamina;
+        tick(p, d, 1, 0, true, false, false);
+        if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("Space under the wall top did not start the ledge jump, state " + d.state);
+        if (Math.abs((before - d.stamina) - 97.5f) > 0.01f || d.jumpSpentSeq != 1) h.fail("a ledge jump must cost a jump's stamina and tell the HUD: " + (before - d.stamina) + " / " + d.jumpSpentSeq);
+        for (int i = 0; i < 80; i++) tick(p, d, 0, 0, false, false, false);
+        double top = h.absoluteVec(new Vec3(0, 10.0, 0)).y, faceZ = h.absoluteVec(new Vec3(0, 0, 8)).z;
+        if (p.getY() < top - 0.02) h.fail("did not end on the wall top, y=" + p.getY());
+        if (p.getZ() < faceZ + 0.3) h.fail("did not end over the wall top, z offset " + (p.getZ() - faceZ));
+        h.succeed();
+    }
+
+    /** The end of a one-block-wide wall (one block across, long away from the player): the climb up its end must finish onto the top too. */
+    @GameTest(template = "empty")
+    public static void ledgeJumpOntoThinWallEnd(GameTestHelper h) {
+        for (int z = 8; z <= 15; z++) for (int y = 1; y <= 9; y++) h.setBlock(5, y, z, Blocks.STONE);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 7.2, 0)).y; i++) tick(p, d, 1, 0, false, false, false);
+        if (d.state != ClimbState.CLIMBING) h.fail("left the thin wall before the jump, state " + d.state);
+        tick(p, d, 1, 0, true, false, false);
+        if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("Space under the end of a thin wall did not start the ledge jump, state " + d.state);
+        for (int i = 0; i < 80; i++) tick(p, d, 0, 0, false, false, false);
+        double top = h.absoluteVec(new Vec3(0, 10.0, 0)).y;
+        if (p.getY() < top - 0.02) h.fail("did not end on the thin wall's top, y=" + p.getY());
+        h.succeed();
+    }
+
+    /** Climbing straight up the end of a one-block-wide wall with W only: it pulls itself up over the top by itself. */
+    @GameTest(template = "empty")
+    public static void climbingUpThinWallEndPullsUp(GameTestHelper h) {
+        for (int z = 8; z <= 15; z++) for (int y = 1; y <= 9; y++) h.setBlock(5, y, z, Blocks.STONE);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 160 && d.state != ClimbState.NONE; i++) tick(p, d, 1, 0, false, false, false);
+        double top = h.absoluteVec(new Vec3(0, 10.0, 0)).y;
+        if (d.state != ClimbState.NONE || p.getY() < top - 0.05) h.fail("climbing up should end standing on top, state " + d.state + " y=" + p.getY() + " top=" + top);
+        h.succeed();
+    }
+
+    /** Climbing along a wall and pressing A + Space under its top edge (no block above): a ledge jump up onto it, not a sideways hop. */
+    @GameTest(template = "empty")
+    public static void sideSpaceUnderWallTopJumpsUp(GameTestHelper h) {
+        wall(h, 9);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 7.2, 0)).y; i++) tick(p, d, 1, 0, false, false, false);
+        tick(p, d, 0, 1, true, false, false);
+        if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("A + Space under the wall top should be the ledge jump, state " + d.state);
+        for (int i = 0; i < 80; i++) tick(p, d, 0, 0, false, false, false);
+        double top = h.absoluteVec(new Vec3(0, 10.0, 0)).y;
+        if (p.getY() < top - 0.02) h.fail("did not end on the wall top, y=" + p.getY());
+        h.succeed();
+    }
+
+    /** Tops reached from awkward places: a lone one-block pillar, and the outermost column of a wide wall. Space and W-only must both finish on top. */
+    @GameTest(template = "empty")
+    public static void topsFromAwkwardPlaces(GameTestHelper h) {
+        double top = h.absoluteVec(new Vec3(0, 10.0, 0)).y;
+        for (int variant = 0; variant < 4; variant++) {
+            for (int x = 0; x < 12; x++) for (int y = 1; y <= 12; y++) for (int z = 5; z <= 12; z++) h.setBlock(x, y, z, Blocks.AIR);
+            double startX = 5.5;
+            if (variant < 2) for (int y = 1; y <= 9; y++) h.setBlock(5, y, 8, Blocks.STONE); // a lone 1x1x9 pillar
+            else {
+                wall(h, 9); // a wide wall, climbed in its outermost column
+                startX = 0.5;
+            }
+            Player p = sim(h, 4.0, false);
+            p.setPos(h.absoluteVec(new Vec3(startX, 4.0, FLUSH_Z)));
+            ClimbData d = p.getData(BotwClimb.CLIMB);
+            grab(p, d);
+            boolean space = variant % 2 == 0;
+            if (space) {
+                for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 7.2, 0)).y; i++) tick(p, d, 1, 0, false, false, false);
+                tick(p, d, 1, 0, true, false, false);
+                if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("variant " + variant + ": Space under the top did not start the ledge jump, state " + d.state);
+                for (int i = 0; i < 80; i++) tick(p, d, 0, 0, false, false, false);
+            } else {
+                for (int i = 0; i < 160 && d.state != ClimbState.NONE; i++) tick(p, d, 1, 0, false, false, false);
+            }
+            if (p.getY() < top - 0.05) h.fail("variant " + variant + " (pillar=" + (variant < 2) + ", space=" + space + ") did not end on top: state " + d.state + " y=" + p.getY() + " top=" + top);
+            d.setState(ClimbState.NONE);
+        }
+        h.succeed();
+    }
+
+    /** A slab in the top half of its space has its underside higher: the ledge jump must still work. */
+    @GameTest(template = "empty")
+    public static void ledgeJumpOntoTopSlab(GameTestHelper h) {
+        wall(h, 14);
+        h.setBlock(5, 9, 7, Blocks.STONE_SLAB.defaultBlockState().setValue(net.minecraft.world.level.block.SlabBlock.TYPE, net.minecraft.world.level.block.state.properties.SlabType.TOP));
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 5.9, 0)).y; i++) tick(p, d, 1, 0, false, false, false);
+        tick(p, d, 1, 0, true, false, false);
+        if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("Space under a top slab did not start the ledge jump, state " + d.state);
+        for (int i = 0; i < 80; i++) tick(p, d, 0, 0, false, false, false);
+        double top = h.absoluteVec(new Vec3(0, 10.0, 0)).y;
+        if (p.getY() < top - 0.02) h.fail("did not end on the slab, y=" + p.getY());
+        h.succeed();
+    }
+
+    /** Right below a block, Space with only A (no W) is the sideways hop, never the ledge jump. */
+    @GameTest(template = "empty")
+    public static void sideOnlyUnderBlockIsNormalHop(GameTestHelper h) {
+        wall(h, 14);
+        h.setBlock(5, 9, 7, Blocks.STONE);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 6.6, 0)).y; i++) tick(p, d, 1, 0, false, false, false);
+        tick(p, d, 0, 1, true, false, false);
+        if (d.state == ClimbState.LEDGE_TRANSITION) h.fail("A + Space started the ledge jump");
+        if (d.state != ClimbState.CLIMB_JUMP) h.fail("A + Space under a block should be the normal hop, state " + d.state);
+        if (d.plan == null || d.plan.end().y > 0.7) h.fail("the sideways hop right under a block went upward, plan " + (d.plan == null ? "none" : d.plan.end()));
+        if (Math.abs(d.plan.end().x) < 0.8) h.fail("the sideways hop did not go sideways, plan " + d.plan.end());
+        h.succeed();
+    }
+
+    /** {climb distance over 20 ticks, ticks a W+A wall jump takes} with or without boots of Climb Speed. */
+    private static double[] speedRun(GameTestHelper h, boolean enchanted) {
+        wall(h, 20);
+        Player p = sim(h, 4.0, false);
+        if (enchanted) {
+            var boots = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_BOOTS);
+            var holder = h.getLevel().registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+                    .getHolderOrThrow(com.botwclimb.common.climb.ClimbController.CLIMB_SPEED_ENCHANT);
+            boots.enchant(holder, 1);
+            p.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, boots);
+        }
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 12; i++) tick(p, d, 0, 0, false, false, false);
+        double y0 = p.getY();
+        for (int i = 0; i < 20; i++) tick(p, d, 1, 0, false, false, false);
+        double dy = p.getY() - y0;
+        tick(p, d, 1, 1, true, false, false);
+        double speed = d.jumpSpeed;
+        int ticks = 0;
+        while (d.state == ClimbState.CLIMB_JUMP && ticks < 80) { tick(p, d, 0, 0, false, false, false); ticks++; }
+        return new double[]{dy, ticks, speed};
+    }
+
+    /** Boots with Climb Speed: 25% faster wall climbing, ~15% quicker wall jumps. */
+    @GameTest(template = "empty")
+    public static void climbSpeedEnchantment(GameTestHelper h) {
+        double[] plain = speedRun(h, false);
+        double[] fast = speedRun(h, true);
+        double ratio = fast[0] / plain[0];
+        if (ratio < 1.2 || ratio > 1.3) h.fail("climb speed ratio should be ~1.25, got " + ratio + " (" + plain[0] + " vs " + fast[0] + ")");
+        if (Math.abs(plain[2] - 0.8) > 1e-9 || Math.abs(fast[2] - 0.8 * 1.15) > 1e-9) h.fail("jump playback speed should be 0.8 / 0.92, got " + plain[2] + " / " + fast[2]);
+        if (fast[1] > plain[1]) h.fail("the faster wall jump must not take longer: " + plain[1] + " ticks vs " + fast[1]); // whole ticks are too coarse to check 15% exactly
+        h.succeed();
+    }
+
+    /** Stamina: 36.5/s while moving on the wall, 150 per climbing jump, and you fall when it runs out. */
+    @GameTest(template = "empty")
+    public static void staminaDrainJumpAndExhaustion(GameTestHelper h) {
+        wall(h, 30);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 12; i++) tick(p, d, 0, 0, false, false, false); // hanging still: no cost
+        float start = d.stamina;
+        if (Math.abs(start - 750f) > 0.01) h.fail("should start with one full wheel (750), has " + start);
+        for (int i = 0; i < 40; i++) tick(p, d, 1, 0, false, false, false);
+        float spent = start - d.stamina;
+        if (Math.abs(spent - 40 * 36.5f / 20f) > 0.5f) h.fail("40 ticks of climbing should cost 73 units, cost " + spent);
+        for (int i = 0; i < 12; i++) tick(p, d, 0, 0, false, false, false);
+        float before = d.stamina;
+        tick(p, d, 1, 1, true, false, false); // a wall jump
+        if (Math.abs((before - d.stamina) - 150f) > 0.01f) h.fail("a climbing jump should cost 150, cost " + (before - d.stamina));
+        for (int i = 0; i < 40 && d.state == ClimbState.CLIMB_JUMP; i++) tick(p, d, 0, 0, false, false, false);
+        d.stamina = 3f;
+        d.state = d.state == ClimbState.NONE ? ClimbState.NONE : d.state;
+        for (int i = 0; i < 5 && d.state == ClimbState.CLIMBING; i++) tick(p, d, 1, 0, false, false, false);
+        if (d.state == ClimbState.CLIMBING) h.fail("out of stamina should drop you off the wall");
+        if (!d.exhausted) h.fail("running out should leave you exhausted");
+        grab(p, d); // the climb key held next to the wall while exhausted
+        if (d.state != ClimbState.NONE) h.fail("must not be able to climb while exhausted, state " + d.state);
+        h.succeed();
+    }
+
+    /** With less stamina than a jump costs you can still jump; it takes what is left and you are exhausted. */
+    @GameTest(template = "empty")
+    public static void jumpWithLittleStaminaStillJumps(GameTestHelper h) {
+        wall(h, 30);
+        Player p = sim(h, 4.0, false);
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        grab(p, d);
+        for (int i = 0; i < 12; i++) tick(p, d, 0, 0, false, false, false);
+        d.stamina = 50f;
+        tick(p, d, 1, 1, true, false, false);
+        if (d.state != ClimbState.CLIMB_JUMP) h.fail("a jump with 50 stamina left should still happen, state " + d.state);
+        if (d.stamina != 0f || !d.exhausted) h.fail("it should have used up the rest: stamina " + d.stamina + " exhausted " + d.exhausted);
+        if (d.jumpSpent != 50f || d.jumpSpentSeq != 1) h.fail("the HUD must be told what the jump took: " + d.jumpSpent + " / " + d.jumpSpentSeq);
+        h.succeed();
+    }
+
+    /** The dev commands must be op-only whichever class registered /botwclimb first. */
+    @GameTest(template = "empty")
+    public static void devCommandsAreOpOnly(GameTestHelper h) {
+        var server = h.getLevel().getServer();
+        var root = server.getCommands().getDispatcher().getRoot().getChild("botwclimb");
+        if (root == null) h.fail("/botwclimb is not registered");
+        var nobody = server.createCommandSourceStack().withPermission(0);
+        var op = server.createCommandSourceStack().withPermission(2);
+        for (String sub : new String[]{"stamina", "paraglider"}) {
+            var node = root.getChild(sub);
+            if (node == null) h.fail("/botwclimb " + sub + " is missing");
+            if (node.canUse(nobody)) h.fail("/botwclimb " + sub + " must not be usable without op");
+            if (!node.canUse(op)) h.fail("/botwclimb " + sub + " must be usable by an op");
+        }
+        h.succeed();
+    }
+
+    /** The slow fall is the server's decision: no bow or on the ground means no slow fall, whatever the client sent. */
+    @GameTest(template = "empty")
+    public static void bulletFallNeedsABowInTheAir(GameTestHelper h) {
+        Player p = h.makeMockPlayer(GameType.SURVIVAL);
+        var id = net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "bullet_fall");
+        var gravity = p.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.GRAVITY);
+        p.setOnGround(false);
+        com.botwclimb.common.bullettime.BulletFall.apply(p, true);
+        if (gravity.hasModifier(id)) h.fail("slow fall applied without a bow");
+        p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BOW));
+        com.botwclimb.common.bullettime.BulletFall.apply(p, true);
+        if (!gravity.hasModifier(id)) h.fail("slow fall should apply with a bow in the air");
+        p.setOnGround(true);
+        com.botwclimb.common.bullettime.BulletFall.apply(p, true);
+        if (gravity.hasModifier(id)) h.fail("slow fall must end on the ground even if the client says it is on");
+        if (com.botwclimb.common.bullettime.BulletFall.allowed(p)) h.fail("allowed() must be false on the ground");
+        h.succeed();
+    }
+
+    /** Packets decode back to what was sent, and an absurd list size is refused. */
+    @GameTest(template = "empty")
+    public static void payloadsRoundTripAndAreBounded(GameTestHelper h) {
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        for (ClimbState st : ClimbState.values()) {
+            for (Direction dir : Direction.Plane.HORIZONTAL) {
+                com.botwclimb.network.ClimbInputPayload.CODEC.encode(buf, new com.botwclimb.network.ClimbInputPayload(st, dir));
+                var back = com.botwclimb.network.ClimbInputPayload.CODEC.decode(buf);
+                if (back.state() != st || back.dir() != dir) h.fail("climb input changed in transit: " + st + "/" + dir + " -> " + back);
+            }
+        }
+        var snaps = java.util.List.of(new com.botwclimb.network.BulletPositionsPayload.Snap(7, 1.5, 2.5, -3.5, 90f));
+        com.botwclimb.network.BulletPositionsPayload.CODEC.encode(buf, new com.botwclimb.network.BulletPositionsPayload(snaps));
+        var got = com.botwclimb.network.BulletPositionsPayload.CODEC.decode(buf).snaps();
+        if (got.size() != 1 || got.get(0).id() != 7 || got.get(0).z() != -3.5) h.fail("bullet positions changed in transit: " + got);
+        buf.clear();
+        buf.writeVarInt(1_000_000);
+        try {
+            com.botwclimb.network.BulletPositionsPayload.CODEC.decode(buf);
+            h.fail("a huge bullet positions list must be refused");
+        } catch (io.netty.handler.codec.DecoderException expected) {
+            // good
+        }
+        h.succeed();
+    }
+
+    /** The server's account: hanging still is free, moving drains, running dry blocks everything until full. */
+    @GameTest(template = "empty")
+    public static void serverStaminaAccount(GameTestHelper h) {
+        ClimbData d = new ClimbData();
+        float max = 750f;
+        d.state = ClimbState.CLIMBING;
+        for (int i = 0; i < 100; i++) com.botwclimb.common.climb.Stamina.serverStep(d, max, false, false);
+        if (d.sStamina != max) h.fail("hanging still must cost nothing, has " + d.sStamina);
+        for (int i = 0; i < 100; i++) com.botwclimb.common.climb.Stamina.serverStep(d, max, true, false);
+        if (d.sStamina >= max || d.sExhausted) h.fail("100 ticks of climbing should drain some, not all: " + d.sStamina);
+        for (int i = 0; i < 2000; i++) com.botwclimb.common.climb.Stamina.serverStep(d, max, true, false);
+        if (!d.sExhausted || d.sStamina != 0f) h.fail("climbing forever must run the account dry");
+        d.state = ClimbState.NONE;
+        com.botwclimb.common.climb.Stamina.serverStep(d, max, false, false);
+        if (!d.sExhausted) h.fail("a little recovery must not lift the block");
+        for (int i = 0; i < 200; i++) com.botwclimb.common.climb.Stamina.serverStep(d, max, false, false);
+        if (d.sExhausted || d.sStamina != max) h.fail("it must unblock only once full: " + d.sStamina + " exhausted " + d.sExhausted);
+        for (int i = 0; i < 1000; i++) com.botwclimb.common.climb.Stamina.serverStep(d, max, false, true);
+        if (!d.sExhausted) h.fail("gliding forever must run the account dry too");
+        h.succeed();
+    }
+
+    /** The shooter's picture lag keeps growing while reports keep coming and closes quickly once they stop. */
+    @GameTest(template = "empty")
+    public static void bulletLagExtrapolation(GameTestHelper h) {
+        var c = com.botwclimb.common.bullettime.BulletConstants.class;
+        if (com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10, 0) != 10) h.fail("no age: unchanged");
+        if (com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10, 2) != 12) h.fail("2 ticks of slow-motion add about 2 ticks of lag");
+        int later = com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10, 5);
+        if (later >= 10) h.fail("once reports stop the picture catches up, lag " + later);
+        if (com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10, 40) != 0) h.fail("it must reach 0 eventually");
+        if (com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10_000, 0) != com.botwclimb.common.bullettime.BulletConstants.MAX_LAG) h.fail("lag is capped");
+        h.succeed();
+    }
+
+    /**
+     * End to end on the server: a cow stands still, the shooter reports a picture lag, the cow is moved far away, then a
+     * bullet arrow is fired at where the cow was. With the right lag it must hit the cow where it was drawn; with no lag it
+     * must not (the real cow is far away).
+     */
+    private static void bulletShotScenario(GameTestHelper h, int reportedLag, boolean expectHit, boolean slowArrow) {
+        var owner = h.makeMockPlayer(GameType.SURVIVAL); // a plain player: a real connection is not needed for the hit logic
+        var level = h.getLevel();
+        Vec3 spot = h.absoluteVec(new Vec3(5.5, 2.0, 5.5)), far = h.absoluteVec(new Vec3(5.5, 2.0, 25.5));
+        var cow = h.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW, new Vec3(5.5, 2.0, 5.5));
+        cow.setNoGravity(true);
+        int[] t = {0};
+        h.onEachTick(() -> {
+            t[0]++;
+            long now = level.getGameTime();
+            if (t[0] == 1) com.botwclimb.common.bullettime.BulletShots.track(cow, now);
+            int lagNow = t[0] < 12 ? 0 : reportedLag + (slowArrow ? Math.round(0.9f * (t[0] - 12)) : 0); // a real client's lag keeps growing while it stays in bullet time
+            com.botwclimb.common.bullettime.BulletShots.report(owner.getUUID(), lagNow, now); // the picture only falls behind once the cow has left
+            if (t[0] == 10) cow.setPos(far);
+            if (t[0] == 12) {
+                var arrow = net.minecraft.world.entity.EntityType.ARROW.create(level);
+                arrow.setOwner(owner);
+                arrow.setNoGravity(true);
+                arrow.setPos(spot.add(slowArrow ? 3.5 : 2.0, 0.6, 0.0));
+                arrow.setDeltaMovement(slowArrow ? -0.2 : -2.5, 0, 0); // the slow one flies for ~17 ticks, long after the cow left
+                arrow.setBaseDamage(2.0);
+                level.addFreshEntity(arrow);
+                if (!com.botwclimb.common.bullettime.BulletShots.tagShot(arrow, owner, level.dimension(), now)) h.fail("the arrow was not tagged as a bullet arrow");
+            }
+            if (t[0] == (slowArrow ? 45 : 20)) {
+                boolean hurt = cow.getHealth() < cow.getMaxHealth();
+                if (hurt != expectHit) h.fail(expectHit ? "the arrow did not hit the cow where it was drawn" : "the arrow hit although the picture was not lagging");
+                h.succeed();
+            }
+        });
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void bulletArrowHitsWhereTheMobWasDrawn(GameTestHelper h) {
+        bulletShotScenario(h, 10, true, false);
+    }
+
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void bulletArrowMissesWithoutLag(GameTestHelper h) {
+        bulletShotScenario(h, 0, false, false);
+    }
+
+    /** A slow arrow keeps flying while bullet time goes on: the picture's lag keeps growing and the hit must follow it. */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void bulletArrowStillHitsWhileTheLagGrows(GameTestHelper h) {
+        bulletShotScenario(h, 10, true, true);
+    }
+
+    private static net.minecraft.world.item.ItemStack stack(net.minecraft.world.item.Item i) {
+        return new net.minecraft.world.item.ItemStack(i);
+    }
+
+    private static void near(GameTestHelper h, String what, float got, float want) {
+        if (Math.abs(got - want) > 0.005f) h.fail(what + ": expected " + want + ", got " + got);
+    }
+
+    /** What items are worth at the altar: the listed valuables, diamond and netherite gear, enchant bonus, durability. */
+    @GameTest(template = "empty")
+    public static void altarValues(GameTestHelper h) {
+        var items = net.minecraft.world.item.Items.class;
+        near(h, "diamond", com.botwclimb.common.altar.AltarValues.unitValue(stack(net.minecraft.world.item.Items.DIAMOND)), 2f);
+        near(h, "iron ingot", com.botwclimb.common.altar.AltarValues.unitValue(stack(net.minecraft.world.item.Items.IRON_INGOT)), 0.1f);
+        near(h, "dirt is not valuable", com.botwclimb.common.altar.AltarValues.unitValue(stack(net.minecraft.world.item.Items.DIRT)), 0f);
+        near(h, "diamond block is 9 diamonds", com.botwclimb.common.altar.AltarValues.unitValue(stack(net.minecraft.world.item.Items.DIAMOND_BLOCK)), 18f);
+        near(h, "diamond sword", com.botwclimb.common.altar.AltarValues.unitValue(stack(net.minecraft.world.item.Items.DIAMOND_SWORD)), 4f);
+        near(h, "diamond chestplate", com.botwclimb.common.altar.AltarValues.unitValue(stack(net.minecraft.world.item.Items.DIAMOND_CHESTPLATE)), 16f);
+        near(h, "netherite sword", com.botwclimb.common.altar.AltarValues.unitValue(stack(net.minecraft.world.item.Items.NETHERITE_SWORD)), 7f);
+        near(h, "netherite chestplate", com.botwclimb.common.altar.AltarValues.unitValue(stack(net.minecraft.world.item.Items.NETHERITE_CHESTPLATE)), 20f);
+        near(h, "iron sword", com.botwclimb.common.altar.AltarValues.unitValue(stack(net.minecraft.world.item.Items.IRON_SWORD)), 0.2f);
+        near(h, "leather chestplate", com.botwclimb.common.altar.AltarValues.unitValue(stack(net.minecraft.world.item.Items.LEATHER_CHESTPLATE)), 0f);
+        var worn = stack(net.minecraft.world.item.Items.DIAMOND_CHESTPLATE);
+        worn.setDamageValue((int) (worn.getMaxDamage() * 0.2));
+        float eighty = com.botwclimb.common.altar.AltarValues.unitValue(worn); // the damage is a whole number, so allow a hair
+        if (Math.abs(eighty - 12.8f) > 0.05f) h.fail("80% durability: expected about 12.8, got " + eighty);
+        worn.setDamageValue((int) (worn.getMaxDamage() * 0.6));
+        near(h, "worn below half is refused", com.botwclimb.common.altar.AltarValues.unitValue(worn), 0f);
+        var holder = h.getLevel().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+                .getOrThrow(net.minecraft.world.item.enchantment.Enchantments.PROTECTION);
+        var strong = stack(net.minecraft.world.item.Items.DIAMOND_CHESTPLATE);
+        strong.enchant(holder, 4);
+        near(h, "level 4 enchant adds 2", com.botwclimb.common.altar.AltarValues.unitValue(strong), 18f);
+        var weak = stack(net.minecraft.world.item.Items.DIAMOND_CHESTPLATE);
+        weak.enchant(holder, 3);
+        near(h, "level 3 adds nothing", com.botwclimb.common.altar.AltarValues.unitValue(weak), 16f);
+        h.succeed();
+    }
+
+    /** Prices, the fewest-overshoot choice of items, credit, and the rounded refund. */
+    @GameTest(template = "empty")
+    public static void altarRules(GameTestHelper h) {
+        var R = com.botwclimb.common.altar.AltarRules.class;
+        float[] want = {10, 14, 20, 28, 38, 50, 64, 80};
+        for (int i = 0; i < 8; i++) near(h, "price " + (i + 1), com.botwclimb.common.altar.AltarRules.price(i), want[i]);
+        // 12 diamonds, price 10: exactly 5 diamonds, no credit
+        var r = com.botwclimb.common.altar.AltarRules.evaluate(0, 0f, java.util.List.of(new com.botwclimb.common.altar.AltarRules.Offered(0, 12, 2f)));
+        if (!r.ok() || r.take().size() != 1 || r.take().get(0).count() != 5) h.fail("12 diamonds for a price of 10 should take exactly 5: " + r);
+        near(h, "no credit", r.creditAfter(), 0f);
+        // not enough
+        if (com.botwclimb.common.altar.AltarRules.evaluate(0, 0f, java.util.List.of(new com.botwclimb.common.altar.AltarRules.Offered(0, 4, 2f))).ok()) h.fail("8 points must not buy a price of 10");
+        // credit pays first
+        var r2 = com.botwclimb.common.altar.AltarRules.evaluate(0, 7f, java.util.List.of(new com.botwclimb.common.altar.AltarRules.Offered(0, 5, 2f)));
+        if (!r2.ok() || r2.take().get(0).count() != 2) h.fail("7 credit + 2 diamonds covers 10: " + r2);
+        // only a big piece can finish it: the overshoot becomes credit
+        var r3 = com.botwclimb.common.altar.AltarRules.evaluate(0, 0f, java.util.List.of(
+                new com.botwclimb.common.altar.AltarRules.Offered(0, 3, 2f), new com.botwclimb.common.altar.AltarRules.Offered(1, 1, 16f)));
+        if (!r3.ok()) h.fail("should be possible: " + r3);
+        near(h, "overshoot becomes credit", r3.creditAfter(), 6f);
+        // small items that sum exactly are preferred over a big overshoot
+        var r4 = com.botwclimb.common.altar.AltarRules.evaluate(0, 0f, java.util.List.of(
+                new com.botwclimb.common.altar.AltarRules.Offered(0, 5, 2f), new com.botwclimb.common.altar.AltarRules.Offered(1, 1, 16f)));
+        near(h, "exact beats overshoot", r4.creditAfter(), 0f);
+        if (com.botwclimb.common.altar.AltarRules.evaluate(8, 0f, java.util.List.of()).ok()) h.fail("nothing can be bought past the last upgrade");
+        if (com.botwclimb.common.altar.AltarRules.refundCount(0.9f, 0.25f) != 4) h.fail("0.9 credit as emeralds rounds to 4");
+        if (com.botwclimb.common.altar.AltarRules.refundCount(4.2f, 2f) != 2) h.fail("4.2 credit as diamonds is 2");
+        if (com.botwclimb.common.altar.AltarRules.refundCount(0.9f, 2f) != 0) h.fail("0.9 credit is not enough for a diamond");
+        if (com.botwclimb.common.altar.AltarRules.refundCount(1.0f, 2f) != 1) h.fail("a credit that reaches half a diamond rounds up to one");
         h.succeed();
     }
 
@@ -495,7 +997,7 @@ public class ClimbPlannerTests {
         h.setBlock(5, 9, 7, Blocks.STONE);
         Player p = sim(h, 6.0, false);
         ClimbData d = p.getData(BotwClimb.CLIMB);
-        for (int i = 0; i < 3; i++) tick(p, d, 0, 0, i == 0, false, false);
+        for (int i = 0; i < 3; i++) tick(p, d, 1, 0, i == 0, false, false);
         if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("Space next to the wall under a block did not climb it, state " + d.state);
         h.succeed();
     }

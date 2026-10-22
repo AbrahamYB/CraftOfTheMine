@@ -27,6 +27,20 @@ public final class ClimbConstants {
     public static final int ATTACH_COOLDOWN = 8;
     public static final int JUMP_SEARCH_TICKS = 3;
     /** Vertical reach of one jump, and how far outward (from the flush position) it may swing to clear a lip. */
+    // ---- stamina: three wheels of 750 units, 2250 at most; every extra wheel is five upgrades of 150
+    public static final float STAMINA_WHEEL = 750f, STAMINA_PER_UPGRADE = 187.5f; // an upgrade adds a quarter of a wheel
+    public static final int STAMINA_MAX_UPGRADES = 8;   // the first wheel is free, then 4 quarters for each of the two extra wheels
+    public static final float STAMINA_CLIMB_DRAIN = 36.5f / 20f;   // per tick while moving on the wall (36.5 units/second)
+    // jump costs, as a share of the first wheel (750): wall jump 22.5%, ledge jump 13%, long (2+ deep) ledge jump 17.5%
+    public static final float STAMINA_JUMP_COST = 150f, STAMINA_LEDGE_COST = 97.5f, STAMINA_LONG_LEDGE_COST = 131.25f;
+    public static final float STAMINA_REGEN = 345f / 20f;          // per tick when not climbing and on the ground
+    public static final float STAMINA_FALL_NO_REGEN = 4f;          // no recovery once the fall is this many blocks long (an ordinary jump is about 1)
+    public static final int STAMINA_REGEN_DELAY = 10, STAMINA_EXHAUST_DELAY = 30;
+    public static final float STAMINA_ATTACH_MIN = 60f;            // need this much to grab a wall
+    /** Climb Speed enchantment (boots): faster wall climbing, and faster side / forward / diagonal wall jumps (never the ledge jumps). */
+    /** Playback speed of every climbing (wall) jump: 20% slower than the original planned pace. */
+    public static final double JUMP_BASE_SPEED = 0.8;
+    public static final double ENCHANT_CLIMB_MULT = 1.25, ENCHANT_JUMP_MULT = 1.15;
     public static final double JUMP_MAX_RISE = 3.5;
     /** Height of a jump up a plain wall (3.5 before, -20%). Clearing a lip may still use the full JUMP_MAX_RISE. */
     public static final double JUMP_OPEN_RISE = 2.8;
@@ -53,9 +67,9 @@ public final class ClimbConstants {
     // --- ledge / corner ---
     public static final double LEDGE_RISE_SPEED = 0.16; // 20% lower than before
     public static final double LEDGE_FORWARD_SPEED = 0.16;
-    public static final int LEDGE_MAX_TICKS = 40;
+    public static final int LEDGE_MAX_TICKS = 100; // safety limit only: a long dash + rise + hang + the climb-up takes ~50 ticks, and the old 40 dropped you mid-climb
     public static final double CORNER_SPEED = 0.14;
-    public static final int CORNER_MAX_TICKS = 7;
+    public static final int CORNER_MAX_TICKS = 10;
 
     /** Damage while on a wall: let go, fall and flail for this many ticks (20 = 1 s). */
     public static final int RAGDOLL_TICKS = 20;

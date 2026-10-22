@@ -24,9 +24,10 @@ public final class ParagliderConstants {
     public static final int HOLD_TICKS = 8;
 
     /** A plain jump after falling this many blocks opens the glider instead of the Elytra. */
-    public static final double OPEN_AFTER_FALL = 2.0;
-    /** Gravity is this much weaker on everyone (-0.35 = falls 35% slower). */
-    public static final double GRAVITY_MODIFIER = -0.35;
+    public static final double OPEN_AFTER_FALL = 4.5;
+
+    /** Stamina per gliding tick (30 units/second, so one 750 wheel lasts 25 s). The same for everyone, always. */
+    public static final float PARAGLIDER_STAMINA_DRAIN_PER_TICK = 1.5f;
 
     public static final int DEPLOY_DURATION_TICKS = 5;
     public static final int CLOSE_DURATION_TICKS = 3;
