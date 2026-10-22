@@ -30,14 +30,11 @@ public final class ParagliderController {
 
     private static final ResourceLocation SLOW_FALL = ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "slow_fall");
 
-    /** Falls are slower for everyone. Runs on both sides so the client's prediction matches the server. */
+    /** Gravity is vanilla now; earlier versions saved a permanent slow-fall modifier on every player, so take it off. */
     @SubscribeEvent
     public static void onFallSpeed(PlayerTickEvent.Post event) {
         var gravity = event.getEntity().getAttribute(Attributes.GRAVITY);
-        if (gravity != null && !gravity.hasModifier(SLOW_FALL)) {
-            gravity.addPermanentModifier(new AttributeModifier(SLOW_FALL, ParagliderConstants.GRAVITY_MODIFIER,
-                    AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
-        }
+        if (gravity != null && gravity.hasModifier(SLOW_FALL)) gravity.removeModifier(SLOW_FALL);
     }
 
     /** Conditions that must hold for as long as the glider is open. */
@@ -49,7 +46,7 @@ public final class ParagliderController {
         ClimbData c = p.getData(BotwClimb.CLIMB);
         return p.isAlive() && !p.isSpectator() && !p.isSleeping() && !p.isPassenger() && !p.isSwimming()
                 && !p.isUnderWater() && !p.isInWater() && !p.isInLava()
-                && !p.getAbilities().flying && c.state == ClimbState.NONE;
+                && !p.getAbilities().flying && c.state == ClimbState.NONE && !c.exhausted;
     }
 
     /** Shift + Space while Elytra-flying (rocket boost or not) swaps straight over to the paraglider. */
@@ -141,6 +138,12 @@ public final class ParagliderController {
 
     /** Stores the player's own fabric choice (not tied to any item) and tells everyone who can see them. */
     public static void setFabric(ServerPlayer p, int index) {
+        if (index < 0 || index >= FabricRegistry.all().size() || !FabricUnlocks.has(p, index)) return; // only a fabric the player has learned
+        forceFabric(p, index);
+    }
+
+    /** Wears a fabric whether it is learned or not (commands, and falling back to the ordinary one). */
+    public static void forceFabric(ServerPlayer p, int index) {
         if (index < 0 || index >= FabricRegistry.all().size()) return;
         p.setData(BotwClimb.FABRIC, index);
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
@@ -152,6 +155,7 @@ public final class ParagliderController {
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer p) {
             ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
+            if (!FabricUnlocks.has(p, p.getData(BotwClimb.FABRIC))) p.setData(BotwClimb.FABRIC, 0); // wearing one that is not learned (before cloths existed): back to ordinary
             g.fabric = p.getData(BotwClimb.FABRIC);
             broadcast(p, false, false);
         }
@@ -169,6 +173,10 @@ public final class ParagliderController {
     public static void serverToggle(ServerPlayer p, boolean open) {
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
         if (open == g.gliding) return;
+        if (open && p.getData(BotwClimb.CLIMB).sExhausted) { // out of stamina on the server
+            broadcast(p, false, true);
+            return;
+        }
         boolean fromElytra = open && canSwitchFromElytra(p);
         if (fromElytra) p.stopFallFlying(); // ends the rocket boost too: fireworks only push a fall-flying player
         // fallDistance > 0: the player just left the ground and the position packet saying so is still on its way
@@ -188,7 +196,7 @@ public final class ParagliderController {
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
         if (!g.gliding) return;
         g.groundTicks = p.onGround() ? g.groundTicks + 1 : 0;
-        if (!stateAllows(p) || g.groundTicks >= SERVER_GROUND_GRACE) {
+        if (!stateAllows(p) || g.groundTicks >= SERVER_GROUND_GRACE || p.getData(BotwClimb.CLIMB).sExhausted) { // the server's stamina account ran out
             g.gliding = false;
             broadcast(p, false, true);
         } else {
@@ -199,7 +207,7 @@ public final class ParagliderController {
     /** Development command: /botwclimb paraglider fabric ID picks the fabric of the player running it. */
     @SubscribeEvent
     public static void onCommands(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal(BotwClimb.MOD_ID).then(Commands.literal("paraglider")
+        event.getDispatcher().register(Commands.literal(BotwClimb.MOD_ID).then(Commands.literal("paraglider").requires(s -> s.hasPermission(2))
                 .then(Commands.literal("fabric").then(Commands.argument("id", StringArgumentType.word())
                         .suggests((c, b) -> SharedSuggestionProvider.suggest(
                                 FabricRegistry.all().stream().map(FabricDefinition::id), b))
@@ -211,7 +219,7 @@ public final class ParagliderController {
                                 return 0;
                             }
                             ServerPlayer p = ctx.getSource().getPlayerOrException();
-                            setFabric(p, index);
+                            forceFabric(p, index);
                             ctx.getSource().sendSuccess(() -> Component.literal("Paraglider fabric: " + id), false);
                             return 1;
                         })))));
