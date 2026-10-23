@@ -3,6 +3,7 @@ package com.botwclimb.network;
 import com.botwclimb.BotwClimb;
 import com.botwclimb.common.climb.ClimbData;
 import com.botwclimb.common.climb.ClimbState;
+import com.botwclimb.common.bullettime.BulletFall;
 import com.botwclimb.common.paraglider.ParagliderController;
 import com.botwclimb.common.climb.ClimbConstants;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,7 +26,32 @@ public final class NetworkHandler {
         r.playToServer(ParagliderFabricPayload.TYPE, ParagliderFabricPayload.CODEC, (p, ctx) -> {
             if (ctx.player() instanceof ServerPlayer sp) ParagliderController.setFabric(sp, p.index());
         });
+        r.playToServer(ClothCraftPayload.TYPE, ClothCraftPayload.CODEC, (p, ctx) -> {
+            if (ctx.player() instanceof ServerPlayer sp) ctx.enqueueWork(() -> com.botwclimb.common.paraglider.ClothCrafting.craft(sp, p.index()));
+        });
+        r.playToClient(BulletShotConfirmPayload.TYPE, BulletShotConfirmPayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(com.botwclimb.client.bullettime.BulletTime::onShotConfirmed));
+        r.playToServer(BulletShotPayload.TYPE, BulletShotPayload.CODEC, (p, ctx) -> {
+            if (ctx.player() instanceof ServerPlayer sp) ctx.enqueueWork(() -> com.botwclimb.common.bullettime.BulletShots.lag(sp, p.lag()));
+        });
+        r.playToClient(BulletPositionsPayload.TYPE, BulletPositionsPayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> com.botwclimb.client.bullettime.BulletTime.onPositions(p)));
+        r.playToServer(BulletFallPayload.TYPE, BulletFallPayload.CODEC, (p, ctx) -> {
+            if (ctx.player() instanceof ServerPlayer sp) BulletFall.apply(sp, p.on());
+        });
+        r.playToServer(AltarOfferPayload.TYPE, AltarOfferPayload.CODEC, (p, ctx) -> {
+            if (ctx.player() instanceof ServerPlayer sp) com.botwclimb.common.altar.AltarServer.handle(sp, p);
+        });
+        r.playToClient(AltarResultPayload.TYPE, AltarResultPayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> com.botwclimb.client.altar.AltarClient.onResult(p)));
         r.playToClient(ParagliderStatePayload.TYPE, ParagliderStatePayload.CODEC, NetworkHandler::onGlideState);
+        r.playToClient(TerminalRidePayload.TYPE, TerminalRidePayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> com.botwclimb.client.shrine.MudHandClient.onState(p)));
+        r.playToClient(TerminalOpenPayload.TYPE, TerminalOpenPayload.CODEC,
+                (p, ctx) -> ctx.enqueueWork(() -> com.botwclimb.client.shrine.TerminalClient.open(p)));
+        r.playToServer(TerminalActionPayload.TYPE, TerminalActionPayload.CODEC, (p, ctx) -> {
+            if (ctx.player() instanceof ServerPlayer sp) com.botwclimb.common.shrine.PlotTravel.handle(sp, p);
+        });
     }
 
     /** Runs on the client; common classes only. */

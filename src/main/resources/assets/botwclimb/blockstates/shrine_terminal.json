@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "lit=false": {
+      "model": "botwclimb:block/shrine_terminal_off"
+    },
+    "lit=true": {
+      "model": "botwclimb:block/shrine_terminal_on"
+    }
+  }
+}
