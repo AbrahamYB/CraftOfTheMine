@@ -3,6 +3,7 @@
   "minVersion": "0.8",
   "package": "com.botwclimb.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["PlayerModelMixin"],
+  "mixins": ["WorldDimensionsMixin"],
+  "client": ["PlayerModelMixin", "SoundEngineMixin"],
   "injectors": { "defaultRequire": 1 }
 }
