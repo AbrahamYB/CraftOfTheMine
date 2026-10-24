@@ -42,3 +42,8 @@ repo/
 ### Local run data ###
 run/
 *.log
+
+### Local dev settings ###
+local.properties
+run-gametest/
+run-auto/
