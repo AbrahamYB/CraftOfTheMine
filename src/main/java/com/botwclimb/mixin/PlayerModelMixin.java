@@ -30,5 +30,6 @@ public abstract class PlayerModelMixin {
         if (p.hasData(BotwClimb.PARAGLIDER)) {
             ParagliderAnimator.apply((PlayerModel<?>) (Object) this, p.getData(BotwClimb.PARAGLIDER), pt, ageInTicks, netHeadYaw);
         }
+        com.botwclimb.client.shrine.totk.TotkRide.pose((PlayerModel<?>) (Object) this, p, pt);
     }
 }
