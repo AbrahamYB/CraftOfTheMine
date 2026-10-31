@@ -12,7 +12,7 @@ import net.neoforged.neoforge.client.settings.KeyModifier;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * The paraglider shortcut (Options > Controls > BOTW Climb). Default Shift + Space.
+ * The paraglider shortcut (Options > Controls > Craft of the Mine). Default Shift + Space.
  * The KeyModifier only lets the Controls menu show and rebind the combo; {@link ChordInputHandler} does the real
  * ordered detection and the Space consumption.
  */

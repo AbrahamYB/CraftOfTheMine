@@ -2,6 +2,12 @@ package com.botwclimb.common.climb;
 
 import com.botwclimb.BotwClimb;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
@@ -21,6 +27,20 @@ import static com.botwclimb.common.climb.ClimbConstants.*;
 public final class ClimbController {
     private ClimbController() {}
 
+    public static final ResourceKey<Enchantment> CLIMB_SPEED_ENCHANT =
+            ResourceKey.create(Registries.ENCHANTMENT, ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "climb_speed"));
+
+    /** Boots with the Climb Speed enchantment (a data-driven enchantment, so it is looked up in the registry). */
+    public static boolean hasClimbSpeed(Player p) {
+        Holder<Enchantment> h = p.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolder(CLIMB_SPEED_ENCHANT).orElse(null);
+        return h != null && EnchantmentHelper.getEnchantmentLevel(h, p) > 0;
+    }
+
+    public static float maxStamina(Player p) {
+        int u = Mth.clamp(p.getData(BotwClimb.STAMINA_UPGRADES), 0, STAMINA_MAX_UPGRADES);
+        return STAMINA_WHEEL + STAMINA_PER_UPGRADE * u;
+    }
+
     public static boolean canClimb(Player p) {
         return !p.isSpectator() && !p.isDeadOrDying() && !p.getAbilities().flying && !p.isFallFlying()
                 && !p.isPassenger() && !p.isSleeping() && !p.isSwimming() && !p.isUnderWater()
@@ -38,11 +58,23 @@ public final class ClimbController {
         boolean jumpPressed = jumpDown && !d.jumpHeld; // edge trigger: holding Space never re-fires
         d.jumpHeld = jumpDown;
         d.stateTicks++;
+        d.climbSpeed = hasClimbSpeed(p);
+        float maxStamina = maxStamina(p);
+        if (d.stamina < 0 || d.stamina > maxStamina) d.stamina = maxStamina;
+        if (d.staminaFlash > 0) d.staminaFlash--;
+        // recovers on the ground, while flying in creative and during an ordinary jump, but not in a real fall (4+ blocks) or
+        // on a wall: emptying the wheel in mid-air means waiting until you land before it refills
+        boolean recovers = p.onGround() || p.getAbilities().flying || p.fallDistance < STAMINA_FALL_NO_REGEN;
+        if (d.state == ClimbState.NONE && recovers) {
+            if (d.staminaDelay > 0) d.staminaDelay--;
+            else if (d.stamina < maxStamina) d.stamina = Math.min(maxStamina, d.stamina + STAMINA_REGEN);
+        }
+        if (d.exhausted && d.stamina >= maxStamina) d.exhausted = false; // the wheel is full again
 
         if (d.state == ClimbState.NONE) {
             // plain Space next to a wall with a block just over your head (not attached yet) is the ledge jump, not a normal jump
-            if (jumpPressed && !climbKey && d.attachCooldown == 0 && canClimb(p) && !sneak
-                    && SurfaceSampler.blocked(p.level(), p, p.getBoundingBox().expandTowards(0, LEDGE_REACH, 0))) { // only a block within jumping reach, not any overhang up to 3.5 above
+            if (jumpPressed && fwd > 0.1f && !climbKey && d.attachCooldown == 0 && !d.exhausted && d.stamina >= STAMINA_ATTACH_MIN && canClimb(p) && !sneak
+                    && blockInReach(p.level(), p, p.getBoundingBox())) { // only a block within jumping reach, not any overhang up to 3.5 above
                 Direction dir = findWall(p);
                 if (dir != null && ledgeDepth(p.level(), p, p.getBoundingBox(), dir) > 0) {
                     d.dir = dir;
@@ -60,6 +92,10 @@ public final class ClimbController {
             release(p, d, ATTACH_COOLDOWN, true);
             return;
         }
+        if (d.state != ClimbState.CLIMBING) d.cornerPlan = null; // a slide round a corner never outlives the climb (a server correction can end it)
+        // a Space pressed while a hop is in the air (or just landed, still on its short cooldown) is not lost: the ledge jumps use it as soon as they may
+        if (d.jumpBuffer > 0) d.jumpBuffer--;
+        if (jumpPressed && (d.state == ClimbState.CLIMB_JUMP || (d.state == ClimbState.CLIMBING && d.jumpCooldown > 0 && d.latchTicks == 0))) d.jumpBuffer = LEDGE_BUFFER_TICKS;
         switch (d.state) {
             case CLIMBING -> stepClimbing(p, d, fwd, str, jumpPressed);
             case CLIMB_JUMP -> stepJump(p, d);
@@ -72,17 +108,14 @@ public final class ClimbController {
 
     /** Holding the climb key next to a wall for CLIMB_HOLD_TICKS grabs it. Space is untouched until you are on the wall. */
     private static void tryAttach(Player p, ClimbData d, boolean keyDown, boolean sneak) {
-        if (!keyDown || d.attachCooldown > 0 || sneak || !canClimb(p)) {
-            if (keyDown && p.tickCount % 10 == 0) {
-                BotwClimb.LOGGER.info("climb key held but blocked: cooldown={} sneak={} canClimb={}",
-                        d.attachCooldown, sneak, canClimb(p));
-            }
+        boolean tired = d.exhausted || d.stamina < STAMINA_ATTACH_MIN;
+        if (keyDown && tired && d.attachCooldown == 0 && d.staminaFlash == 0) d.staminaFlash = 20; // too tired to grab
+        if (!keyDown || d.attachCooldown > 0 || sneak || !canClimb(p) || tired) {
             d.keyHold = 0;
             return;
         }
         Direction dir = findWall(p);
         if (dir == null) {
-            if (p.tickCount % 10 == 0) BotwClimb.LOGGER.info("climb key held but no wall within reach");
             d.keyHold = 0;
             return;
         }
@@ -92,17 +125,21 @@ public final class ClimbController {
         d.setState(ClimbState.CLIMBING);
         d.cornerTicks = 0;
         d.latchTicks = LATCH_PROFILE.length; // the hop onto the wall
+        d.jumpCooldown = LATCH_PROFILE.length + 4; // a stray or held Space right after grabbing is not a jump (no double jump, no sudden ledge jump)
         p.setSprinting(false);
         p.setDeltaMovement(Vec3.ZERO);
     }
+
+    private static final float ATTACH_ANGLE = 60f; // degrees either side of the wall's direction
 
     /** The wall next to the player that is closest to where they are looking, or null. */
     public static Direction findWall(Player p) {
         Direction best = null;
         float bestDiff = Float.MAX_VALUE;
         for (Direction dir : Direction.Plane.HORIZONTAL) {
-            if (!SurfaceSampler.sample(p.level(), p, p.getBoundingBox(), dir).canAttach(ATTACH_GAP)) continue;
             float diff = Math.abs(Mth.wrapDegrees(p.getYRot() - dir.toYRot()));
+            if (diff > ATTACH_ANGLE) continue; // a wall off to the side or behind is not one you are facing: no grab, Shift + Space stays a plain jump
+            if (!SurfaceSampler.sample(p.level(), p, p.getBoundingBox(), dir).canAttach(ATTACH_GAP)) continue;
             if (diff < bestDiff) {
                 bestDiff = diff;
                 best = dir;
@@ -113,8 +150,10 @@ public final class ClimbController {
 
     public static void release(Player p, ClimbData d, int attachCooldown, boolean stop) {
         d.setState(ClimbState.NONE);
+        d.staminaDelay = Math.max(d.staminaDelay, STAMINA_REGEN_DELAY);
         d.attachCooldown = attachCooldown;
         d.cornerTicks = 0;
+        d.cornerPlan = null;
         d.plan = null;
         if (stop) p.setDeltaMovement(Vec3.ZERO);
     }
@@ -122,37 +161,51 @@ public final class ClimbController {
     // ------------------------------------------------------------------ normal climbing
 
     private static void stepClimbing(Player p, ClimbData d, float fwd, float str, boolean jumpPressed) {
+        if (d.exhausted && d.stamina <= 0f) { // the last of it went into a jump: the grip is gone as soon as it lands
+            release(p, d, ATTACH_COOLDOWN, false);
+            return;
+        }
         Level level = p.level();
         Direction dir = d.dir;
         AABB box = p.getBoundingBox();
 
-        if (d.cornerTicks > 0) {
-            stepCorner(p, d, box);
+        if (d.cornerPlan != null) {
+            stepCornerSlide(p, d);
             return;
         }
 
         SurfaceContact c = SurfaceSampler.sample(level, p, box, dir);
         double up = Math.abs(fwd) < 0.1f ? 0 : Math.signum(fwd);
         double side = Math.abs(str) < 0.1f ? 0 : Math.signum(str);
+        boolean ledgePress = jumpPressed || d.jumpBuffer > 0; // the ledge jumps also take a Space pressed just before, during a hop
+        if (jumpPressed && level.isClientSide) { // diagnostics for a ledge jump that does not start: what the controller saw when Space went down
+            BotwClimb.LOGGER.info("[ledge] Space down: up={} side={} cooldown={} blockInReach={} blockAbove={} wallTop={} holds={} state={}", up, side, d.jumpCooldown,
+                    blockInReach(level, p, box), blockAbove(level, p, box), wallTopAbove(level, p, box, dir), c.holds(HOLD_GAP), d.state);
+        }
 
         // W+A / W+D with the block up and to that side (not straight above): the whole jump and climb-up go diagonally to it
         Direction latDir = side > 0 ? dir.getCounterClockWise() : dir.getClockWise();
         AABB sideBox = box.move(latDir.getStepX(), 0, latDir.getStepZ());
-        boolean diagonal = side != 0 && up > 0 && jumpPressed && !blockInReach(level, p, box) && blockInReach(level, p, sideBox)
+        boolean diagonal = side != 0 && up > 0 && ledgePress && !blockInReach(level, p, box) && blockInReach(level, p, sideBox)
                 && !SurfaceSampler.blocked(level, p, box.expandTowards(latDir.getStepX(), 0, latDir.getStepZ()));
-        if (d.pendingBlockJump || diagonal || (jumpPressed && blockInReach(level, p, box))) {
+        if (d.pendingBlockJump || (d.jumpCooldown == 0 && (diagonal || (ledgePress && up > 0 && blockInReach(level, p, box))))) { // only with W (or W+A / W+D)
+            d.jumpBuffer = 0;
             // a block (or block and a half) above: the only thing Space does here is the jump onto it.
             // The old climb jump is never used under a block.
             d.pendingBlockJump = false;
             AABB tb = diagonal ? sideBox : box;
             int depth = ledgeDepth(level, p, tb, dir);
+            if (level.isClientSide) BotwClimb.LOGGER.info("[ledge] block jump: depth={} stamina={} exhausted={}", depth, d.stamina, d.exhausted);
             if (depth == 0) return; // no way out past it (too deep, or too thick for a long jump)
+            if (!spendJump(d, depth > 1 ? STAMINA_LONG_LEDGE_COST : STAMINA_LEDGE_COST)) return;
             double top = box.maxY + 0.3, bottom = Double.MAX_VALUE;
-            for (VoxelShape shape : level.getBlockCollisions(p, tb.expandTowards(0, JUMP_MAX_RISE, 0))) {
+            for (VoxelShape shape : level.getBlockCollisions(p, tb.expandTowards(0, JUMP_MAX_RISE, 0))) bottom = Math.min(bottom, shape.bounds().minY); // the underside of the overhang
+            // a long jump (2 or 3 deep) climbs onto the farthest block, so its top is the target: a block stacked on a nearer one is beside it, not in the way
+            AABB landing = depth >= 2 ? tb.move(-dir.getStepX() * (depth - 1), 0, -dir.getStepZ() * (depth - 1)) : tb;
+            for (VoxelShape shape : level.getBlockCollisions(p, landing.expandTowards(0, JUMP_MAX_RISE, 0))) {
+                if (depth >= 2 && shape.bounds().minY > bottom + 1.01) continue; // not part of the layer that is climbed onto
                 top = Math.max(top, shape.bounds().maxY);
-                bottom = Math.min(bottom, shape.bounds().minY);
             }
-            if (bottom - box.maxY > LEDGE_REACH) return; // too far above to jump up to: climb closer first
             startLedge(d, top);
             d.ledgeBlockMin = bottom;
             d.ledgeSide = (int) side;
@@ -163,7 +216,23 @@ public final class ClimbController {
             d.ledgeOut = 0;
             return;
         }
-        if (jumpPressed && d.jumpCooldown == 0 && c.holds(HOLD_GAP) && !blockInReach(level, p, box)) { // a block further up (an overhang) does not stop the normal wall jumps
+        if (ledgePress && d.jumpCooldown == 0 && (up > 0 || side != 0) && !blockInReach(level, p, box)) {
+            // A / D with Space counts here too: climbing along a wall and pressing Space under its top edge is a jump up onto it, drifting that way
+            // the wall itself ends just above and there is nothing past it but air to walk on: the same jump, hang and pull-up onto its top edge
+            double wt = wallTopAbove(level, p, box, dir);
+            if (!Double.isNaN(wt) && spendJump(d, STAMINA_LEDGE_COST)) {
+                d.jumpBuffer = 0;
+                startLedge(d, wt);
+                d.ledgeBlockMin = Double.MAX_VALUE;
+                d.ledgeSide = (int) side; // W+A / W+D here: the climb up the wall top drifts that way too
+                d.ledgeLat = 0;
+                d.ledgeLatTotal = side != 0 ? 0.8 : 0;
+                d.ledgeOutNeed = d.ledgeOut = 0.01; // nothing to clear: no dash out, straight up to the hang
+                d.ledgeOutSpeed = LEDGE_OUT_SPEED;
+                return;
+            }
+        }
+        if (jumpPressed && d.jumpCooldown == 0 && c.holds(HOLD_GAP) && !(up > 0 && blockInReach(level, p, box))) { // a block further up (an overhang) does not stop the normal wall jumps
             startJump(p, d, (int) side, up == 0);
             return;
         }
@@ -179,7 +248,7 @@ public final class ClimbController {
             p.setDeltaMovement(dir.getOpposite().getStepX() * away + dir.getStepZ() * 0 + wobble * dir.getStepZ(), LATCH_PROFILE[i], dir.getOpposite().getStepZ() * away + wobble * dir.getStepX());
             return;
         }
-        if (up > 0 && !blockAbove(level, p, box)) { // with a block over you, only Space climbs it: no automatic grab
+        if ((up > 0 || d.jumpCooldown > 0) && !blockAbove(level, p, box)) { // with a block over you, only Space climbs it: no automatic grab. Just after a hop it finishes without W too: letting go of W must not drop you at the top
             double ledge = SurfaceSampler.findLedge(level, p, box, dir);
             if (!Double.isNaN(ledge)) {
                 startLedge(d, ledge);
@@ -193,28 +262,45 @@ public final class ClimbController {
 
         // Constant climbing pace. The wavy feel lives in the animation only (ClimbAnimator), never in movement.
         // one speed in every direction: a diagonal (up + sideways) is scaled down so it is not faster than straight
+        if (up != 0 || side != 0) { // moving on the wall costs stamina; at zero you lose your grip
+            d.stamina -= STAMINA_CLIMB_DRAIN;
+            if (d.stamina <= 0) {
+                release(p, d, ATTACH_COOLDOWN, false);
+                Stamina.exhaust(d); // BOTW style: no climbing until it has recovered completely
+                return;
+            }
+        }
         double k = up != 0 && side != 0 ? Math.sqrt(0.5) : 1;
+        if (d.climbSpeed) k *= ENCHANT_CLIMB_MULT;
         Vec3 vel = new Vec3(0, up * CLIMB_SPEED * k, 0);
         if (side != 0) {
             Direction lat = side > 0 ? dir.getCounterClockWise() : dir.getClockWise(); // str > 0 is left
             Vec3 step = new Vec3(lat.getStepX(), 0, lat.getStepZ()).scale(SIDE_SPEED * k);
             AABB moved = box.move(step);
             if (SurfaceSampler.blocked(level, p, moved)) {
-                // inner corner: a perpendicular wall is in the way, turn onto it
-                if (SurfaceSampler.sample(level, p, box, lat).canAttach(HOLD_GAP)) {
+                // inner corner: a perpendicular wall is in the way, turn onto it. A missing row in it, or a block over the head, must not stop the
+                // turn (it used to need the head and torso both, and failed the first time): the same grip test as for hanging, with the wider reach
+                if (SurfaceSampler.sample(level, p, box, lat).holds(REGRAB_GAP)) {
                     d.dir = lat;
                     p.setDeltaMovement(Vec3.ZERO);
                     return;
                 }
+                vel = vel.add(step); // blocked by something else (an overhang): vanilla collision slides along it instead of standing still
             } else {
                 if (!SurfaceSampler.sample(level, p, moved, dir).holds(HOLD_GAP)) {
-                    // wall ends this way: look for the face around an outer corner
-                    d.cornerTicks = CORNER_MAX_TICKS;
-                    d.cornerTo = lat.getOpposite();
-                    p.setDeltaMovement(Vec3.ZERO);
-                    return;
+                    // wall ends this way: go round an outer corner if there is a face to hold on the other side. Otherwise this is just
+                    // the end of the wall: stay hanging at the edge (no sideways step), never let go because of it
+                    JumpPlan round = JumpPlanner.cornerSlide(level, p, p.position(), dir, (int) side);
+                    if (round != null) {
+                        d.cornerPlan = round;
+                        d.cornerIdx = 0;
+                        d.jumpStart = p.position();
+                        p.setDeltaMovement(Vec3.ZERO);
+                        return;
+                    }
+                } else {
+                    vel = vel.add(step);
                 }
-                vel = vel.add(step);
             }
         }
         double pull = Mth.clamp(c.gap() - ADHESION_GAP, -0.05, ADHESION_MAX_PULL);
@@ -222,19 +308,20 @@ public final class ClimbController {
         p.setDeltaMovement(vel);
     }
 
-    /** Outer corner: slide round the end of the wall until the side face of that last block is in reach. */
-    private static void stepCorner(Player p, ClimbData d, AABB box) {
-        if (SurfaceSampler.sample(p.level(), p, box, d.cornerTo).holds(HOLD_GAP)) {
-            d.dir = d.cornerTo;
-            d.cornerTicks = 0;
+    /** The slide round the end of a wall: follows the planned path, and the face it ends on becomes the wall. */
+    private static void stepCornerSlide(Player p, ClimbData d) {
+        JumpPlan plan = d.cornerPlan;
+        if (d.cornerIdx >= plan.length()) {
+            d.dir = plan.around();
+            d.cornerPlan = null;
             p.setDeltaMovement(Vec3.ZERO);
             return;
         }
-        if (--d.cornerTicks <= 0) {
-            release(p, d, 5, true);
-            return;
-        }
-        p.setDeltaMovement(d.dir.getStepX() * CORNER_SPEED, 0, d.dir.getStepZ() * CORNER_SPEED);
+        if (d.cornerIdx >= plan.length() * 0.3) d.dir = plan.around(); // the body starts turning early, so it turns along with the slide, not after it
+        Vec3 want = d.jumpStart.add(plan.steps()[d.cornerIdx++]);
+        Vec3 v = want.subtract(p.position());
+        double len = v.length();
+        p.setDeltaMovement(len > 0.2 ? v.scale(0.2 / len) : v); // vanilla collision still has the last word
     }
 
     /** Upward velocity per tick of the latch hop: two ticks crouched, then a burst that slows as the body lifts. */
@@ -242,13 +329,33 @@ public final class ClimbController {
     /** Sideways (away from the wall) per tick of the latch: a little kick back, then into the wall. */
     private static final double[] LATCH_OUT = {0, 0, 0.14, 0.10, -0.06, -0.14};
 
+    private static final double LEDGE_TOP_REACH = 2.5; // ... or the block's top edge this far above the head
     private static final double LEDGE_REACH = 1.5;   // the block's underside may be at most this far above the head
     private static final double AROUND_OUT = 1.05;   // how far out the body goes to clear the block
 
     /** A block (or block and a half) is over the head, close enough that Space means the jump onto it. */
     /** A block just over the head, close enough to jump up and grab: Space is the ledge jump there, a normal wall jump otherwise. */
     private static boolean blockInReach(Level level, Player p, AABB box) {
-        return SurfaceSampler.blocked(level, p, box.expandTowards(0, LEDGE_REACH, 0));
+        // reachable if its underside is within LEDGE_REACH of the head, or its top edge within LEDGE_TOP_REACH (a slab on the top half of the space has its underside further up)
+        for (VoxelShape shape : level.getBlockCollisions(p, box.expandTowards(0, LEDGE_TOP_REACH, 0))) {
+            AABB s = shape.bounds();
+            if (s.minY - box.maxY <= LEDGE_REACH || s.maxY - box.maxY <= LEDGE_TOP_REACH) return true;
+        }
+        return false;
+    }
+
+    /**
+     * The top of the wall being climbed when it ends just above the head with room to stand on it (nothing above the
+     * wall): the Y to climb onto, or NaN. Used by the ledge jump on a wall's own top edge.
+     */
+    private static double wallTopAbove(Level level, Player p, AABB box, Direction dir) {
+        double top = Double.NaN;
+        AABB col = box.move(dir.getStepX() * 0.3, 0, dir.getStepZ() * 0.3).expandTowards(0, LEDGE_REACH + 1.0, 0);
+        for (VoxelShape shape : level.getBlockCollisions(p, col)) top = Double.isNaN(top) ? shape.bounds().maxY : Math.max(top, shape.bounds().maxY);
+        if (Double.isNaN(top) || top - box.maxY < 0.05 || top - box.maxY > LEDGE_REACH) return Double.NaN;
+        AABB dest = box.move(dir.getStepX() * MANTLE_FORWARD, top - box.minY + 0.02, dir.getStepZ() * MANTLE_FORWARD);
+        if (SurfaceSampler.blocked(level, p, dest) || !SurfaceSampler.blocked(level, p, dest.move(0, -0.1, 0))) return Double.NaN; // no room, or nothing to stand on
+        return top;
     }
 
     private static boolean blockAbove(Level level, Player p, AABB box) {
@@ -260,14 +367,14 @@ public final class ClimbController {
      * onto it, else 0. One deep may be any thickness; two deep only one block thick (2x2 is not climbable).
      */
     private static int refuse(Level level, String why) {
-        if (level.isClientSide) BotwClimb.LOGGER.info("ledge jump refused: {}", why);
+        if (BotwClimb.DEBUG && level.isClientSide) BotwClimb.LOGGER.info("ledge jump refused: {}", why);
         return 0;
     }
 
     private static int ledgeDepth(Level level, Player p, AABB box, Direction dir) {
         Direction out = dir.getOpposite();
         double b0 = Double.MAX_VALUE;
-        for (VoxelShape shape : level.getBlockCollisions(p, box.expandTowards(0, LEDGE_REACH, 0))) b0 = Math.min(b0, shape.bounds().minY);
+        for (VoxelShape shape : level.getBlockCollisions(p, box.expandTowards(0, LEDGE_TOP_REACH, 0))) b0 = Math.min(b0, shape.bounds().minY);
         // the next column out counts only if it has a block at the same height as this one (not something higher up)
         AABB band = new AABB(box.minX + 0.05, b0 + 0.02, box.minZ + 0.05, box.maxX - 0.05, b0 + 0.98, box.maxZ - 0.05);
         int depth = 1;
@@ -280,7 +387,9 @@ public final class ClimbController {
         if (depth >= 2) {
             double bottom = Double.MAX_VALUE;
             java.util.List<AABB> stack = new java.util.ArrayList<>();
-            for (VoxelShape shape : level.getBlockCollisions(p, box.expandTowards(0, JUMP_MAX_RISE, 0))) {
+            // the climb-up is onto the farthest block, so it is that column that must be one thick: a block stacked on a nearer one is not in the way
+            AABB far = box.move(out.getStepX() * (depth - 1), 0, out.getStepZ() * (depth - 1));
+            for (VoxelShape shape : level.getBlockCollisions(p, far.expandTowards(0, JUMP_MAX_RISE, 0))) {
                 bottom = Math.min(bottom, shape.bounds().minY);
                 stack.add(shape.bounds());
             }
@@ -300,8 +409,27 @@ public final class ClimbController {
 
     // ------------------------------------------------------------------ climb jump
 
+    /**
+     * A jump (wall jump, ledge jump or long ledge jump) takes its cost, or whatever is left, as long as there is any stamina. Taking the
+     * last of it leaves you exhausted. Tells the HUD what was taken so it can flash that arc. False = refused (exhausted).
+     */
+    private static boolean spendJump(ClimbData d, float cost) {
+        if (d.exhausted || d.stamina <= 0) {
+            d.staminaFlash = 20;
+            return false;
+        }
+        d.jumpSpent = Stamina.take(d, cost);
+        d.jumpSpentSeq++;
+        if (!d.exhausted) d.staminaDelay = Math.max(d.staminaDelay, STAMINA_REGEN_DELAY * 2);
+        return true;
+    }
+
     private static void startJump(Player p, ClimbData d, int side, boolean sideOnly) {
-        d.plan = JumpPlanner.plan(p.level(), p, p.position(), d.dir, side, sideOnly);
+        JumpPlan plan = JumpPlanner.plan(p.level(), p, p.position(), d.dir, side, sideOnly);
+        if (plan == null) return; // A / D with nowhere to hop to: stay on the wall, do not jump up instead
+        if (!spendJump(d, STAMINA_JUMP_COST)) return; // nothing left to jump with
+        d.plan = plan;
+        d.jumpSpeed = JUMP_BASE_SPEED * (d.climbSpeed ? ENCHANT_JUMP_MULT : 1); // wall jumps only; the ledge jumps never use it
         d.jumpStart = p.position();
         d.jumpTick = 0;
         d.setState(ClimbState.CLIMB_JUMP);
@@ -315,21 +443,26 @@ public final class ClimbController {
             return;
         }
         int k = d.jumpTick++;
-        if (k < JUMP_WINDUP_TICKS) { // crouch against the wall, the animation loads the legs
+        double nominal = k * d.jumpSpeed; // jump time: everything (crouch, path, animation) runs on it, so a slower jump stretches all of it
+        if (nominal < JUMP_WINDUP_TICKS) { // crouch against the wall, the animation loads the legs
             p.setDeltaMovement(Vec3.ZERO);
             return;
         }
-        int idx = k - JUMP_WINDUP_TICKS;
+        double idxF = nominal - JUMP_WINDUP_TICKS; // fractional position along the plan
+        int idx = (int) idxF;
         if (idx < plan.length()) {
             // follow the planned waypoint; vanilla collision still has the last word
-            if (p.level().isClientSide) BotwClimb.LOGGER.info("jump tick {} rel=({}, {}) plan=({}, {})", idx, fmt(p.getY() - d.jumpStart.y), fmt(p.getZ() - d.jumpStart.z), fmt(plan.steps()[idx].y), fmt(plan.steps()[idx].z));
-            Vec3 v = d.jumpStart.add(plan.steps()[idx]).subtract(p.position());
+            if (BotwClimb.DEBUG && p.level().isClientSide) BotwClimb.LOGGER.info("jump tick {} rel=({}, {}) plan=({}, {})", idx, fmt(p.getY() - d.jumpStart.y), fmt(p.getZ() - d.jumpStart.z), fmt(plan.steps()[idx].y), fmt(plan.steps()[idx].z));
+            Vec3 at = plan.steps()[idx];
+            if (idx + 1 < plan.length()) at = at.lerp(plan.steps()[idx + 1], idxF - idx);
+            Vec3 v = d.jumpStart.add(at).subtract(p.position());
             double len = v.length();
             if (len > 1.0) v = v.scale(1.0 / len);
             p.setDeltaMovement(v);
             return;
         }
         // trajectory finished: grab whatever is there
+        if (plan.around() != null) d.dir = plan.around(); // a hop round a pillar's corner: the next face is the wall now
         int extra = idx - plan.length();
         AABB box = p.getBoundingBox();
         // no ledge grab at the end of a wall jump: the old jump never puts you on a block's top (that is the block climb)
@@ -371,11 +504,12 @@ public final class ClimbController {
         d.setState(ClimbState.LEDGE_TRANSITION);
     }
 
+    private static final int LEDGE_BUFFER_TICKS = 10; // half a second
     private static final double LEDGE_OUT_SPEED = 0.22;
-    private static final double LEDGE_LONG_SPEED = 0.30; // the long horizontal jump under a 2-deep overhang
+    private static final double LEDGE_LONG_SPEED = 0.24; // the long horizontal jump under a 2-deep overhang
     private static final double LEDGE_JUMP_UP = 0.5;
     private static final int LEDGE_HANG_TICKS = 5;
-    private static final int MANTLE_TICKS = 18;
+    private static final int MANTLE_TICKS = 22;
     private static final double LEDGE_LATERAL = 0.4; // blocks of sideways drift for a W+A / W+D jump, small enough to stay over the block
     /** From hanging (body 0.35 off the face) to standing 0.45 in over the top. shortcut: fixed for a full-depth block, a thinner shelf would need the measured depth. */
     private static final double MANTLE_FORWARD = 0.8;
@@ -447,10 +581,10 @@ public final class ClimbController {
             // up: strong while pulling, easing once the chest is over the edge. Forward: starts late, overlaps the rise,
             // so the path curves round the corner (the block itself holds the body back until the feet clear the edge).
             // a kick, not a glide: sag a little to load, then a hard burst up (most of the height), then ease in over the top
-            double load = -0.12 * Math.sin(Math.PI * Mth.clamp(t / 0.30f, 0, 1)); // ~0.25 blocks of drawing in before the thrust
+            // it has weight: a deep draw-in (~0.4 blocks), a fast thrust that overshoots the top by ~0.3, then it settles onto it
+            double load = -0.19 * Math.sin(Math.PI * Mth.clamp(t / 0.30f, 0, 1));
             double xb = Mth.clamp((t - 0.26f) / 0.34f, 0, 1);
-            double burst = 0.8 * (1 - Math.pow(1 - xb, 3));
-            double fy = load + burst + 0.2 * smoothStep((t - 0.5f) / 0.45f);
+            double fy = load + 1.14 * (1 - Math.pow(1 - xb, 3)) - 0.14 * smoothStep((t - 0.55f) / 0.35f);
             fy += 0.03 * Math.sin(t * 17) * Math.sin(Math.PI * t); // pulls come in uneven heaves, not one smooth glide
             double ff = smoothStep((t - 0.45f) / 0.5f);
             double endY = d.ledgeY + 0.05;

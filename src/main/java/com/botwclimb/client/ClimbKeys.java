@@ -11,7 +11,7 @@ import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.client.settings.KeyModifier;
 import org.lwjgl.glfw.GLFW;
 
-/** The rebindable climb key (Options > Controls > BOTW Climb). Default Shift + Space. Combos with Shift/Ctrl/Alt can be set in the Controls menu. */
+/** The rebindable climb key (Options > Controls > Craft of the Mine). Default Shift + Space. Combos with Shift/Ctrl/Alt can be set in the Controls menu. */
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClimbKeys {
     public static final KeyMapping CLIMB = new KeyMapping("key.botwclimb.climb", KeyConflictContext.IN_GAME,

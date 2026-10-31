@@ -1,19 +1,18 @@
-# BOTW Climb – manual test plan
+# Craft of the Mine – manual test plan
 
 Run with `gradlew runClient` (add `-Dbotwclimb.debug=true` to the client JVM args to draw the planned jump path as
 end-rod particles). Use creative mode + a stone brick/stone build area. Third person (F5) for animation checks.
 
 Legend: `#` stone, `P` the player hanging on the wall, side view, wall is on the right.
-Start climbing: **hold the Climb key (default Shift + Space, rebind in Options > Controls > BOTW Climb; combos with Shift/Ctrl/Alt are allowed) for 0.6 s while next to a wall**. Space and walking into a wall never start a climb.
+Start climbing: **hold the Climb key (default Shift + Space, rebind in Options > Controls > Craft of the Mine; combos with Shift/Ctrl/Alt are allowed) for 0.2 s while next to a wall**. Walking into a wall never starts a climb; Space alone is a normal jump, except with W held under a block, where it is the ledge jump.
 Controls while hanging: W/S up/down, A/D sideways, Space (release it first, then press) = climb jump, **Sneak = let go** (sprint no longer affects climbing).
 
 Automatic geometry check of the jump planner (no game window needed):
-`gradlew runGameTestServer` – 7 headless tests (open wall, 1-block lip, lip on a wall top, lip out of reach,
-3-block block, 2-block-deep lip, low roof). All must pass.
+`gradlew runGameTestServer` – 36 headless tests (jump planning, ledge and long jumps, stamina, enchantment, server checks, packets). All must pass. Close the client first.
 
 ## TEST 1 – basic wall
-Build a 12-high, 5-wide wall. Stand next to it and hold the Climb key for 0.6 s.
-Expected: Space only does a normal jump; after 0.6 s of holding the key you grab the wall, then W climbs straight up at a slow constant speed, A/D shuffle sideways, S climbs
+Build a 12-high, 5-wide wall. Stand next to it and hold the Climb key for 0.2 s.
+Expected: Space only does a normal jump; after 0.2 s of holding the key you grab the wall, then W climbs straight up at a slow constant speed, A/D shuffle sideways, S climbs
 down, S at the floor lets go.
 
 ## TEST 2 – normal climb into a lip
@@ -88,7 +87,7 @@ Expected: you keep climbing round both; the body turns to the new wall face. At 
 
 # Paraglider
 
-Shortcut: **hold Shift, then press Space and keep both held for 0.4 s** while airborne (rebind in Options > Controls > BOTW Climb > "Toggle Paraglider";
+Shortcut: **hold Shift, then press Space and keep both held for 0.4 s** while airborne (rebind in Options > Controls > Craft of the Mine > "Toggle Paraglider";
 the order Shift -> Space is enforced, any Shift/Ctrl/Alt + key combo can be bound). Next to a climbable wall the same
 chord is the climb key instead, and the glider never opens while climbing.
 Automatic checks (`gradlew runGameTestServer`): chord ordering and one-press consumption, Elytra/climb/airborne rules,
@@ -155,3 +154,24 @@ champion, majora, demon_king.
     flight 2 in about 8.4 s, flight 3 in about 10.7 s.
     Turns and steering still work during the fade.
 27. The whole underside of the glider (canopy and both wings) is uniformly dark; no bright patches show through.
+
+## Shrine terminal and plots
+`gradlew runGameTestServer` checks the plot data, the island, the return landing and that the dimension files decode; the ride between
+worlds itself needs the game (relaunch the client: new blocks, packets and a dimension).
+28. Right-click a terminal: a screen with two plot cards opens (no ride yet). Plot 1 says Claim, no Return button.
+29. Click Claim on Plot 1: mud forms round you, you rise, the view whites out, and you come down in front of the terminal on a
+    grass island in empty sky. Third person the whole time; no controls until you land.
+30. On the island: right-click the terminal. Plot 1 says "You are here" (cannot be clicked), Plot 2 says Claim, Return is shown.
+    Return takes you back to exactly where you stood at the overworld terminal.
+31. Claim Plot 2: a different island. Go back and forth: both islands keep what you built. Break the island terminal (survival
+    or creative): it will not break; `/fill` over it removes it, and it is put back the next time you arrive.
+32. Break the overworld terminal while you are in a plot, then Return: you land at the world spawn. `/plot return` does the same
+    without a ride (only works inside a plot).
+33. Quit the game mid-ride, load the world again: you are not floating, and you stand on the ground under where you stopped.
+
+Ride visuals without a person at the keyboard: `gradlew runAutoClient` starts a second game in `run-auto` (own copy of the world, no Sodium),
+rides to plot 1 and back by itself and saves frames to `run-auto/screenshots` (`python tools/sheet.py up 1 36 out.png` makes a contact sheet).
+Needs `run-auto/saves/AutoTest` (copy a world there once). Quits when done.
+
+## TotK ride style
+Set the ride style to TOTK in the config, ride to a plot and back (or `./gradlew runAutoClient -Pstyle=totk`, only with no other game window open). Look for: green sparks and a ring/glyph while gathering; two cyan ribbons crossing in the room (the screen dimmed), turning green; a hard cut into a dark teal void with bright green spikes, drifting stars and a double helix, with the rider tumbling in it; the loading screen never showing terrain; a hard cut back with a pale haze (trip) or a cyan glow and swirling green sparks (Return); on a trip, a cyan bubble round the rider that pops. Details and known timing limits: notes/totk-ride.md.

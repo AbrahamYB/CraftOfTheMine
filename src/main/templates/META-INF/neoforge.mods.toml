@@ -7,7 +7,7 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 description='''
-Breath-of-the-Wild style wall climbing with a climb jump. Nothing else.
+Craft of the Mine (CotM): wall climbing and ledge jumps, a paraglider with craftable fabrics, a stamina wheel and altar, bullet time with bows.
 '''
 
 [[mixins]]
@@ -16,7 +16,7 @@ config="${mod_id}.mixins.json"
 [[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"
-    versionRange="[${neo_version},)"
+    versionRange="${neo_version_range}"
     ordering="NONE"
     side="BOTH"
 
