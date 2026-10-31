@@ -2,6 +2,8 @@ package com.botwclimb.client.paraglider;
 
 import com.botwclimb.BotwClimb;
 import com.botwclimb.common.climb.ClimbController;
+import com.botwclimb.common.climb.ClimbData;
+import com.botwclimb.common.climb.Stamina;
 import com.botwclimb.common.paraglider.InputChord;
 import com.botwclimb.common.paraglider.ParagliderConstants;
 import com.botwclimb.common.paraglider.ParagliderController;
@@ -106,7 +108,8 @@ public final class ClientParagliderController {
 
     private static boolean canOpen(LocalPlayer p) {
         // next to a climbable wall the same chord means "climb" instead
-        return ParagliderController.canDeploy(p) && ClimbController.findWall(p) == null;
+        // not right after an ordinary jump: Shift + Space on the way down from a hop (bridging, pillaring) is a jump, not a glider
+        return ParagliderController.canDeploy(p) && p.fallDistance >= 2.0f && ClimbController.findWall(p) == null;
     }
 
     private static void setGliding(ParagliderData g, boolean open) {
@@ -123,6 +126,12 @@ public final class ClientParagliderController {
             return;
         }
         ParagliderController.step(p, g, forward, strafe);
+        // stamina: shared with climbing, drains the same whatever the glider does; the delay keeps regen off while open
+        ClimbData d = p.getData(BotwClimb.CLIMB);
+        Stamina.take(d, ParagliderConstants.PARAGLIDER_STAMINA_DRAIN_PER_TICK);
+        if (d.stamina <= 0f) { // empty: exhausted like climbing, and the glider closes at once
+            setGliding(g, false);
+        }
         in.forwardImpulse = 0;
         in.leftImpulse = 0;
         in.up = in.down = in.left = in.right = false;
@@ -196,6 +205,13 @@ public final class ClientParagliderController {
     }
 
     // ------------------------------------------------------------------ rendering
+
+    /** True while a bow is being drawn during a glide: the climb camera leaves the view alone then. */
+    public static boolean bowAimActive() {
+        Player p = Minecraft.getInstance().player;
+        return p != null && p.getData(BotwClimb.PARAGLIDER).gliding && p.isUsingItem()
+                && com.botwclimb.common.bullettime.BulletFall.isShooter(p.getUseItem().getItem());
+    }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onRenderPre(RenderLivingEvent.Pre<?, ?> event) {

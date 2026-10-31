@@ -31,7 +31,7 @@ repositories {
 }
 
 base {
-    archivesName = mod_id
+    archivesName = 'CraftOfTheMine'
 }
 
 // Mojang ships Java 21 to end users in 1.21.1, so mods should target Java 21.
@@ -51,11 +51,37 @@ neoForge {
 
     // Default run configurations.
     // These can be tweaked, removed, or duplicated as needed.
+    // Dev conveniences live in local.properties (not in git): quickWorld=<save folder> boots straight into that
+    // singleplayer world, window=1280x720 sets the window size. Without the file the client starts normally.
+    def local = new Properties()
+    if (file('local.properties').exists()) file('local.properties').withInputStream { local.load(it) }
+
     runs {
         client {
             client()
+            // a debug port, so `gradlew hotswap` can push changed code into the running client (see tools/HotSwap.java)
+            jvmArguments.add '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=127.0.0.1:5005'
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            if (local.getProperty('quickWorld')) programArguments.addAll '--quickPlaySingleplayer', local.getProperty('quickWorld')
+            if (local.getProperty('window')) {
+                def wh = local.getProperty('window').split('x')
+                programArguments.addAll '--width', wh[0], '--height', wh[1]
+            }
+        }
+
+        // dev only: joins the world in run-auto by itself, rides the terminal and saves screenshots (see dev/AutoShots.java)
+        autoClient {
+            client()
+            gameDirectory = project.file('run-auto')
+            if (project.hasProperty('wall')) {
+                systemProperty 'botwclimb.autowall', 'true' // -Pwall: the wall marker check (dev/AutoWall.java) instead of the ride
+            } else {
+                systemProperty 'botwclimb.autotest', 'true'
+            }
+
+            if (project.hasProperty('style')) systemProperty 'botwclimb.style', project.property('style') // -Pstyle=totk
+            programArguments.addAll '--quickPlaySingleplayer', 'AutoTest', '--width', '854', '--height', '480'
         }
 
         server {
@@ -69,6 +95,8 @@ neoForge {
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
             type = "gameTestServer"
+            // its own folder: the client's run/mods holds Sodium, which cannot start without a window
+            gameDirectory = project.file('run-gametest')
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
@@ -146,6 +174,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
             loader_version_range   : loader_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
@@ -192,4 +221,40 @@ idea {
 // Dev-only headless planner tests (runGameTestServer) are not shipped.
 tasks.named('jar') {
     exclude 'com/botwclimb/dev/**', 'data/botwclimb/structure/**'
+}
+
+// `gradlew deploy` (and every `gradlew build`) copies the built jar into a launcher's mods folder, replacing the old botwclimb jar.
+// Set prismMods=<that mods folder, with forward slashes> in local.properties (not in git); without it this does nothing.
+tasks.register('deploy', Copy) {
+    dependsOn 'jar'
+    def props = new Properties()
+    if (file('local.properties').exists()) file('local.properties').withInputStream { props.load(it) }
+    def target = props.getProperty('prismMods')
+    onlyIf { target != null }
+    from tasks.named('jar')
+    into target ?: layout.buildDirectory.dir('deploy')
+    doFirst { delete fileTree(dir: target, includes: ['botwclimb-*.jar', 'CraftOfTheMine-*.jar']) }
+}
+tasks.named('build') { finalizedBy 'deploy' }
+
+// `gradlew hotswap`: compile, then push the changed classes into the running dev client (no restart; method bodies only, see tools/HotSwap.java).
+// Textures, models and lang files are updated by pressing F3+T in the game after this (it also rebuilds the resources).
+tasks.register('hotswap', Exec) {
+    dependsOn 'classes'
+    commandLine System.getProperty('java.home') + '/bin/java', '--add-modules', 'jdk.jdi', 'tools/HotSwap.java'
+    ignoreExitValue = true
+}
+// Optional: run the dev client on the JetBrains Runtime (jbr=<its folder> in local.properties, not in git). Its enhanced class redefinition lets a
+// hot swap add and remove methods and fields too, not only change method bodies (registrations and new classes' registrations still need a restart).
+def devProps = new Properties()
+if (file('local.properties').exists()) file('local.properties').withInputStream { devProps.load(it) }
+if (devProps.getProperty('jbr')) {
+    // Gradle must know where it is: org.gradle.java.installations.paths=<that folder> in ~/.gradle/gradle.properties
+    tasks.named('runClient') {
+        javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(21); vendor = JvmVendorSpec.JETBRAINS }
+        jvmArgs '-XX:+AllowEnhancedClassRedefinition'
+    }
+}
+tasks.named('runClient') {
+    doFirst { file('build/hotswap.stamp').with { it.parentFile.mkdirs(); it.text = '' } } // everything compiled from here on counts as new
 }

@@ -36,6 +36,8 @@ import org.joml.Quaternionf;
  */
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
 public final class ClientClimbController {
+    /** How long turning round a corner to face the next wall takes (0.45 s). */
+    private static final int TURN_TICKS = 9;
     private static boolean pushed;
 
     private ClientClimbController() {}
@@ -48,6 +50,13 @@ public final class ClientClimbController {
         Input in = event.getInput();
         ClimbData d = p.getData(BotwClimb.CLIMB);
         float rawForward = in.forwardImpulse, rawStrafe = in.leftImpulse;
+        // NeoForge hands a key press only to the bindings that match the held modifiers when there are any: Shift + Space goes to the climb and
+        // glider bindings and vanilla's jump never sees it (so a jump with Shift held, bridging and pillaring, did nothing). Give it back here.
+        var jumpKey = Minecraft.getInstance().options.keyJump.getKey();
+        if (!in.jumping && (ClimbKeys.CLIMB.isDown() && ClimbKeys.CLIMB.getKey().equals(jumpKey)
+                || com.botwclimb.client.paraglider.ParagliderKeys.PARAGLIDE.isDown() && com.botwclimb.client.paraglider.ParagliderKeys.PARAGLIDE.getKey().equals(jumpKey))) {
+            in.jumping = true;
+        }
         ClientParagliderController.handleChord(p, in); // must run before anything reads in.jumping
 
         // Shift that is part of the climb key combo must not count as "let go" while grabbing the wall,
@@ -68,7 +77,8 @@ public final class ClientClimbController {
         }
         boolean climbKey = ClimbKeys.CLIMB.isDown();
         boolean jump = in.jumping;
-        if (!d.active() && climbKey && ClimbKeys.CLIMB.getKey().equals(Minecraft.getInstance().options.keyJump.getKey())) {
+        if (!d.active() && climbKey && ClimbKeys.CLIMB.getKey().equals(Minecraft.getInstance().options.keyJump.getKey())
+                && ClimbController.findWall(p) != null) { // only next to a wall it can grab: in the open Shift + Space is an ordinary jump (bridging, pillaring)
             in.jumping = false; // Space is part of the combo: no vanilla hop while holding it
             // `jump` stays true on purpose: the climb tick must see Space as already held, otherwise the moment the
             // grab succeeds the held Space looks like a brand new press and fires a jump straight away
@@ -141,24 +151,38 @@ public final class ClientClimbController {
 
         if (d.active()) {
             Direction dir = d.dir;
-            Direction left = dir.getCounterClockWise();
+            float targetYaw = dir.toYRot();
+            if (d.blend <= 0.001f) {
+                d.bodyYaw = targetYaw;
+                d.bodyYawO = targetYaw;
+                d.turnTo = targetYaw;
+                d.turnAge = 999;
+                d.lean = d.leanO = 0;
+            } else {
+                if (Math.abs(Mth.wrapDegrees(targetYaw - d.turnTo)) > 1f) { // a new wall to face (a corner, inside or out): turn to it over a few ticks
+                    d.turnFrom = d.bodyYaw;
+                    d.turnTo = targetYaw;
+                    d.turnAge = 0;
+                }
+                if (d.turnAge < TURN_TICKS) {
+                    float u = ++d.turnAge / (float) TURN_TICKS;
+                    u = u * u * u * (u * (u * 6f - 15f) + 10f); // a gentle start and finish
+                    d.bodyYaw = d.turnFrom + Mth.wrapDegrees(d.turnTo - d.turnFrom) * u;
+                } else {
+                    d.bodyYaw = d.turnTo;
+                }
+            }
+            // the limb cycle and the lean follow the way the body is actually facing while it turns round a corner, not the wall it is about to face,
+            // so nothing in the pose jumps when the direction changes (other players see this too)
+            double yawR = Math.toRadians(d.bodyYaw), fx = -Math.sin(yawR), fz = Math.cos(yawR);
             boolean tracked = d.state != ClimbState.CLIMB_JUMP; // the jump has its own pose
             double up = tracked ? delta.y : 0;
-            double side = tracked ? delta.x * left.getStepX() + delta.z * left.getStepZ() : 0;
+            double side = tracked ? delta.x * fz - delta.z * fx : 0; // left of the facing direction
             // the phase only advances with real surface movement: blocked = no limb cycling
             d.distUp += up;
             d.distSide += side;
             d.speedUp += (up - d.speedUp) * 0.5;
             d.speedSide += (side - d.speedSide) * 0.3;
-
-            float targetYaw = dir.toYRot();
-            if (d.blend <= 0.001f) {
-                d.bodyYaw = targetYaw;
-                d.bodyYawO = targetYaw;
-                d.lean = d.leanO = 0;
-            } else {
-                d.bodyYaw += Mth.wrapDegrees(targetYaw - d.bodyYaw) * 0.45f;
-            }
             d.blend = Math.min(1f, d.blend + 0.34f);
 
             AABB box = p.getBoundingBox();
@@ -215,19 +239,19 @@ public final class ClientClimbController {
         PoseStack ps = event.getPoseStack();
         ps.pushPose();
         pushed = true;
-        Direction dir = d.dir;
+        float facing = (float) Math.toRadians(Mth.rotLerp(pt, d.bodyYawO, d.bodyYaw)); // the body's own turning facing: nothing here jumps at a corner
+        float dx = -Mth.sin(facing), dz = Mth.cos(facing);
         float snug = 0.10f * w;
-        ps.translate(dir.getStepX() * snug, 0, dir.getStepZ() * snug);
+        ps.translate(dx * snug, 0, dz * snug);
 
         float lean = (ClimbAnimator.leanDegrees(d, pt) + ClimbAnimator.leapDegrees(d, pt)) * w;
         if (lean > 0.01f) {
-            Direction t = dir.getClockWise();
-            ps.rotateAround(new Quaternionf().rotationAxis(lean * (float) (Math.PI / 180), t.getStepX(), 0, t.getStepZ()),
+            ps.rotateAround(new Quaternionf().rotationAxis(lean * (float) (Math.PI / 180), -dz, 0, dx), // the clockwise side of the facing
                     0, 0.9f, 0);
         }
         float roll = ClimbAnimator.rollDegrees(d, pt) * w; // leaning into the direction of travel / jump swing
         if (Math.abs(roll) > 0.01f) {
-            ps.rotateAround(new Quaternionf().rotationAxis(-roll * (float) (Math.PI / 180), dir.getStepX(), 0, dir.getStepZ()),
+            ps.rotateAround(new Quaternionf().rotationAxis(-roll * (float) (Math.PI / 180), dx, 0, dz),
                     0, 0.9f, 0);
         }
         float stretch = ClimbAnimator.stretch(d, pt);
