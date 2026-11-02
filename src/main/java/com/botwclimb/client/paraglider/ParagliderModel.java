@@ -21,7 +21,11 @@ import net.minecraft.resources.ResourceLocation;
  * two struts down to the hands. Coordinates are in player-model pixels (y down, shoulders at y = 0, hands at about
  * y = -10). Fabrics only differ in texture.
  */
+//? if >=1.21.11 {
+/*public final class ParagliderModel extends Model<net.minecraft.util.Unit> {
+*///?} else {
 public final class ParagliderModel extends Model {
+//?}
     public static final ModelLayerLocation LAYER =
             new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "paraglider"), "main");
 
@@ -41,7 +45,7 @@ public final class ParagliderModel extends Model {
 
     public ParagliderModel(ModelPart root) {
         //? if >=1.21.2 {
-        /*super(root, RenderType::entityCutoutNoCull);
+        /*super(root, (net.minecraft.resources.ResourceLocation id) -> RenderType.entityCutoutNoCull(id));
         *///?} else {
         super(RenderType::entityCutoutNoCull);
         //?}

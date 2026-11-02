@@ -106,7 +106,7 @@ public class PlotTests {
         if (d.claim(a, 0) != 0) h.fail("claiming a claimed slot must keep its plot");
         if (d.plot(b, 1) != -1 || d.slotOf(a, 2) != 1 || d.slotOf(a, 1) != -1) h.fail("slot lookups are wrong");
         d.setReturn(a, new PlotData.Return(Level.OVERWORLD, new BlockPos(1, 2, 3), 1.5, 2.0, 3.5, 90f));
-        PlotData back = PlotData.load(d.save(new CompoundTag(), h.getLevel().registryAccess()), h.getLevel().registryAccess());
+        PlotData back = PlotData.roundTrip(d);
         if (back.plot(a, 0) != 0 || back.plot(a, 1) != 2 || back.plot(b, 0) != 1 || back.plot(b, 1) != -1) h.fail("plots were lost in saving");
         PlotData.Return r = back.returnPoint(a);
         if (r == null || !r.terminal().equals(new BlockPos(1, 2, 3)) || r.x() != 1.5 || r.yaw() != 90f || r.dim() != Level.OVERWORLD) h.fail("return point was lost in saving: " + r);

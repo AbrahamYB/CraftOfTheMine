@@ -3,7 +3,6 @@ package com.botwclimb.client.altar;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
-import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SpriteSet;
 import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.core.particles.SimpleParticleType;
@@ -19,8 +18,12 @@ public class SheikahGlyph extends TextureSheetParticle {
     private final double bx, by, bz, rise, swayX, swayZ;
 
     private SheikahGlyph(ClientLevel level, double x, double y, double z, SpriteSet sprites, int letter) {
+        //? if >=1.21.11 {
+        /*super(level, x, y, z, sprites.get(letter, 25));
+        *///?} else {
         super(level, x, y, z);
         setSprite(sprites.get(letter, 25));
+        //?}
         bx = x;
         by = y;
         bz = z;
@@ -50,7 +53,29 @@ public class SheikahGlyph extends TextureSheetParticle {
         alpha = Math.min(1f, Math.min(age / (float) FADE_IN, (lifetime - age) / (float) FADE_OUT)) * 1.0f;
     }
 
-    /** A faint dark copy a hair down and to the side, behind the letter, so it lifts off bright backgrounds. */
+    //? if >=1.21.11 {
+    /*// a faint dark copy a hair down and to the side, behind the letter, so it lifts off bright backgrounds
+    @Override
+    public void extract(net.minecraft.client.renderer.state.QuadParticleRenderState state, net.minecraft.client.Camera camera, float partialTick) {
+        float r = rCol, g = gCol, b = bCol, a = alpha;
+        double px = x, py = y, pz = z, pxo = xo, pyo = yo, pzo = zo;
+        var left = camera.leftVector();
+        double dx = -left.x() * SHADOW, dy = -SHADOW, dz = -left.z() * SHADOW;
+        rCol = gCol = bCol = 0f;
+        alpha = a * 0.3f;
+        x += dx; y += dy; z += dz; xo += dx; yo += dy; zo += dz;
+        super.extract(state, camera, partialTick);
+        rCol = r; gCol = g; bCol = b; alpha = a;
+        x = px; y = py; z = pz; xo = pxo; yo = pyo; zo = pzo;
+        super.extract(state, camera, partialTick);
+    }
+
+    @Override
+    protected Layer getLayer() {
+        return Layer.TRANSLUCENT;
+    }
+    *///?} else {
+    // a faint dark copy a hair down and to the side, behind the letter, so it lifts off bright backgrounds
     @Override
     public void render(com.mojang.blaze3d.vertex.VertexConsumer buffer, net.minecraft.client.Camera camera, float partialTick) {
         float r = rCol, g = gCol, b = bCol, a = alpha;
@@ -67,9 +92,10 @@ public class SheikahGlyph extends TextureSheetParticle {
     }
 
     @Override
-    public ParticleRenderType getRenderType() {
-        return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
+    public net.minecraft.client.particle.ParticleRenderType getRenderType() {
+        return net.minecraft.client.particle.ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
+    //?}
 
     @Override
     protected int getLightColor(float partialTick) {
@@ -77,9 +103,17 @@ public class SheikahGlyph extends TextureSheetParticle {
     }
 
     public record Provider(SpriteSet sprites) implements ParticleProvider<SimpleParticleType> {
+        //? if >=1.21.11 {
+        /*@Override
+        public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z, double xd, double yd, double zd,
+                                       net.minecraft.util.RandomSource random) {
+            return new SheikahGlyph(level, x, y, z, sprites, Mth.positiveModulo((int) xd, 26));
+        }
+        *///?} else {
         @Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z, double xd, double yd, double zd) {
             return new SheikahGlyph(level, x, y, z, sprites, Mth.positiveModulo((int) xd, 26));
         }
+        //?}
     }
 }

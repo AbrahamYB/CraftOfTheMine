@@ -77,7 +77,12 @@ public final class TotkRide {
     private static float voidAngle, voidAngleClk, voidAngleFor = Float.NaN;
 
     /** True while the rider is being drawn into the void on the HUD (that draw goes through the player renderer, whose events must leave it alone). */
-    static boolean drawingHud() {
+    /** The render type the ride's glowing geometry is drawn with. */
+    public static RenderType glowType() {
+        return RenderType.eyes(GLOW);
+    }
+
+    public static boolean drawingHud() {
         return drawingHud;
     }
 
@@ -122,12 +127,12 @@ public final class TotkRide {
      * Poses a rider going to a plot (called from the player model mixin): in the world, once the ribbons start, the right arm is
      * stretched up and the legs sway; in the void (the rider drawn on the HUD) the whole dive plays. Anyone else is left alone.
      */
-    public static void pose(net.minecraft.client.model.PlayerModel m, AbstractClientPlayer p, float pt) {
+    public static void pose(net.minecraft.client.model.PlayerModel m, AbstractClientPlayer p, float pt, boolean hud) {
         if (com.botwclimb.client.ClientConfig.style() != com.botwclimb.client.ClientConfig.RideStyle.TOTK) return;
         MudHandClient.State s = MudHandClient.get(p.getId());
         if (s == null) return;
         if (s.kind() == 1) { // the Return: dragged down, arms trailing up behind, legs together, everything lagging the pull
-            if (!drawingHud) return;
+            if (!hud) return;
             float t = clk() - voidClk, y = yank(t); // surprised and struggling: arms and legs scrabble a little, harder on every tug
             float a1 = (float) Math.sin(t * 0.9f), a2 = (float) Math.sin(t * 1.1f + 1.7f), a3 = (float) Math.sin(t * 0.7f + 0.6f);
             m.rightArm.xRot = -2.1f;
@@ -139,16 +144,12 @@ public final class TotkRide {
             m.rightLeg.zRot = -0.05f;
             m.leftLeg.zRot = 0.05f;
             m.body.xRot = 0f;
-            m.rightSleeve.copyFrom(m.rightArm);
-            m.leftSleeve.copyFrom(m.leftArm);
-            m.rightPants.copyFrom(m.rightLeg);
-            m.leftPants.copyFrom(m.leftLeg);
-            m.jacket.copyFrom(m.body);
+            com.botwclimb.client.ClientCompat.syncOuterLayers(m);
             return;
         }
         if (s.kind() != 0) return;
         float[] d;
-        if (drawingHud) {
+        if (hud) {
             d = dive(clk() - voidClk); // the baked hold: right arm up, legs hanging, a slow breath
         } else {
             float now = p.level().getGameTime() + pt;
@@ -164,11 +165,7 @@ public final class TotkRide {
         m.body.xRot = d[5];
         m.rightLeg.zRot = d[6];
         m.leftLeg.zRot = d[7];
-        m.rightSleeve.copyFrom(m.rightArm);
-        m.leftSleeve.copyFrom(m.leftArm);
-        m.rightPants.copyFrom(m.rightLeg);
-        m.leftPants.copyFrom(m.leftLeg);
-        m.jacket.copyFrom(m.body);
+        com.botwclimb.client.ClientCompat.syncOuterLayers(m);
     }
 
     private TotkRide() {}
@@ -251,8 +248,8 @@ public final class TotkRide {
     // ------------------------------------------------------------------------------------------------ world layer
 
     /** Drawn for every player riding a terminal (the rider and anyone watching), in the same space as the mud layer: origin at the feet, y up. */
-    public static void layer(PoseStack ps, MultiBufferSource buffer, int light, AbstractClientPlayer p, MudHandClient.State s, float partial) {
-        if (drawingHud) return; // the rider drawn into the void on the HUD must not carry the world effects with them
+    public static void layer(PoseStack ps, MultiBufferSource buffer, int light, AbstractClientPlayer p, MudHandClient.State s, float partial, boolean hud) {
+        if (hud) return; // the rider drawn into the void on the HUD must not carry the world effects with them
         float now = p.level().getGameTime() + partial, t = now - s.since(), tp = now - s.phaseSince();
         float h = (float) (Mth.lerp(partial, p.yo, p.getY()) - s.startY());
         boolean home = s.kind() == 1;
@@ -463,7 +460,7 @@ public final class TotkRide {
         float c = clk();
         int w = g.guiWidth(), h = g.guiHeight();
         if (s == null && !voidOn) return;
-        Matrix4f m = g.pose().last().pose();
+        Matrix4f m = com.botwclimb.client.GuiShapes.pose(g);
         if (voidOn) {
             float age = c - voidClk;
             if (voidAngleFor != voidClk) { // a new void: carry on from the world's turn
@@ -473,7 +470,9 @@ public final class TotkRide {
             }
             voidAngleClk = c;
             drawVoid(g, m, w, h, age, c);
+            //? if <1.21.11
             g.flush();
+            //? if <1.21.11
             if (kind != 1) drawHelix3d(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight(), c, kind == 1 ? -1f : 1f);
             if (!(mc.screen instanceof ReceivingLevelScreen) && mc.player != null) rider(g, mc, w, h, partial);
             return;
@@ -516,6 +515,10 @@ public final class TotkRide {
 
     /** One screen quad with a colour at each corner. The gui type culls back faces, so the corners are written counter-clockwise whichever way they were given. */
     private static void tri(VertexConsumer vc, Matrix4f m, float x0, float y0, int c0, float x1, float y1, int c1, float x2, float y2, int c2, float x3, float y3, int c3) {
+        //? if >=1.21.11 {
+        /*com.botwclimb.client.GuiShapes.quad(x0, y0, c0, x1, y1, c1, x2, y2, c2, x3, y3, c3);
+        if (true) return;
+        *///?}
         float area = x0 * y1 - x1 * y0 + x1 * y2 - x2 * y1 + x2 * y3 - x3 * y2 + x3 * y0 - x0 * y3;
         if (area <= 0) { // the order vanilla's own fills use: top-left, bottom-left, bottom-right, top-right
             vc.addVertex(m, x0, y0, 0).setColor(c0);
@@ -551,7 +554,12 @@ public final class TotkRide {
         // base: black at the cut, teal within 7 ticks (footage: (0,70,60) at rest)
         float bk = smooth(age / 7f), dir = kind == 1 ? -1f : 1f;
         // everything is raw quads in one buffer, drawn in this order (no fills: they may or may not flush the buffer, and the order must be certain)
+        //? if >=1.21.11 {
+        /*VertexConsumer vc = null; // the shapes are collected and handed to the GUI as one element (GuiShapes)
+        com.botwclimb.client.GuiShapes.begin(g);
+        *///?} else {
         VertexConsumer vc = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.gui()); // the buffer the GUI itself draws with
+        //?}
         int base = argb(255, 0, (int) (bk * 44), (int) (bk * 40));
         tri(vc, m, 0, 0, base, w, 0, base, w, h, base, 0, h, base);
         float cx = w / 2f;
@@ -605,6 +613,8 @@ public final class TotkRide {
                 tri(vc, m, x2 - bw * 0.7f, yb, bright, x2 + bw * 0.7f, yb, bright, x2 + bw * 0.1f, yb + sgn * len2, tip, x2 - bw * 0.1f, yb + sgn * len2, tip);
             }
         }
+        //? if >=1.21.11
+        /*com.botwclimb.client.GuiShapes.end();*/
     }
 
     /**
@@ -614,7 +624,9 @@ public final class TotkRide {
      */
     private static void drawHelix3d(Minecraft mc, int w, int h, float time, float dir) {
         com.mojang.blaze3d.systems.RenderSystem.backupProjectionMatrix();
-        //? if >=1.21.2 {
+        //? if >=1.21.11 {
+        /*// this version has no way to swap the projection from here: the helix is not drawn on it (see hud)
+        *///?} else if >=1.21.2 {
         /*com.mojang.blaze3d.systems.RenderSystem.setProjectionMatrix(new Matrix4f().perspective((float) Math.toRadians(70), (float) w / h, 0.05f, 100f), com.mojang.blaze3d.ProjectionType.PERSPECTIVE);
         *///?} else {
         com.mojang.blaze3d.systems.RenderSystem.setProjectionMatrix(new Matrix4f().perspective((float) Math.toRadians(70), (float) w / h, 0.05f, 100f), com.mojang.blaze3d.vertex.VertexSorting.DISTANCE_TO_ORIGIN);
@@ -622,7 +634,9 @@ public final class TotkRide {
         var mv = com.mojang.blaze3d.systems.RenderSystem.getModelViewStack();
         mv.pushMatrix();
         mv.identity();
-        //? if >=1.21.2 {
+        //? if >=1.21.11 {
+        /*// nothing to clear here
+        *///?} else if >=1.21.2 {
         /*com.mojang.blaze3d.systems.RenderSystem.clear(256); // the world's depth must not hide it
         *///?} else {
         com.mojang.blaze3d.systems.RenderSystem.applyModelViewMatrix();
@@ -659,7 +673,25 @@ public final class TotkRide {
             p.hurtTime = 0; // no red flash
             Quaternionf rot = kind == 1 ? new Quaternionf().rotateZ((float) Math.PI)
                     : diveRotation(clk() - voidClk); // going up: no turn, they dive
+            //? if >=1.21.11 {
+            /*var dispatcher = mc.getEntityRenderDispatcher();
+            var state = dispatcher.getRenderer(p).createRenderState(p, 1.0f);
+            state.lightCoords = 15728880;
+            state.shadowPieces.clear();
+            state.outlineColor = 0;
+            state.setRenderData(com.botwclimb.client.RenderData.HUD, Boolean.TRUE);
+            if (state instanceof net.minecraft.client.renderer.entity.state.LivingEntityRenderState living) {
+                living.bodyRot = 0f;
+                living.yRot = 0f;
+                living.xRot = 0f;
+                living.boundingBoxWidth /= living.scale;
+                living.boundingBoxHeight /= living.scale;
+                living.scale = 1f;
+            }
+            g.submitEntityRenderState(state, h * RIDER_SIZE, new Vector3f(0, p.getBbHeight() / 2f + 0.0625f, 0), rot, null, 0, 0, w, h);
+            *///?} else {
             InventoryScreen.renderEntityInInventory(g, w * 0.5f, riderY(h, clk() - voidClk), h * RIDER_SIZE, new Vector3f(0, p.getBbHeight() / 2f + 0.0625f, 0), rot, null, p);
+            //?}
         } catch (RuntimeException e) {
             // the model is a nicety; the void works without it
         } finally {

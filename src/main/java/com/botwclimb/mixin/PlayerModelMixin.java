@@ -23,12 +23,14 @@ public abstract class PlayerModelMixin {
         if (p == null) return;
         // ageInTicks = tickCount + partialTick; first-person hand rendering passes 0, which we must not pose.
         float ageInTicks = state.ageInTicks, netHeadYaw = state.yRot;
+        boolean hud = com.botwclimb.client.RenderData.hud(state);
         *///?} else {
     @Inject(method = "setupAnim", at = @At("TAIL"))
     private void botwclimb$pose(net.minecraft.world.entity.LivingEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks,
                                 float netHeadYaw, float headPitch, CallbackInfo ci) {
         if (!(entity instanceof AbstractClientPlayer p)) return;
         // ageInTicks = tickCount + partialTick; first-person hand rendering passes 0, which we must not pose.
+        boolean hud = com.botwclimb.client.shrine.totk.TotkRide.drawingHud();
         //?}
         float pt = ageInTicks - p.tickCount;
         if (pt < 0f || pt > 1.001f) return;
@@ -38,6 +40,6 @@ public abstract class PlayerModelMixin {
         if (p.hasData(BotwClimb.PARAGLIDER)) {
             ParagliderAnimator.apply((PlayerModel) (Object) this, p.getData(BotwClimb.PARAGLIDER), pt, ageInTicks, netHeadYaw);
         }
-        com.botwclimb.client.shrine.totk.TotkRide.pose((PlayerModel) (Object) this, p, pt);
+        com.botwclimb.client.shrine.totk.TotkRide.pose((PlayerModel) (Object) this, p, pt, hud);
     }
 }

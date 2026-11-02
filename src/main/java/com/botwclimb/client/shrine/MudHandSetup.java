@@ -1,6 +1,7 @@
 package com.botwclimb.client.shrine;
 
 import com.botwclimb.BotwClimb;
+//? if <1.21.11
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.resources.PlayerSkin;
 import net.neoforged.api.distmarker.Dist;
@@ -19,10 +20,17 @@ public final class MudHandSetup {
 
     @SubscribeEvent
     public static void addLayers(EntityRenderersEvent.AddLayers event) {
+        //? if >=1.21.11 {
+        /*for (net.minecraft.world.entity.player.PlayerModelType skin : event.getSkins()) {
+            var r = event.getPlayerRenderer(skin);
+            r.addLayer(new MudHandLayer(r));
+        }
+        *///?} else {
         for (PlayerSkin.Model skin : event.getSkins()) {
             if (event.getSkin(skin) instanceof PlayerRenderer r) {
                 r.addLayer(new MudHandLayer(r));
             }
         }
+        //?}
     }
 }

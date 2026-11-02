@@ -5,17 +5,10 @@ import com.botwclimb.common.climb.ClimbConstants;
 import com.botwclimb.common.climb.ClimbController;
 import com.botwclimb.common.climb.ClimbData;
 import com.botwclimb.common.climb.ClimbState;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
@@ -23,7 +16,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL11;
 
 /**
  * The stamina meter. The centre wheel is a thick ring around an empty hole; every further wheel is a thinner ring outside
@@ -53,17 +45,14 @@ public final class StaminaHud {
 
     private StaminaHud() {}
 
-    /** For other screens that draw the same wheel arcs: sets up the shader, blending and edge softness. Pair with {@link #endDraw()}. */
-    public static void beginDraw(Minecraft mc) {
+    /** For other screens that draw the same wheel arcs: sets up the drawing and edge softness. Pair with {@link #endDraw()}. */
+    public static void beginDraw(Minecraft mc, GuiGraphics g) {
         feather = (float) (0.55 / Math.max(1.0, mc.getWindow().getGuiScale()));
-        passes = GL11.glIsEnabled(GL11.GL_CULL_FACE) ? 2 : 1;
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        ClientCompat.positionColorShader();
+        GuiShapes.begin(g);
     }
 
     public static void endDraw() {
-        RenderSystem.disableBlend();
+        GuiShapes.end();
     }
 
     //? if >=1.21.11 {
@@ -180,13 +169,9 @@ public final class StaminaHud {
         // and at every GUI scale (GUI units are whole-number multiples of pixels, so they jump between sizes)
         float gs = (float) Math.max(1.0, mc.getWindow().getGuiScale()), px = mc.getWindow().getHeight();
         float cx = g.guiWidth() / 2f - 0.128f * px / gs, cy = g.guiHeight() / 2f - 0.090f * px / gs; // nudged down and right as it shrank, so its place on screen feels the same
-        // never touches the culling state: with culling on, every strip is also emitted with the opposite winding, so one of the two is always front-facing
-        passes = GL11.glIsEnabled(GL11.GL_CULL_FACE) ? 2 : 1;
         feather = (float) (0.55 / Math.max(1.0, mc.getWindow().getGuiScale())); // about half a screen pixel on each side of an edge
-        Matrix4f m = g.pose().last().pose();
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        ClientCompat.positionColorShader();
+        Matrix4f m = GuiShapes.pose(g);
+        GuiShapes.begin(g);
         float s = scale * (0.0476f * px / (gs * RINGS[2][1])); // the outermost of three wheels reaches 4.76% of the window height (15% smaller than 5.6%)
         for (int i = 0; i < RINGS.length; i++) {
             float lo = ClimbConstants.STAMINA_WHEEL * i;
@@ -224,7 +209,7 @@ public final class StaminaHud {
                 ring(m, cx, cy, r0, r1, c0, c1, pink, alpha);
             }
         }
-        RenderSystem.disableBlend();
+        GuiShapes.end();
     }
 
     /** A ring segment from fraction {@code from} to {@code to} of a full turn (counter-clockwise from the top): hard edges, no blur. */
@@ -238,24 +223,7 @@ public final class StaminaHud {
     }
 
     private static void strip(Matrix4f m, float cx, float cy, float ra, float rb, float from, float to, int rgb, float aIn, float aOut) {
-        if (rb <= ra) return;
-        int n = Math.max(3, (int) Math.ceil(208 * (to - from)));
-        int in = argb(rgb, aIn), out = argb(rgb, aOut);
-        for (int pass = 0; pass < passes; pass++) {
-            BufferBuilder buf = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
-            for (int i = 0; i <= n; i++) {
-                double ang = -Math.PI / 2 - 2 * Math.PI * (from + (to - from) * i / n); // counter-clockwise from the top
-                float cos = (float) Math.cos(ang), sin = (float) Math.sin(ang);
-                if (pass == 0) {
-                    buf.addVertex(m, cx + cos * ra, cy + sin * ra, 0f).setColor(in);
-                    buf.addVertex(m, cx + cos * rb, cy + sin * rb, 0f).setColor(out);
-                } else { // same strip, opposite winding
-                    buf.addVertex(m, cx + cos * rb, cy + sin * rb, 0f).setColor(out);
-                    buf.addVertex(m, cx + cos * ra, cy + sin * ra, 0f).setColor(in);
-                }
-            }
-            BufferUploader.drawWithShader(buf.buildOrThrow());
-        }
+        GuiShapes.strip(m, cx, cy, ra, rb, from, to, argb(rgb, aIn), argb(rgb, aOut));
     }
 
     private static float smooth01(float x) {

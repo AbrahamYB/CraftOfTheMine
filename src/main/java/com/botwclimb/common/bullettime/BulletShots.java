@@ -166,7 +166,7 @@ public final class BulletShots {
     }
 
     private static void damage(ServerLevel level, AbstractArrow arrow, LivingEntity target) {
-        int damage = Mth.ceil(Mth.clamp(arrow.getDeltaMovement().length() * arrow.getBaseDamage(), 0, Integer.MAX_VALUE / 2));
+        int damage = Mth.ceil(Mth.clamp(arrow.getDeltaMovement().length() * com.botwclimb.common.Compat.baseDamage(arrow), 0, Integer.MAX_VALUE / 2));
         if (arrow.isCritArrow()) damage += level.random.nextInt(damage / 2 + 2);
         if (arrow.isOnFire()) target.setRemainingFireTicks(100);
         target.hurt(level.damageSources().arrow(arrow, arrow.getOwner()), damage);

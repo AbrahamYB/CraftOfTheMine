@@ -237,12 +237,12 @@ public class AltarScreen extends Screen {
             Component label = Component.translatable("gui.botwclimb.altar.capacity");
             float k = 1.25f, gap = 5f;
             float total = (font.width("2,250") + gap + font.width(label)) * k;
-            g.pose().pushPose();
-            g.pose().translate(cx - total / 2f, top + 82, 0);
-            g.pose().scale(k, k, 1f);
+            com.botwclimb.client.ClientCompat.pushPose(g);
+            com.botwclimb.client.ClientCompat.translate(g, cx - total / 2f, top + 82, 0);
+            com.botwclimb.client.ClientCompat.scale(g, k, k);
             g.drawString(font, "2,250", 0, 0, BRIGHT, false);
             g.drawString(font, label, (int) (font.width("2,250") + gap), 0, MUTED, false);
-            g.pose().popPose();
+            com.botwclimb.client.ClientCompat.popPose(g);
             if (credit() > 0.01f) g.drawCenteredString(font, Component.translatable("gui.botwclimb.altar.credit", fmt(credit())), cx, top + 100, MUTED);
             return;
         }
@@ -261,8 +261,8 @@ public class AltarScreen extends Screen {
     private void drawWheel(GuiGraphics g, int u) {
         Minecraft mc = Minecraft.getInstance();
         float cx = left() + W / 2f, cy = top() + (maxed() ? 46 : 44), s = 0.9f; // fits between the title row and the offered line, even with every wheel
-        Matrix4f m = g.pose().last().pose();
-        StaminaHud.beginDraw(mc);
+        Matrix4f m = com.botwclimb.client.GuiShapes.pose(g);
+        StaminaHud.beginDraw(mc, g);
         float[][] radii = StaminaHud.RINGS; // the same rings as in the game
         StaminaHud.ring(m, cx, cy, radii[0][0] * s, radii[0][1] * s, 0f, 1f, GREY & 0xFFFFFF, 1f);
         StaminaHud.ring(m, cx, cy, radii[0][0] * s, radii[0][1] * s, 0f, 1f, 0x00F25A, 1f);
@@ -317,11 +317,11 @@ public class AltarScreen extends Screen {
         float p = Mth.clamp((now - pickerOpenAt) / 160f, 0f, 1f);
         p = 1f - (1f - p) * (1f - p) * (1f - p); // eased out: fast at first, settling
         float scale = 0.25f + 0.75f * p;
-        g.pose().pushPose();
-        g.pose().translate(0, 0, 300);
-        g.pose().translate(pickerPivotX, pickerPivotY, 0); // grows out of the slot that was clicked
-        g.pose().scale(scale, scale, 1f);
-        g.pose().translate(-pickerPivotX, -pickerPivotY, 0);
+        com.botwclimb.client.ClientCompat.pushPose(g);
+        com.botwclimb.client.ClientCompat.translate(g, 0, 0, 300);
+        com.botwclimb.client.ClientCompat.translate(g, pickerPivotX, pickerPivotY, 0); // grows out of the slot that was clicked
+        com.botwclimb.client.ClientCompat.scale(g, scale, scale);
+        com.botwclimb.client.ClientCompat.translate(g, -pickerPivotX, -pickerPivotY, 0);
         g.fill(x - 1, y - 1, x + w + 1, y + h + 1, fade(0xFF242A32, p));
         g.fill(x, y, x + w, y + h, fade(0xFF07090C, p));
         vignette(g, x, y, w, h);
@@ -352,7 +352,7 @@ public class AltarScreen extends Screen {
             g.fill(x + w - 3, ly, x + w - 1, ly + trackH, GREY);
             g.fill(x + w - 3, barY, x + w - 1, barY + barH, MUTED);
         }
-        g.pose().popPose();
+        com.botwclimb.client.ClientCompat.popPose(g);
     }
 
     /** The items the credit left after the last upgrade can be taken as, best fit first. */
@@ -403,6 +403,14 @@ public class AltarScreen extends Screen {
 
     // ------------------------------------------------------------------ input
 
+    //? if >=1.21.11 {
+    /*@Override
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        return mouseClicked(event.x(), event.y(), event.button());
+    }
+    *///?}
+
+    //? if <1.21.11
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (pickerFor >= 0) {
@@ -413,7 +421,7 @@ public class AltarScreen extends Screen {
                 int i = (int) Math.floor((my - ly) / ROW_H + pickerPos);
                 if (my >= ly && my < ly + ROWS * ROW_H && i >= 0 && i < rows.size()) {
                     Row r = rows.get(i);
-                    boolean whole = hasShiftDown() || AltarValues.isGear(r.stack());
+                    boolean whole = com.botwclimb.client.ClientCompat.shiftDown() || AltarValues.isGear(r.stack());
                     int add = whole ? r.available() : 1; // click: one more; shift-click: the whole stack
                     AltarOffer cur = offer[pickerFor];
                     int count = cur != null && cur.invSlot() == r.invSlot() ? cur.count() + add : add;
@@ -460,7 +468,11 @@ public class AltarScreen extends Screen {
             com.botwclimb.client.ClientCompat.sendToServer(new AltarOfferPayload(pos, entries, AltarOfferPayload.NO_REFUND));
             return true;
         }
+        //? if >=1.21.11 {
+        /*return super.mouseClicked(new net.minecraft.client.input.MouseButtonEvent(mx, my, new net.minecraft.client.input.MouseButtonInfo(button, 0)), false);
+        *///?} else {
         return super.mouseClicked(mx, my, button);
+        //?}
     }
 
     @Override

@@ -21,10 +21,17 @@ public final class PlotVeil {
     @SubscribeEvent
     public static void fog(ViewportEvent.RenderFog event) {
         if (!outside()) return;
+        //? if >=1.21.11 {
+        /*var fog = event.getFogData();
+        fog.environmentalStart = fog.renderDistanceStart = 0f;
+        fog.environmentalEnd = fog.renderDistanceEnd = 3f;
+        fog.skyEnd = fog.cloudEnd = 3f;
+        *///?} else {
         event.setNearPlaneDistance(0f);
         event.setFarPlaneDistance(3f);
         event.setFogShape(com.mojang.blaze3d.shaders.FogShape.SPHERE);
         event.setCanceled(true);
+        //?}
     }
 
     @SubscribeEvent

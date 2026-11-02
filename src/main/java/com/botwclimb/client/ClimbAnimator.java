@@ -216,12 +216,7 @@ public final class ClimbAnimator {
         m.rightLeg.xRot = Mth.lerp(fade, m.rightLeg.xRot, -0.6f + 0.9f * Mth.sin(t * 2.0f + 3f));
         m.body.zRot = Mth.lerp(fade, m.body.zRot, 0.35f * Mth.sin(t * 0.8f));
         m.body.xRot = Mth.lerp(fade, m.body.xRot, 0.3f + 0.2f * Mth.sin(t * 1.1f));
-        m.hat.copyFrom(m.head);
-        m.leftPants.copyFrom(m.leftLeg);
-        m.rightPants.copyFrom(m.rightLeg);
-        m.leftSleeve.copyFrom(m.leftArm);
-        m.rightSleeve.copyFrom(m.rightArm);
-        m.jacket.copyFrom(m.body);
+        com.botwclimb.client.ClientCompat.syncOuterLayers(m);
     }
 
     public static void apply(PlayerModel m, ClimbData d, float pt, float netHeadYaw) {
@@ -370,12 +365,7 @@ public final class ClimbAnimator {
         m.head.yRot = Mth.lerp(ws, m.head.yRot, Mth.clamp(netHeadYaw, -70f, 70f) * RAD);
         m.head.zRot = Mth.lerp(ws, m.head.zRot, 0f);
 
-        m.hat.copyFrom(m.head);
-        m.leftPants.copyFrom(m.leftLeg);
-        m.rightPants.copyFrom(m.rightLeg);
-        m.leftSleeve.copyFrom(m.leftArm);
-        m.rightSleeve.copyFrom(m.rightArm);
-        m.jacket.copyFrom(m.body);
+        com.botwclimb.client.ClientCompat.syncOuterLayers(m);
     }
 
     private static void limb(ModelPart part, float w, float x, float z, float yOffset) {

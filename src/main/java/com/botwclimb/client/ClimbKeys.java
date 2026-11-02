@@ -18,13 +18,21 @@ import org.lwjgl.glfw.GLFW;
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 //?}
 public final class ClimbKeys {
+    //? if >=1.21.11 {
+    /*public static final KeyMapping.Category CATEGORY = new KeyMapping.Category(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "main"));
+    *///?} else {
+    public static final String CATEGORY = "key.categories.botwclimb";
+    //?}
+
     public static final KeyMapping CLIMB = new KeyMapping("key.botwclimb.climb", KeyConflictContext.IN_GAME,
-            KeyModifier.SHIFT, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_SPACE, "key.categories.botwclimb");
+            KeyModifier.SHIFT, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_SPACE, CATEGORY);
 
     private ClimbKeys() {}
 
     @SubscribeEvent
     public static void register(RegisterKeyMappingsEvent event) {
+        //? if >=1.21.11
+        /*event.registerCategory(CATEGORY);*/
         event.register(CLIMB);
     }
 }
