@@ -12,14 +12,14 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 import java.util.stream.Stream;
 
-/** {@code /botwclimb cloth unlock <fabric|all>} and {@code /botwclimb cloth reset}: for testing and for admins. Ops only. */
+/** {@code /cotm cloth unlock <fabric|all>} and {@code /cotm cloth reset}: for testing and for admins. Ops only. */
 @EventBusSubscriber(modid = BotwClimb.MOD_ID)
 public final class FabricCommand {
     private FabricCommand() {}
 
     @SubscribeEvent
     public static void register(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal(BotwClimb.MOD_ID).requires(s -> s.hasPermission(2))
+        event.getDispatcher().register(Commands.literal("cotm").requires(s -> s.hasPermission(2))
                 .then(Commands.literal("cloth")
                         .then(Commands.literal("unlock").then(Commands.argument("fabric", StringArgumentType.word())
                                 .suggests((c, b) -> SharedSuggestionProvider.suggest(

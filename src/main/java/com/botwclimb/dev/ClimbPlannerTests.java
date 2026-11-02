@@ -755,19 +755,19 @@ public class ClimbPlannerTests {
         h.succeed();
     }
 
-    /** The dev commands must be op-only whichever class registered /botwclimb first. */
+    /** The dev commands must be op-only whichever class registered /cotm first. */
     @GameTest(template = "empty")
     public static void devCommandsAreOpOnly(GameTestHelper h) {
         var server = h.getLevel().getServer();
-        var root = server.getCommands().getDispatcher().getRoot().getChild("botwclimb");
-        if (root == null) h.fail("/botwclimb is not registered");
+        var root = server.getCommands().getDispatcher().getRoot().getChild("cotm");
+        if (root == null) h.fail("/cotm is not registered");
         var nobody = server.createCommandSourceStack().withPermission(0);
         var op = server.createCommandSourceStack().withPermission(2);
         for (String sub : new String[]{"stamina", "paraglider"}) {
             var node = root.getChild(sub);
-            if (node == null) h.fail("/botwclimb " + sub + " is missing");
-            if (node.canUse(nobody)) h.fail("/botwclimb " + sub + " must not be usable without op");
-            if (!node.canUse(op)) h.fail("/botwclimb " + sub + " must be usable by an op");
+            if (node == null) h.fail("/cotm " + sub + " is missing");
+            if (node.canUse(nobody)) h.fail("/cotm " + sub + " must not be usable without op");
+            if (!node.canUse(op)) h.fail("/cotm " + sub + " must be usable by an op");
         }
         h.succeed();
     }

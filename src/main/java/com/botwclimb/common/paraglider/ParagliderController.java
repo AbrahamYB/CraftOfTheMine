@@ -204,10 +204,10 @@ public final class ParagliderController {
         }
     }
 
-    /** Development command: /botwclimb paraglider fabric ID picks the fabric of the player running it. */
+    /** Development command: /cotm paraglider fabric ID picks the fabric of the player running it. */
     @SubscribeEvent
     public static void onCommands(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal(BotwClimb.MOD_ID).then(Commands.literal("paraglider").requires(s -> s.hasPermission(2))
+        event.getDispatcher().register(Commands.literal("cotm").then(Commands.literal("paraglider").requires(s -> s.hasPermission(2))
                 .then(Commands.literal("fabric").then(Commands.argument("id", StringArgumentType.word())
                         .suggests((c, b) -> SharedSuggestionProvider.suggest(
                                 FabricRegistry.all().stream().map(FabricDefinition::id), b))

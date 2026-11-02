@@ -123,7 +123,7 @@ catch from a fast fall, smooth acceleration, cruise speed, gradual deceleration.
 
 # Paraglider fabrics
 
-`/botwclimb paraglider fabric <id>` (tab-completes) sets the fabric of the player running it; other players see it too.
+`/cotm paraglider fabric <id>` (tab-completes) sets the fabric of the player running it; other players see it too.
 Ids: ordinary, zonai, royal_hyrulean, sheikah, gerudo, zora, goron, yiga, cece, addison, chuchu, aerocuda, korok,
 champion, majora, demon_king.
 19. Open the glider, run the command for each id and look at the canopy from below and above (third person): the design
