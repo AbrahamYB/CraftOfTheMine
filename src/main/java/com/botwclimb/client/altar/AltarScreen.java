@@ -111,7 +111,7 @@ public class AltarScreen extends Screen {
 
     private List<Row> pickerRows() {
         List<Row> rows = new ArrayList<>();
-        var items = me().getInventory().items;
+        var items = com.botwclimb.common.Compat.items(me().getInventory());
         for (int i = 0; i < items.size(); i++) {
             ItemStack s = items.get(i);
             float unit = AltarValues.unitValue(s);
@@ -430,7 +430,7 @@ public class AltarScreen extends Screen {
             int x = left() + 12, y = top() + REFUND_Y, w = W - 24;
             for (int i = 0; i < 2 && refundScroll + i < items.size(); i++) {
                 if (over(mx, my, x, y + i * ROW_H, w, ROW_H)) {
-                    PacketDistributor.sendToServer(new AltarOfferPayload(pos, List.of(), BuiltInRegistries.ITEM.getKey(items.get(refundScroll + i))));
+                    com.botwclimb.client.ClientCompat.sendToServer(new AltarOfferPayload(pos, List.of(), BuiltInRegistries.ITEM.getKey(items.get(refundScroll + i))));
                     return true;
                 }
             }
@@ -457,7 +457,7 @@ public class AltarScreen extends Screen {
         if (canOffer() && over(mx, my, buttonX(), buttonY(), buttonW(), 18)) {
             List<AltarOfferPayload.Entry> entries = new ArrayList<>();
             for (AltarOffer o : offer) if (o != null) entries.add(new AltarOfferPayload.Entry(o.invSlot(), o.count()));
-            PacketDistributor.sendToServer(new AltarOfferPayload(pos, entries, AltarOfferPayload.NO_REFUND));
+            com.botwclimb.client.ClientCompat.sendToServer(new AltarOfferPayload(pos, entries, AltarOfferPayload.NO_REFUND));
             return true;
         }
         return super.mouseClicked(mx, my, button);

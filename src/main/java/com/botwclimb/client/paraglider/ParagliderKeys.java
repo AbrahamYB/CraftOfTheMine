@@ -16,7 +16,11 @@ import org.lwjgl.glfw.GLFW;
  * The KeyModifier only lets the Controls menu show and rebind the combo; {@link ChordInputHandler} does the real
  * ordered detection and the Space consumption.
  */
+//? if >=1.21.11 {
+/*@EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
+*///?} else {
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+//?}
 public final class ParagliderKeys {
     public static final KeyMapping PARAGLIDE = new KeyMapping("key.botwclimb.paraglide", KeyConflictContext.IN_GAME,
             KeyModifier.SHIFT, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_SPACE, "key.categories.botwclimb");

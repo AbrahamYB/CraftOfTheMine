@@ -125,7 +125,7 @@ public final class AutoShots {
     private static void toEdge() {
         var t = PlotWorld.terminalPos(0);
         player().setNoGravity(true);
-        com.botwclimb.common.Compat.teleport(player(), player().serverLevel(), t.getX() + 0.5, t.getY() + 40, -30.5, 0f, 52f); // high above the void side, looking over the whole island
+        com.botwclimb.common.Compat.teleport(player(), com.botwclimb.common.Compat.level(player()), t.getX() + 0.5, t.getY() + 40, -30.5, 0f, 52f); // high above the void side, looking over the whole island
     }
 
     private static void toTerminal() {
@@ -153,8 +153,8 @@ public final class AutoShots {
     /** A flat stone pad with air above it and a terminal beside the player, wherever in the world they are. */
     private static void prepare() {
         ServerPlayer p = Minecraft.getInstance().getSingleplayerServer().getPlayerList().getPlayers().get(0);
-        if (p.serverLevel() != p.server.overworld()) com.botwclimb.common.Compat.teleport(p, p.server.overworld(), 0.5, 100, 0.5, 0f, 0f); // a world saved inside the plot starts from the overworld
-        ServerLevel level = p.serverLevel();
+        if (com.botwclimb.common.Compat.level(p) != p.level().getServer().overworld()) com.botwclimb.common.Compat.teleport(p, p.level().getServer().overworld(), 0.5, 100, 0.5, 0f, 0f); // a world saved inside the plot starts from the overworld
+        ServerLevel level = com.botwclimb.common.Compat.level(p);
         BlockPos base = p.blockPosition();
         p.setGameMode(GameType.SURVIVAL);
         for (int x = -8; x <= 8; x++) for (int z = -8; z <= 8; z++) {
@@ -171,7 +171,7 @@ public final class AutoShots {
         ServerPlayer p = Minecraft.getInstance().getSingleplayerServer().getPlayerList().getPlayers().get(0);
         BlockPos terminal;
         if (target == PlotTravel.RETURN) {
-            int plot = PlotData.get(p.server).plot(p.getUUID(), 0);
+            int plot = PlotData.get(p.level().getServer()).plot(p.getUUID(), 0);
             terminal = PlotWorld.terminalPos(plot);
         } else {
             terminal = p.blockPosition().offset(3, 0, 0);

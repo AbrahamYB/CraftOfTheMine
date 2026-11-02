@@ -163,7 +163,7 @@ public final class FabricPicker {
 
     private static int have(Item item) {
         int n = 0;
-        for (ItemStack st : Minecraft.getInstance().player.getInventory().items) if (st.is(item)) n += st.getCount();
+        for (ItemStack st : com.botwclimb.common.Compat.items(Minecraft.getInstance().player.getInventory())) if (st.is(item)) n += st.getCount();
         return n;
     }
 
@@ -320,7 +320,7 @@ public final class FabricPicker {
             Card c = card(screen);
             if (mx >= c.x() && mx < c.x() + c.w() && my >= c.y() && my < c.y() + c.h()) {
                 event.setCanceled(true);
-                if (event.getButton() == 0 && c.craftable() && c.overButton(mx, my)) PacketDistributor.sendToServer(new ClothCraftPayload(info));
+                if (event.getButton() == 0 && c.craftable() && c.overButton(mx, my)) com.botwclimb.client.ClientCompat.sendToServer(new ClothCraftPayload(info));
                 return;
             }
         }
@@ -332,7 +332,7 @@ public final class FabricPicker {
         info = row; // any click shows the recipe
         var player = Minecraft.getInstance().player;
         if (event.getButton() == 0 && FabricUnlocks.has(player, row)) {
-            PacketDistributor.sendToServer(new ParagliderFabricPayload(row));
+            com.botwclimb.client.ClientCompat.sendToServer(new ParagliderFabricPayload(row));
             player.getData(BotwClimb.PARAGLIDER).fabric = row; // show it straight away
         }
     }

@@ -8,7 +8,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * Minecraft 1.21.2 and later: attaches the living entity to the render state it is drawn from, so the layers, the pose and the render
  * events can find it (see {@link RenderData}). Older versions pass the entity around directly and need nothing.
  */
+//? if >=1.21.11 {
+/*@EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
+*///?} else {
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+//?}
 public final class RenderStateSetup {
     private RenderStateSetup() {}
 

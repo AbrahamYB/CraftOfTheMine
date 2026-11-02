@@ -66,7 +66,11 @@ public final class StaminaHud {
         RenderSystem.disableBlend();
     }
 
+    //? if >=1.21.11 {
+    /*@EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
+    *///?} else {
     @EventBusSubscriber(modid = BotwClimb.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    //?}
     public static final class Setup {
         @SubscribeEvent
         public static void layers(RegisterGuiLayersEvent event) {

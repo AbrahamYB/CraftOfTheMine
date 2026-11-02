@@ -33,22 +33,22 @@ public class BotwClimb {
     /** The player's chosen paraglider fabric (index into FabricRegistry). Saved with the player. */
     public static final Supplier<AttachmentType<Integer>> FABRIC =
             ATTACHMENTS.register("fabric", () -> AttachmentType.builder(() -> 0)
-                    .serialize(com.mojang.serialization.Codec.INT).copyOnDeath().build());
+                    .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.INT)).copyOnDeath().build());
 
     /** Which paraglider fabrics the player has learned (one bit per fabric, see FabricUnlocks). Saved, kept on death, sent to the owner by PlayerStateSync. */
     public static final Supplier<AttachmentType<Integer>> FABRIC_UNLOCKS =
             ATTACHMENTS.register("fabric_unlocks", () -> AttachmentType.builder(() -> 0)
-                    .serialize(com.mojang.serialization.Codec.INT).copyOnDeath().build());
+                    .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.INT)).copyOnDeath().build());
 
     /** Stamina capacity upgrades 0..8 (a quarter wheel, 187.5 units each, 4 per extra wheel). Saved, kept on death, sent to the owner by PlayerStateSync. */
     public static final Supplier<AttachmentType<Integer>> STAMINA_UPGRADES =
             ATTACHMENTS.register("stamina_upgrades", () -> AttachmentType.builder(() -> 0)
-                    .serialize(com.mojang.serialization.Codec.INT).copyOnDeath().build());
+                    .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.INT)).copyOnDeath().build());
 
     /** Points left over after an upgrade at the stamina altar, kept for the next one. Saved, kept on death, sent to the owner by PlayerStateSync. */
     public static final Supplier<AttachmentType<Float>> ALTAR_CREDIT =
             ATTACHMENTS.register("altar_credit", () -> AttachmentType.builder(() -> 0f)
-                    .serialize(com.mojang.serialization.Codec.FLOAT).copyOnDeath().build());
+                    .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.FLOAT)).copyOnDeath().build());
 
     // ---- the stamina altar
     private static final net.neoforged.neoforge.registries.DeferredRegister.Blocks BLOCKS =

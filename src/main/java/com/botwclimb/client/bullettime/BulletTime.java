@@ -132,7 +132,7 @@ public final class BulletTime {
         d.bowHold = (active && (drawing || charged)) || pendingShot > 0 ? Math.min(SHOT_COST, d.stamina) : 0f; // the HUD previews the cost until the shot is paid or dropped
         if (active) {
             if (drawing || charged) d.staminaDelay = Math.max(d.staminaDelay, ClimbConstants.STAMINA_REGEN_DELAY); // no recovery while drawing in bullet time
-            PacketDistributor.sendToServer(new BulletShotPayload(Math.round(rt - pb))); // how far behind the drawn picture is
+            com.botwclimb.client.ClientCompat.sendToServer(new BulletShotPayload(Math.round(rt - pb))); // how far behind the drawn picture is
         }
 
         if (!on) return;
@@ -194,14 +194,14 @@ public final class BulletTime {
 
     private static void setFall(Player p, boolean on) {
         BulletFall.apply(p, on);
-        PacketDistributor.sendToServer(new BulletFallPayload(on));
+        com.botwclimb.client.ClientCompat.sendToServer(new BulletFallPayload(on));
     }
 
     private static void start(Player p) {
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
         if (g.gliding) { // bullet time takes the glider away: the slowed fall takes over
             g.gliding = false;
-            PacketDistributor.sendToServer(new ParagliderTogglePayload(false));
+            com.botwclimb.client.ClientCompat.sendToServer(new ParagliderTogglePayload(false));
         }
         if (on) { // still catching up from the last time: carry on from where the picture is, so nothing jumps
             active = true;

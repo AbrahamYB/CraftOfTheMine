@@ -119,7 +119,7 @@ public final class ClientParagliderController {
 
     private static void setGliding(ParagliderData g, boolean open) {
         g.gliding = open;
-        PacketDistributor.sendToServer(new ParagliderTogglePayload(open));
+        com.botwclimb.client.ClientCompat.sendToServer(new ParagliderTogglePayload(open));
     }
 
     /** Runs after the climb code. Moves the glider and takes over movement input while it is open. */
@@ -141,8 +141,7 @@ public final class ClientParagliderController {
         if (d.stamina <= 0f) { // empty: exhausted like climbing, and the glider closes at once
             setGliding(g, false);
         }
-        in.forwardImpulse = 0;
-        in.leftImpulse = 0;
+        com.botwclimb.client.ClientCompat.stopMoving(in);
         com.botwclimb.client.ClientCompat.clearDirections(in);
         com.botwclimb.client.ClientCompat.shift(in, false); // a held Shift must not crouch the glider pilot
     }
@@ -152,7 +151,7 @@ public final class ClientParagliderController {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         Player p = event.getEntity();
-        if (!p.level().isClientSide || !(p instanceof AbstractClientPlayer) || !p.hasData(BotwClimb.PARAGLIDER)) return;
+        if (!p.level().isClientSide() || !(p instanceof AbstractClientPlayer) || !p.hasData(BotwClimb.PARAGLIDER)) return;
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
         Vec3 pos = p.position();
         if (!g.animInit) {

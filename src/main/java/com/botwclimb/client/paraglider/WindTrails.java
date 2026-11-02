@@ -73,7 +73,7 @@ public final class WindTrails {
     @SubscribeEvent
     public static void onTick(PlayerTickEvent.Post event) {
         Player p = event.getEntity();
-        if (!p.level().isClientSide || !(p instanceof AbstractClientPlayer) || !p.hasData(BotwClimb.PARAGLIDER)) return;
+        if (!p.level().isClientSide() || !(p instanceof AbstractClientPlayer) || !p.hasData(BotwClimb.PARAGLIDER)) return;
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
         Trail t = TRAILS.get(p.getUUID());
         if (t == null) {

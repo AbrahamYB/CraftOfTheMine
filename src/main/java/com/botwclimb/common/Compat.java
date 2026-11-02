@@ -30,7 +30,7 @@ public final class Compat {
         //? if >=1.21.2 {
         /*return InteractionResult.SUCCESS;
         *///?} else {
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return InteractionResult.sidedSuccess(level.isClientSide());
         //?}
     }
 
@@ -71,4 +71,42 @@ public final class Compat {
         return level.getMinBuildHeight();
         //?}
     }
+
+    /** The level a server player is in. */
+    public static ServerLevel level(ServerPlayer p) {
+        //? if >=1.21.11 {
+        /*return p.level();
+        *///?} else {
+        return p.serverLevel();
+        //?}
+    }
+
+    /** Who may use the admin commands (game masters, level 2). */
+    public static java.util.function.Predicate<net.minecraft.commands.CommandSourceStack> gamemaster() {
+        //? if >=1.21.11 {
+        /*return net.minecraft.commands.Commands.hasPermission(net.minecraft.commands.Commands.LEVEL_GAMEMASTERS);
+        *///?} else {
+        return s -> s.hasPermission(2);
+        //?}
+    }
+
+    /** The 36 main inventory slots (hotbar and storage). */
+    public static net.minecraft.core.NonNullList<net.minecraft.world.item.ItemStack> items(net.minecraft.world.entity.player.Inventory inv) {
+        //? if >=1.21.11 {
+        /*return inv.getNonEquipmentItems();
+        *///?} else {
+        return inv.items;
+        //?}
+    }
+
+    /** How a saved number is written for an attachment (a plain codec, or a map codec from 1.21.11 on). */
+    //? if >=1.21.11 {
+    /*public static <T> com.mojang.serialization.MapCodec<T> attach(com.mojang.serialization.Codec<T> codec) {
+        return codec.fieldOf("value");
+    }
+    *///?} else {
+    public static <T> com.mojang.serialization.Codec<T> attach(com.mojang.serialization.Codec<T> codec) {
+        return codec;
+    }
+    //?}
 }
