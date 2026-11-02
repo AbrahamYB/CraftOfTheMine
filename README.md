@@ -19,8 +19,8 @@ The full description of every feature and its numbers is in the [player guide](d
 
 ## Downloads
 
-There are no published releases yet. Until there are, build the jar yourself (see below). Releases will be listed on this
-repository's Releases page, and every change is described in the [changelog](CHANGELOG.md).
+Download `CraftOfTheMine-1.0.0.jar` from the [Releases page](../../releases/latest). Each release lists what changed (the full history is
+in the [changelog](CHANGELOG.md)) and a SHA-256 checksum of the jar. You can also build the jar yourself (see below).
 
 ## Installation
 
