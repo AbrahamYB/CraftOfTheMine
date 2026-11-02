@@ -681,8 +681,7 @@ public class ClimbPlannerTests {
         Player p = sim(h, 4.0, false);
         if (enchanted) {
             var boots = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_BOOTS);
-            var holder = h.getLevel().registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
-                    .getHolderOrThrow(com.botwclimb.common.climb.ClimbController.CLIMB_SPEED_ENCHANT);
+            var holder = com.botwclimb.common.Compat.holder(h.getLevel(), com.botwclimb.common.climb.ClimbController.CLIMB_SPEED_ENCHANT).orElseThrow();
             boots.enchant(holder, 1);
             p.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, boots);
         }
@@ -872,7 +871,7 @@ public class ClimbPlannerTests {
             com.botwclimb.common.bullettime.BulletShots.report(owner.getUUID(), lagNow, now); // the picture only falls behind once the cow has left
             if (t[0] == 10) cow.setPos(far);
             if (t[0] == 12) {
-                var arrow = net.minecraft.world.entity.EntityType.ARROW.create(level);
+                var arrow = com.botwclimb.common.Compat.create(net.minecraft.world.entity.EntityType.ARROW, level);
                 arrow.setOwner(owner);
                 arrow.setNoGravity(true);
                 arrow.setPos(spot.add(slowArrow ? 3.5 : 2.0, 0.6, 0.0));

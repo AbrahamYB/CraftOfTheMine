@@ -245,9 +245,10 @@ public final class BulletTime {
 
     /** Draws a living character where the slowed playback clock says it was, not where it is now. */
     @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.LOWEST) // last, so a canceled render never leaves a pose pushed
-    public static void onRenderPre(RenderLivingEvent.Pre<?, ?> event) {
+    public static void onRenderPre(RenderLivingEvent.Pre event) {
         if (!on) return;
-        LivingEntity e = event.getEntity();
+        LivingEntity e = com.botwclimb.client.RenderData.entity(event);
+        if (e == null) return;
         Track t = TRACKS.get(e.getId());
         if (t == null) return;
         float pt = event.getPartialTick();
@@ -268,7 +269,7 @@ public final class BulletTime {
     }
 
     @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.LOWEST)
-    public static void onRenderPost(RenderLivingEvent.Post<?, ?> event) {
+    public static void onRenderPost(RenderLivingEvent.Post event) {
         if (pushed) {
             event.getPoseStack().popPose();
             pushed = false;

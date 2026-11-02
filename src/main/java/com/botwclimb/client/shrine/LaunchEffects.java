@@ -35,7 +35,7 @@ public final class LaunchEffects {
             return;
         }
         float f = ownSpeed(Minecraft.getInstance(), (float) event.getPartialTick());
-        if (f > 0f) event.setFOV(event.getFOV() * (1 + 0.32 * f));
+        if (f > 0f) event.setFOV((float) (event.getFOV() * (1 + 0.32 * f)));
     }
 
     @SubscribeEvent

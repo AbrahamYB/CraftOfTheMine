@@ -147,7 +147,7 @@ public final class TerminalRide {
         if (a.level() != p.level()) { // players watching from the world the rider leaves must not keep drawing mud on nobody
             PacketDistributor.sendToPlayersTrackingEntity(p, new TerminalRidePayload(p.getId(), 0, (float) r.y, r.sink ? 1 : 0));
         }
-        p.teleportTo(a.level(), a.x(), a.y() + a.rise(), a.z(), a.yaw(), 0f);
+        com.botwclimb.common.Compat.teleport(p, a.level(), a.x(), a.y() + a.rise(), a.z(), a.yaw(), 0f);
         p.noPhysics = false;
         hold(p);
     }

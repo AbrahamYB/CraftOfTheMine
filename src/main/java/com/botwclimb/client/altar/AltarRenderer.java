@@ -107,7 +107,7 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
                         float deg = (float) Math.toDegrees(Math.atan2(-dx, -dz));
                         if (deg < 0) deg += 360f;
                         if (deg < qq * 90f + 2f || deg > (qq + 1) * 90f - 2f) continue;
-                        img.setPixelRGBA(ix, iz, grey(tone(0xFFFFFF, ix, iz, ring * 4 + qq, l)));
+                        com.botwclimb.client.ClientCompat.setGrey(img, ix, iz, grey(tone(0xFFFFFF, ix, iz, ring * 4 + qq, l)));
                     }
                 }
             }
@@ -169,7 +169,7 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
                     for (int i = 0; i < grid() / 16; i++)
                         for (int j = 0; j < grid() / 16; j++) {
                             int gu = cell[1] * (grid() / 16) + i, gv = cell[0] * (grid() / 16) + j;
-                            img.setPixelRGBA(gu, gv, grey(tone(0xFFFFFF, gu, gv, sd, l)));
+                            com.botwclimb.client.ClientCompat.setGrey(img, gu, gv, grey(tone(0xFFFFFF, gu, gv, sd, l)));
                         }
             }, lit);
             VertexConsumer vc = buffers.getBuffer(RenderType.entityTranslucentEmissive(tex));

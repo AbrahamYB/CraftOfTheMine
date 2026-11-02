@@ -205,7 +205,7 @@ public final class ClimbAnimator {
                 0.42f * sd * keep}; // torso turned into the diagonal (same as the hang, so no pop)
     }
 
-    private static void applyRagdoll(PlayerModel<?> m, ClimbData d, float pt) {
+    private static void applyRagdoll(PlayerModel m, ClimbData d, float pt) {
         float t = d.ragdollAge + pt;
         float fade = 1f - smooth((t - (ClimbConstants.RAGDOLL_TICKS - 5f)) / 5f);
         m.leftArm.xRot = Mth.lerp(fade, m.leftArm.xRot, -1.8f + 1.1f * Mth.sin(t * 1.9f));
@@ -224,7 +224,7 @@ public final class ClimbAnimator {
         m.jacket.copyFrom(m.body);
     }
 
-    public static void apply(PlayerModel<?> m, ClimbData d, float pt, float netHeadYaw) {
+    public static void apply(PlayerModel m, ClimbData d, float pt, float netHeadYaw) {
         if (d.ragdollTicks > 0) {
             applyRagdoll(m, d, pt);
             return;

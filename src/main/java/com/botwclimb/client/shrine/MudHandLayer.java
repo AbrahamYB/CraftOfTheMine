@@ -11,6 +11,18 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.util.Mth;
 
 /** Draws the magic mud on any player who is riding a terminal, so everyone nearby sees it. */
+//? if >=1.21.2 {
+/*public final class MudHandLayer extends RenderLayer<net.minecraft.client.renderer.entity.state.PlayerRenderState, PlayerModel> {
+    public MudHandLayer(RenderLayerParent<net.minecraft.client.renderer.entity.state.PlayerRenderState, PlayerModel> parent) {
+        super(parent);
+    }
+
+    @Override
+    public void render(PoseStack ps, MultiBufferSource buffer, int light, net.minecraft.client.renderer.entity.state.PlayerRenderState state, float yRot, float xRot) {
+        AbstractClientPlayer p = com.botwclimb.client.RenderData.player(state);
+        if (p != null) draw(ps, buffer, light, p, Mth.clamp(state.ageInTicks - p.tickCount, 0f, 1f));
+    }
+*///?} else {
 public final class MudHandLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
     public MudHandLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
         super(parent);
@@ -19,6 +31,11 @@ public final class MudHandLayer extends RenderLayer<AbstractClientPlayer, Player
     @Override
     public void render(PoseStack ps, MultiBufferSource buffer, int light, AbstractClientPlayer p, float limbSwing,
                        float limbSwingAmount, float partialTick, float ageInTicks, float netHeadYaw, float headPitch) {
+        draw(ps, buffer, light, p, partialTick);
+    }
+//?}
+
+    private static void draw(PoseStack ps, MultiBufferSource buffer, int light, AbstractClientPlayer p, float partialTick) {
         MudHandClient.State s = MudHandClient.get(p.getId());
         if (s == null) return;
         if (com.botwclimb.client.ClientConfig.style() == com.botwclimb.client.ClientConfig.RideStyle.TOTK) {

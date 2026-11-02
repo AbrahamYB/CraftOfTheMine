@@ -125,7 +125,7 @@ public final class AutoShots {
     private static void toEdge() {
         var t = PlotWorld.terminalPos(0);
         player().setNoGravity(true);
-        player().teleportTo(player().serverLevel(), t.getX() + 0.5, t.getY() + 40, -30.5, 0f, 52f); // high above the void side, looking over the whole island
+        com.botwclimb.common.Compat.teleport(player(), player().serverLevel(), t.getX() + 0.5, t.getY() + 40, -30.5, 0f, 52f); // high above the void side, looking over the whole island
     }
 
     private static void toTerminal() {
@@ -153,7 +153,7 @@ public final class AutoShots {
     /** A flat stone pad with air above it and a terminal beside the player, wherever in the world they are. */
     private static void prepare() {
         ServerPlayer p = Minecraft.getInstance().getSingleplayerServer().getPlayerList().getPlayers().get(0);
-        if (p.serverLevel() != p.server.overworld()) p.teleportTo(p.server.overworld(), 0.5, 100, 0.5, 0f, 0f); // a world saved inside the plot starts from the overworld
+        if (p.serverLevel() != p.server.overworld()) com.botwclimb.common.Compat.teleport(p, p.server.overworld(), 0.5, 100, 0.5, 0f, 0f); // a world saved inside the plot starts from the overworld
         ServerLevel level = p.serverLevel();
         BlockPos base = p.blockPosition();
         p.setGameMode(GameType.SURVIVAL);

@@ -22,6 +22,9 @@ public final class ClimbData {
     public int jumpSpentSeq;                // counts jumps, so the HUD can flash exactly once per jump however small the amount
     public float sStamina = -1;             // SERVER account (see Stamina.serverStep): -1 = not set yet
     public boolean sExhausted;
+    /** Server only: the saved values last sent to this player (see PlayerStateSync); the impossible start values force a first send. */
+    public int sentUnlocks = -1, sentUpgrades = -1;
+    public float sentCredit = Float.NaN;
     public net.minecraft.world.phys.Vec3 sPos = net.minecraft.world.phys.Vec3.ZERO;
     public boolean exhausted;               // ran out: no climbing at all until the wheel has refilled completely
     public int staminaDelay;                // ticks before it starts recovering

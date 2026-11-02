@@ -18,6 +18,12 @@ public final class NetworkHandler {
 
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar r = event.registrar("1");
+        r.playToClient(PlayerStatePayload.TYPE, PlayerStatePayload.CODEC, (p, ctx) -> ctx.enqueueWork(() -> {
+            var me = ctx.player();
+            me.setData(BotwClimb.FABRIC_UNLOCKS, p.fabricUnlocks());
+            me.setData(BotwClimb.STAMINA_UPGRADES, p.staminaUpgrades());
+            me.setData(BotwClimb.ALTAR_CREDIT, p.altarCredit());
+        }));
         r.playToServer(ClimbInputPayload.TYPE, ClimbInputPayload.CODEC, NetworkHandler::onInput);
         r.playToClient(ClimbStatePayload.TYPE, ClimbStatePayload.CODEC, NetworkHandler::onState);
         r.playToServer(ParagliderTogglePayload.TYPE, ParagliderTogglePayload.CODEC, (p, ctx) -> {

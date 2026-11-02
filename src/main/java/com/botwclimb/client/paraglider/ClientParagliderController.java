@@ -12,6 +12,7 @@ import com.botwclimb.network.ParagliderTogglePayload;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
+//? if <1.21.2
 import net.minecraft.client.player.Input;
 import net.minecraft.core.component.DataComponents;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -49,7 +50,11 @@ public final class ClientParagliderController {
      * code reads {@code input.jumping} afterwards), so clearing {@code jumping} here keeps this Space press away
      * from vanilla. Must run before the climb code reads the jump flag.
      */
+    //? if >=1.21.2 {
+    /*public static void handleChord(LocalPlayer p, net.minecraft.client.player.ClientInput in) {
+    *///?} else {
     public static void handleChord(LocalPlayer p, Input in) {
+    //?}
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
         InputChord chord = ChordInputHandler.PARAGLIDE;
         chord.clearIfKeyUp(ChordInputHandler.keyPhysicallyDown());
@@ -83,14 +88,14 @@ public final class ClientParagliderController {
             }
         }
         // a plain Space press after falling off a ledge opens the glider instead of vanilla's Elytra start
-        if (in.jumping && !g.gliding && p.fallDistance >= ParagliderConstants.OPEN_AFTER_FALL
+        if (com.botwclimb.client.ClientCompat.jumping(in) && !g.gliding && p.fallDistance >= ParagliderConstants.OPEN_AFTER_FALL
                 && !p.isFallFlying() && canOpen(p)) {
             setGliding(g, true);
             g.fresh = true;
-            in.jumping = false;
+            com.botwclimb.client.ClientCompat.jumping(in, false);
         }
         if (chord.consumed() && ParagliderKeys.PARAGLIDE.getKey().equals(Minecraft.getInstance().options.keyJump.getKey())) {
-            in.jumping = false; // consumed press: stays false until the key is released
+            com.botwclimb.client.ClientCompat.jumping(in, false); // consumed press: stays false until the key is released
         }
     }
 
@@ -103,7 +108,7 @@ public final class ClientParagliderController {
     }
 
     private static boolean canResumeElytra(LocalPlayer p) {
-        return !p.onGround() && !p.isInWater() && p.getItemBySlot(EquipmentSlot.CHEST).canElytraFly(p);
+        return !p.onGround() && !p.isInWater() && com.botwclimb.client.ClientCompat.canGlide(p);
     }
 
     private static boolean canOpen(LocalPlayer p) {
@@ -118,7 +123,11 @@ public final class ClientParagliderController {
     }
 
     /** Runs after the climb code. Moves the glider and takes over movement input while it is open. */
+    //? if >=1.21.2 {
+    /*public static void steer(LocalPlayer p, net.minecraft.client.player.ClientInput in, float forward, float strafe, boolean climbing) {
+    *///?} else {
     public static void steer(LocalPlayer p, Input in, float forward, float strafe, boolean climbing) {
+    //?}
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
         if (!g.gliding) return;
         if (climbing || !ParagliderController.stateAllows(p) || p.onGround()) {
@@ -134,8 +143,8 @@ public final class ClientParagliderController {
         }
         in.forwardImpulse = 0;
         in.leftImpulse = 0;
-        in.up = in.down = in.left = in.right = false;
-        in.shiftKeyDown = false; // a held Shift must not crouch the glider pilot
+        com.botwclimb.client.ClientCompat.clearDirections(in);
+        com.botwclimb.client.ClientCompat.shift(in, false); // a held Shift must not crouch the glider pilot
     }
 
     // ------------------------------------------------------------------ animation numbers (all players)
@@ -214,8 +223,8 @@ public final class ClientParagliderController {
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onRenderPre(RenderLivingEvent.Pre<?, ?> event) {
-        if (!(event.getEntity() instanceof AbstractClientPlayer p) || !p.hasData(BotwClimb.PARAGLIDER)) return;
+    public static void onRenderPre(RenderLivingEvent.Pre event) {
+        if (!(com.botwclimb.client.RenderData.entity(event) instanceof AbstractClientPlayer p) || !p.hasData(BotwClimb.PARAGLIDER)) return;
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
         float pt = event.getPartialTick();
         float open = ParagliderAnimator.open(g, pt);
@@ -224,8 +233,7 @@ public final class ClientParagliderController {
         // render-only: the body turns to the direction of travel, the camera and logical yaw stay free
         float heading = Mth.rotLerp(pt, g.headingO, g.heading);
         float yaw = Mth.rotLerp(open, Mth.rotLerp(pt, p.yBodyRotO, p.yBodyRot), heading);
-        p.yBodyRot = yaw;
-        p.yBodyRotO = yaw;
+        com.botwclimb.client.RenderData.setBodyYaw(event, p, yaw);
 
         PoseStack ps = event.getPoseStack();
         ps.pushPose();
@@ -240,7 +248,7 @@ public final class ClientParagliderController {
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onRenderPost(RenderLivingEvent.Post<?, ?> event) {
+    public static void onRenderPost(RenderLivingEvent.Post event) {
         if (pushed) {
             event.getPoseStack().popPose();
             pushed = false;

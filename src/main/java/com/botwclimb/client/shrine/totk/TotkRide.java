@@ -122,7 +122,7 @@ public final class TotkRide {
      * Poses a rider going to a plot (called from the player model mixin): in the world, once the ribbons start, the right arm is
      * stretched up and the legs sway; in the void (the rider drawn on the HUD) the whole dive plays. Anyone else is left alone.
      */
-    public static void pose(net.minecraft.client.model.PlayerModel<?> m, AbstractClientPlayer p, float pt) {
+    public static void pose(net.minecraft.client.model.PlayerModel m, AbstractClientPlayer p, float pt) {
         if (com.botwclimb.client.ClientConfig.style() != com.botwclimb.client.ClientConfig.RideStyle.TOTK) return;
         MudHandClient.State s = MudHandClient.get(p.getId());
         if (s == null) return;
@@ -551,7 +551,7 @@ public final class TotkRide {
         // base: black at the cut, teal within 7 ticks (footage: (0,70,60) at rest)
         float bk = smooth(age / 7f), dir = kind == 1 ? -1f : 1f;
         // everything is raw quads in one buffer, drawn in this order (no fills: they may or may not flush the buffer, and the order must be certain)
-        VertexConsumer vc = g.bufferSource().getBuffer(RenderType.gui());
+        VertexConsumer vc = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.gui()); // the buffer the GUI itself draws with
         int base = argb(255, 0, (int) (bk * 44), (int) (bk * 40));
         tri(vc, m, 0, 0, base, w, 0, base, w, h, base, 0, h, base);
         float cx = w / 2f;
@@ -614,12 +614,20 @@ public final class TotkRide {
      */
     private static void drawHelix3d(Minecraft mc, int w, int h, float time, float dir) {
         com.mojang.blaze3d.systems.RenderSystem.backupProjectionMatrix();
+        //? if >=1.21.2 {
+        /*com.mojang.blaze3d.systems.RenderSystem.setProjectionMatrix(new Matrix4f().perspective((float) Math.toRadians(70), (float) w / h, 0.05f, 100f), com.mojang.blaze3d.ProjectionType.PERSPECTIVE);
+        *///?} else {
         com.mojang.blaze3d.systems.RenderSystem.setProjectionMatrix(new Matrix4f().perspective((float) Math.toRadians(70), (float) w / h, 0.05f, 100f), com.mojang.blaze3d.vertex.VertexSorting.DISTANCE_TO_ORIGIN);
+        //?}
         var mv = com.mojang.blaze3d.systems.RenderSystem.getModelViewStack();
         mv.pushMatrix();
         mv.identity();
+        //? if >=1.21.2 {
+        /*com.mojang.blaze3d.systems.RenderSystem.clear(256); // the world's depth must not hide it
+        *///?} else {
         com.mojang.blaze3d.systems.RenderSystem.applyModelViewMatrix();
         com.mojang.blaze3d.systems.RenderSystem.clear(256, Minecraft.ON_OSX); // the world's depth must not hide it
+        //?}
         PoseStack ps = new PoseStack();
         ps.translate(0, 0, -7f);
         ps.scale(1.8f, 1f, 1.8f);
@@ -629,6 +637,7 @@ public final class TotkRide {
         helix(vc, ps.last(), time * 0.2f, 2.4f, 80f, 255f, 150f);
         buffers.endBatch(RenderType.eyes(GLOW));
         mv.popMatrix();
+        //? if <1.21.2
         com.mojang.blaze3d.systems.RenderSystem.applyModelViewMatrix();
         com.mojang.blaze3d.systems.RenderSystem.restoreProjectionMatrix();
     }
@@ -715,7 +724,11 @@ public final class TotkRide {
     }
 
     private static DustParticleOptions dust(float r, float g, float b) {
+        //? if >=1.21.2 {
+        /*return new DustParticleOptions(((int) (r * 255) & 255) << 16 | ((int) (g * 255) & 255) << 8 | ((int) (b * 255) & 255), 1f);
+        *///?} else {
         return new DustParticleOptions(new Vector3f(r, g, b), 1f);
+        //?}
     }
 
     /** The field of view the camera should use this frame; return {@code fov} unchanged for no effect. */

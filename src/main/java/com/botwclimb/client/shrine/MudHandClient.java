@@ -162,7 +162,9 @@ public final class MudHandClient {
     public static void lock(MovementInputUpdateEvent event) {
         if (!RIDES.containsKey(event.getEntity().getId())) return;
         var in = event.getInput();
-        in.up = in.down = in.left = in.right = in.jumping = in.shiftKeyDown = false;
+        com.botwclimb.client.ClientCompat.clearDirections(in);
+        com.botwclimb.client.ClientCompat.jumping(in, false);
+        com.botwclimb.client.ClientCompat.shift(in, false);
         in.forwardImpulse = 0;
         in.leftImpulse = 0;
     }

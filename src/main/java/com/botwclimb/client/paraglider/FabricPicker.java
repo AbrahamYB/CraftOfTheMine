@@ -82,7 +82,7 @@ public final class FabricPicker {
     }
 
     private static boolean bookOpen(AbstractContainerScreen<?> screen) {
-        return screen instanceof InventoryScreen inv && inv.getRecipeBookComponent().isVisible();
+        return screen instanceof InventoryScreen inv && com.botwclimb.client.ClientCompat.recipeBookOpen(inv);
     }
 
     /** Left of the inventory, or right of it while the recipe book fills the left; never off screen. */
@@ -227,7 +227,7 @@ public final class FabricPicker {
                 if (i < 0) continue;
                 int ry = listTop + Math.round((i - scrollPos) * ROW_H), rx = x + (PANEL_W - 40) / 2; // the swatch is centred in the panel
                 g.fill(rx - 1, ry - 1, rx + 41, ry + 17, FRAME);
-                g.blit(all.get(i).texture(), rx, ry, 40, 16, 0f, 46f, 40, 16, 128, 64);
+                com.botwclimb.client.ClientCompat.blit(g, all.get(i).texture(), rx, ry, 40, 16, 0f, 46f, 40, 16, 128, 64);
                 if (!FabricUnlocks.has(unlocked, i)) { // not learned yet: dimmed, with a question mark
                     g.fill(rx, ry, rx + 40, ry + 16, 0xC00C0F13);
                     g.drawCenteredString(mc.font, "?", rx + 20, ry + 4, MUTED);
@@ -272,7 +272,7 @@ public final class FabricPicker {
                         int rx = ax + 10, ry = c.slotsY();
                         g.fill(rx, ry, rx + SLOT, ry + SLOT, FRAME);
                         g.fill(rx + 1, ry + 1, rx + SLOT - 1, ry + SLOT - 1, SLOT_BG);
-                        g.blit(all.get(info).texture(), rx + 1, ry + 3, 16, 12, 10f, 48f, 20, 14, 128, 64); // the fabric itself is what you get
+                        com.botwclimb.client.ClientCompat.blit(g, all.get(info).texture(), rx + 1, ry + 3, 16, 12, 10f, 48f, 20, 14, 128, 64); // the fabric itself is what you get
                         // the Craft button: it only crafts when pressed, and only when everything is in the inventory
                         boolean hot = c.craftable() && c.overButton(mx, my);
                         int bx = c.x() + PAD, bw = c.w() - PAD * 2;
@@ -287,8 +287,8 @@ public final class FabricPicker {
         // the button: a vanilla button with the worn fabric's pattern on it, pressed in while the menu is open
         int[] bp = buttonPos(screen);
         boolean overButton = overButton(screen, mx, my);
-        g.blitSprite(open || overButton ? BUTTON_ON : BUTTON, bp[0], bp[1], BUTTON_W, BUTTON_H);
-        g.blit(FabricRegistry.byIndex(selected).texture(), bp[0] + 3, bp[1] + 3, 12, 12, 10f, 48f, 20, 14, 128, 64);
+        com.botwclimb.client.ClientCompat.blitSprite(g, open || overButton ? BUTTON_ON : BUTTON, bp[0], bp[1], BUTTON_W, BUTTON_H);
+        com.botwclimb.client.ClientCompat.blit(g, FabricRegistry.byIndex(selected).texture(), bp[0] + 3, bp[1] + 3, 12, 12, 10f, 48f, 20, 14, 128, 64);
         if (itemTip != null) g.renderTooltip(mc.font, itemTip, mx, my);
         else if (tooltip != null) g.renderTooltip(mc.font, tooltip, Optional.empty(), mx, my);
         else if (overButton && !open) g.renderTooltip(mc.font, Component.translatable("gui.botwclimb.cloth_button_tip"), mx, my);

@@ -59,7 +59,7 @@ public final class StaminaHud {
         passes = GL11.glIsEnabled(GL11.GL_CULL_FACE) ? 2 : 1;
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        ClientCompat.positionColorShader();
     }
 
     public static void endDraw() {
@@ -182,7 +182,7 @@ public final class StaminaHud {
         Matrix4f m = g.pose().last().pose();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        ClientCompat.positionColorShader();
         float s = scale * (0.0476f * px / (gs * RINGS[2][1])); // the outermost of three wheels reaches 4.76% of the window height (15% smaller than 5.6%)
         for (int i = 0; i < RINGS.length; i++) {
             float lo = ClimbConstants.STAMINA_WHEEL * i;

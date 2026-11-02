@@ -120,7 +120,7 @@ public final class GroundHole {
             for (int z = (int) Math.floor(cz) - reach; z <= (int) Math.floor(cz) + reach; z++) {
                 if (!inside(x, z, cx, cz, r, seed) || !level.hasChunkAt(new BlockPos(x, top, z))) continue;
                 double dist = Math.sqrt((x + 0.5 - cx) * (x + 0.5 - cx) + (z + 0.5 - cz) * (z + 0.5 - cz));
-                for (int y = top; y > top - DEPTH && y >= level.getMinBuildHeight(); y--) {
+                for (int y = top; y > top - DEPTH && y >= com.botwclimb.common.Compat.minY(level); y--) {
                     BlockPos pos = new BlockPos(x, y, z);
                     if (carved.blocks.containsKey(pos)) continue;
                     BlockState state = level.getBlockState(pos);
