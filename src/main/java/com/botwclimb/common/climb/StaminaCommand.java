@@ -9,14 +9,14 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
-/** {@code /botwclimb stamina <0-8>}: sets the number of stamina capacity upgrades (4 per extra wheel); {@code /botwclimb stamina reset} clears them and the altar credit. Ops only. */
+/** {@code /cotm stamina <0-8>}: sets the number of stamina capacity upgrades (4 per extra wheel); {@code /cotm stamina reset} clears them and the altar credit. Ops only. */
 @EventBusSubscriber(modid = BotwClimb.MOD_ID)
 public final class StaminaCommand {
     private StaminaCommand() {}
 
     @SubscribeEvent
     public static void register(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal("botwclimb").requires(s -> s.hasPermission(2))
+        event.getDispatcher().register(Commands.literal("cotm").requires(s -> s.hasPermission(2))
                 .then(Commands.literal("stamina").requires(s -> s.hasPermission(2))
                         .then(Commands.literal("reset").executes(ctx -> { // back to the start: no upgrades and no altar credit
                             ServerPlayer p = ctx.getSource().getPlayerOrException();
