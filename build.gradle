@@ -228,7 +228,8 @@ tasks.named('jar') {
 tasks.register('deploy', Copy) {
     dependsOn 'jar'
     def target = localProps.getProperty('prismMods')
-    onlyIf { target != null }
+    // only the version the launcher instance runs (prismVersion in local.properties, default 1.21.1): a jar for another version would not load there
+    onlyIf { target != null && localProps.getProperty('prismVersion', '1.21.1') == project.minecraft_version }
     from tasks.named('jar')
     into target ?: layout.buildDirectory.dir('deploy')
     doFirst { delete fileTree(dir: target, includes: ['botwclimb-*.jar', 'CraftOfTheMine-*.jar']) }
