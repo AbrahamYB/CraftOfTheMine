@@ -47,6 +47,6 @@ public final class ChordInputHandler {
     public static boolean keyPhysicallyDown() {
         var key = ParagliderKeys.PARAGLIDE.getKey();
         return key.getType() == InputConstants.Type.KEYSYM
-                && InputConstants.isKeyDown(com.botwclimb.client.ClientCompat.windowHandle(), key.getValue());
+                && com.botwclimb.client.ClientCompat.keyDown(key.getValue());
     }
 }

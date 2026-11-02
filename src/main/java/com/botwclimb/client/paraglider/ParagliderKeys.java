@@ -23,7 +23,7 @@ import org.lwjgl.glfw.GLFW;
 //?}
 public final class ParagliderKeys {
     public static final KeyMapping PARAGLIDE = new KeyMapping("key.botwclimb.paraglide", KeyConflictContext.IN_GAME,
-            KeyModifier.SHIFT, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_SPACE, "key.categories.botwclimb");
+            KeyModifier.SHIFT, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_SPACE, com.botwclimb.client.ClimbKeys.CATEGORY);
 
     private ParagliderKeys() {}
 

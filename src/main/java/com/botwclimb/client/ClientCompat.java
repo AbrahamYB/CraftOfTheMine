@@ -114,7 +114,9 @@ public final class ClientCompat {
 
     /** Draws part of a texture (the old blit argument order: size on screen, then the texture window). */
     public static void blit(GuiGraphics g, ResourceLocation tex, int x, int y, int w, int h, float u, float v, int uw, int vh, int texW, int texH) {
-        //? if >=1.21.2 {
+        //? if >=1.21.11 {
+        /*g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, tex, x, y, u, v, w, h, uw, vh, texW, texH);
+        *///?} else if >=1.21.2 {
         /*g.blit(net.minecraft.client.renderer.RenderType::guiTextured, tex, x, y, u, v, w, h, uw, vh, texW, texH);
         *///?} else {
         g.blit(tex, x, y, w, h, u, v, uw, vh, texW, texH);
@@ -123,19 +125,33 @@ public final class ClientCompat {
 
     /** Draws a GUI sprite (a button background and the like). */
     public static void blitSprite(GuiGraphics g, ResourceLocation sprite, int x, int y, int w, int h) {
-        //? if >=1.21.2 {
+        //? if >=1.21.11 {
+        /*g.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, sprite, x, y, w, h);
+        *///?} else if >=1.21.2 {
         /*g.blitSprite(net.minecraft.client.renderer.RenderType::guiTextured, sprite, x, y, w, h);
         *///?} else {
         g.blitSprite(sprite, x, y, w, h);
         //?}
     }
 
-    /** Selects the plain position-and-colour shader. */
+    /** Selects the plain position-and-colour shader (only the old immediate drawing needs it). */
     public static void positionColorShader() {
-        //? if >=1.21.2 {
+        //? if >=1.21.11 {
+        /*// the GUI pipelines pick their own shader
+        *///?} else if >=1.21.2 {
         /*com.mojang.blaze3d.systems.RenderSystem.setShader(net.minecraft.client.renderer.CoreShaders.POSITION_COLOR);
         *///?} else {
         com.mojang.blaze3d.systems.RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionColorShader);
+        //?}
+    }
+
+    /** Saves a picture of the main render target into a folder (dev tooling). */
+    public static void screenshot(java.io.File dir, String name) {
+        Minecraft mc = Minecraft.getInstance();
+        //? if >=1.21.11 {
+        /*net.minecraft.client.Screenshot.grab(dir, name, mc.getMainRenderTarget(), 1, msg -> { });
+        *///?} else {
+        net.minecraft.client.Screenshot.grab(dir, name, mc.getMainRenderTarget(), msg -> { });
         //?}
     }
 
@@ -183,5 +199,123 @@ public final class ClientCompat {
         *///?} else {
         return Minecraft.getInstance().getWindow().getWindow();
         //?}
+    }
+
+    /** Whether either Shift key is held right now. */
+    public static boolean shiftDown() {
+        long w = windowHandle();
+        //? if >=1.21.11 {
+        /*var win = Minecraft.getInstance().getWindow();
+        return com.mojang.blaze3d.platform.InputConstants.isKeyDown(win, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT) || com.mojang.blaze3d.platform.InputConstants.isKeyDown(win, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT);
+        *///?} else {
+        return com.mojang.blaze3d.platform.InputConstants.isKeyDown(w, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT) || com.mojang.blaze3d.platform.InputConstants.isKeyDown(w, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT);
+        //?}
+    }
+
+    /** The raw state of a key. */
+    public static boolean keyDown(int keyCode) {
+        //? if >=1.21.11 {
+        /*return com.mojang.blaze3d.platform.InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), keyCode);
+        *///?} else {
+        return com.mojang.blaze3d.platform.InputConstants.isKeyDown(windowHandle(), keyCode);
+        //?}
+    }
+
+    // ---- the GUI's transform (a 3D matrix stack before 1.21.6, a 2D one after; the z of a translate is dropped, drawing order decides what is on top)
+
+    public static void pushPose(GuiGraphics g) {
+        //? if >=1.21.11 {
+        /*g.pose().pushMatrix();
+        *///?} else {
+        g.pose().pushPose();
+        //?}
+    }
+
+    public static void popPose(GuiGraphics g) {
+        //? if >=1.21.11 {
+        /*g.pose().popMatrix();
+        *///?} else {
+        g.pose().popPose();
+        //?}
+    }
+
+    public static void translate(GuiGraphics g, float x, float y, float z) {
+        //? if >=1.21.11 {
+        /*g.pose().translate(x, y);
+        *///?} else {
+        g.pose().translate(x, y, z);
+        //?}
+    }
+
+    public static void scale(GuiGraphics g, float x, float y) {
+        //? if >=1.21.11 {
+        /*g.pose().scale(x, y);
+        *///?} else {
+        g.pose().scale(x, y, 1f);
+        //?}
+    }
+
+    /** Makes the skin's outer layers (hat, sleeves, pants, jacket) follow the posed body; from 1.21.11 they are children of the parts and follow on their own. */
+    public static void syncOuterLayers(net.minecraft.client.model.PlayerModel m) {
+        //? if >=1.21.11 {
+        /*// nothing to do
+        *///?} else {
+        m.hat.copyFrom(m.head);
+        m.leftPants.copyFrom(m.leftLeg);
+        m.rightPants.copyFrom(m.rightLeg);
+        m.leftSleeve.copyFrom(m.leftArm);
+        m.rightSleeve.copyFrom(m.rightArm);
+        m.jacket.copyFrom(m.body);
+        //?}
+    }
+
+    /** The fraction of the tick that has passed; {@code pause} true counts a frozen game as at the start of the tick. */
+    public static float partialTick(boolean realtime) {
+        //? if >=1.21.2 {
+        /*return Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(realtime);
+        *///?} else {
+        return Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(realtime);
+        //?}
+    }
+
+    /** Where the camera is. */
+    public static net.minecraft.world.phys.Vec3 cameraPos() {
+        //? if >=1.21.11 {
+        /*return Minecraft.getInstance().gameRenderer.getMainCamera().position();
+        *///?} else {
+        return Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        //?}
+    }
+
+    /** The pose stack to draw level geometry with (camera-relative positions go in; it carries the view rotation). */
+    public static com.mojang.blaze3d.vertex.PoseStack levelPose(net.neoforged.neoforge.client.event.RenderLevelStageEvent event) {
+        //? if >=1.21.11 {
+        /*var ps = new com.mojang.blaze3d.vertex.PoseStack();
+        ps.mulPose(event.getModelViewMatrix());
+        return ps;
+        *///?} else {
+        return event.getPoseStack();
+        //?}
+    }
+
+    /** The puff of pieces of a broken block. */
+    public static void destroyEffect(Minecraft mc, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
+        //? if >=1.21.11 {
+        /*mc.level.addDestroyBlockEffect(pos, state);
+        *///?} else {
+        mc.particleEngine.destroy(pos, state);
+        //?}
+    }
+
+    /** A pose stack whose top is a copy of the given pose (for drawing code that wants a stack, from a geometry callback that hands out a pose). */
+    public static com.mojang.blaze3d.vertex.PoseStack poseStackOf(com.mojang.blaze3d.vertex.PoseStack.Pose pose) {
+        var ps = new com.mojang.blaze3d.vertex.PoseStack();
+        //? if >=1.21.11 {
+        /*ps.last().set(pose);
+        *///?} else {
+        ps.last().pose().set(pose.pose());
+        ps.last().normal().set(pose.normal());
+        //?}
+        return ps;
     }
 }

@@ -415,7 +415,7 @@ public class ClimbPlannerTests {
         inv.add(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.OAK_SAPLING, 1));
         int[] slots = com.botwclimb.common.paraglider.ClothCrafting.plan(inv, ingredients);
         if (slots == null || slots.length != ingredients.size()) h.fail("a full inventory should give a plan");
-        for (int k = 0; k < slots.length; k++) if (!inv.items.get(slots[k]).is(ingredients.get(k))) h.fail("each slot must hold its ingredient");
+        for (int k = 0; k < slots.length; k++) if (!com.botwclimb.common.Compat.items(inv).get(slots[k]).is(ingredients.get(k))) h.fail("each slot must hold its ingredient");
         h.succeed();
     }
 
@@ -760,8 +760,8 @@ public class ClimbPlannerTests {
         var server = h.getLevel().getServer();
         var root = server.getCommands().getDispatcher().getRoot().getChild("cotm");
         if (root == null) h.fail("/cotm is not registered");
-        var nobody = server.createCommandSourceStack().withPermission(0);
-        var op = server.createCommandSourceStack().withPermission(2);
+        var nobody = server.createCommandSourceStack().withPermission(com.botwclimb.common.Compat.permission(0));
+        var op = server.createCommandSourceStack().withPermission(com.botwclimb.common.Compat.permission(2));
         for (String sub : new String[]{"stamina", "paraglider"}) {
             var node = root.getChild(sub);
             if (node == null) h.fail("/cotm " + sub + " is missing");

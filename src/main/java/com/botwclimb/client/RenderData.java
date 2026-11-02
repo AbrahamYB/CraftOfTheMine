@@ -44,6 +44,12 @@ public final class RenderData {
     /*public static final net.minecraft.util.context.ContextKey<net.minecraft.world.entity.LivingEntity> ENTITY =
             new net.minecraft.util.context.ContextKey<>(ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "entity"));
 
+    // marks the render state of the rider drawn on the HUD (it is drawn later than it is described, so a flag on the code path is too early)
+    public static final net.minecraft.util.context.ContextKey<Boolean> HUD =
+            new net.minecraft.util.context.ContextKey<>(ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "hud_rider"));
+
+
+
     // the living entity a render state was taken from, or null
     public static net.minecraft.world.entity.LivingEntity entity(net.neoforged.neoforge.client.renderstate.BaseRenderState state) {
         return state.getRenderData(ENTITY);
@@ -52,6 +58,17 @@ public final class RenderData {
     // the player a render state was taken from, or null (not a player)
     public static AbstractClientPlayer player(net.neoforged.neoforge.client.renderstate.BaseRenderState state) {
         return entity(state) instanceof AbstractClientPlayer p ? p : null;
+    }
+    *///?}
+
+    // whether a render state is the rider drawn on the HUD: from 1.21.11 the entity is described and drawn at different times, so it carries the mark
+    //? if >=1.21.11 {
+    /*public static boolean hud(net.neoforged.neoforge.client.renderstate.BaseRenderState state) {
+        return state.getRenderData(HUD) != null;
+    }
+    *///?} else if >=1.21.2 {
+    /*public static boolean hud(net.neoforged.neoforge.client.renderstate.BaseRenderState state) {
+        return com.botwclimb.client.shrine.totk.TotkRide.drawingHud();
     }
     *///?}
 }

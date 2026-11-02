@@ -35,15 +35,21 @@ public final class PlotOutline {
         com.botwclimb.client.ClientConfig.set(com.botwclimb.client.ClientConfig.plotOutlineValue(), !on());
     }
 
+    //? if >=1.21.11 {
+    /*@SubscribeEvent
+    public static void draw(RenderLevelStageEvent.AfterWeather event) {
+        if (!on()) return;
+    *///?} else {
     @SubscribeEvent
     public static void draw(RenderLevelStageEvent event) {
         if (!on() || event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
+    //?}
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null || mc.level.dimension() != PlotWorld.DIM) return;
         int plot = PlotWorld.plotAt(mc.player.blockPosition());
-        Vec3 cam = event.getCamera().getPosition();
+        Vec3 cam = com.botwclimb.client.ClientCompat.cameraPos();
         float x0 = PlotWorld.ORIGIN_X + plot * PlotWorld.SPACING + LOW, x1 = PlotWorld.ORIGIN_X + plot * PlotWorld.SPACING + HIGH, z0 = PlotWorld.ORIGIN_Z + LOW, z1 = PlotWorld.ORIGIN_Z + HIGH, y = PlotWorld.Y + 1f;
-        PoseStack ps = event.getPoseStack();
+        PoseStack ps = com.botwclimb.client.ClientCompat.levelPose(event);
         ps.pushPose();
         ps.translate(-cam.x, -cam.y, -cam.z);
         Matrix4f m = ps.last().pose();

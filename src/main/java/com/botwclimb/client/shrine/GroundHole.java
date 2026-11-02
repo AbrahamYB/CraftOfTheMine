@@ -132,7 +132,7 @@ public final class GroundHole {
                             continue;
                         }
                         // down it goes, with a puff of pieces (only some of the blocks, to spare the particle count)
-                        if (y >= top - 1 ? rnd(x, y, z, seed + 1) < 0.5f : rnd(x, y, z, seed + 1) < 0.1f) mc.particleEngine.destroy(pos, state);
+                        if (y >= top - 1 ? rnd(x, y, z, seed + 1) < 0.5f : rnd(x, y, z, seed + 1) < 0.1f) com.botwclimb.client.ClientCompat.destroyEffect(mc, pos, state);
                         broke = true;
                     }
                     showCrack(mc, carved, pos, -1);

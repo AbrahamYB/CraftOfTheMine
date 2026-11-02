@@ -54,12 +54,7 @@ public final class ParagliderAnimator {
         m.head.yRot = Mth.lerp(w, m.head.yRot, Mth.clamp(netHeadYaw, -70f, 70f) * RAD);
         m.head.zRot = Mth.lerp(w, m.head.zRot, 0f);
 
-        m.hat.copyFrom(m.head);
-        m.leftPants.copyFrom(m.leftLeg);
-        m.rightPants.copyFrom(m.rightLeg);
-        m.leftSleeve.copyFrom(m.leftArm);
-        m.rightSleeve.copyFrom(m.rightArm);
-        m.jacket.copyFrom(m.body);
+        com.botwclimb.client.ClientCompat.syncOuterLayers(m);
     }
 
     private static void arm(ModelPart part, float w, float x, float z, float yOffset) {

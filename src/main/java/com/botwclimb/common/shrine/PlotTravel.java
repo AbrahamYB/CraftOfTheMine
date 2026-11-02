@@ -45,7 +45,7 @@ public final class PlotTravel {
         int here = inPlot ? data.slotOf(id, PlotWorld.plotAt(terminal)) : -1;
         int open = 0;
         for (int s = 0; s < PlotData.SLOTS; s++) if (data.plot(id, s) >= 0 && data.isOpen(data.plot(id, s))) open |= 1 << s;
-        return new TerminalOpenPayload(terminal, claimed, here, inPlot, open, hosts(p).stream().map(h -> new TerminalOpenPayload.Host(h.player().getUUID(), h.player().getGameProfile().getName(), h.slot())).toList());
+        return new TerminalOpenPayload(terminal, claimed, here, inPlot, open, hosts(p).stream().map(h -> new TerminalOpenPayload.Host(h.player().getUUID(), com.botwclimb.common.Compat.name(h.player()), h.slot())).toList());
     }
 
     private record Host(ServerPlayer player, int slot, int plot) {}
@@ -155,7 +155,7 @@ public final class PlotTravel {
 
     private static Arrival worldSpawn(ServerPlayer p, double wantedRise) {
         ServerLevel level = p.level().getServer().overworld();
-        BlockPos spawn = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, level.getSharedSpawnPos());
+        BlockPos spawn = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, com.botwclimb.common.Compat.worldSpawn(level));
         double x = spawn.getX() + 0.5, z = spawn.getZ() + 0.5;
         return new Arrival(level, x, spawn.getY(), z, 0, riseThatFits(level, standingBox(p, level, x, spawn.getY(), z), wantedRise));
     }

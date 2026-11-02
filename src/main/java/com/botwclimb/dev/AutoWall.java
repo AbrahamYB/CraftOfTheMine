@@ -94,7 +94,7 @@ public final class AutoWall {
     public static void frame(RenderGuiEvent.Post event) {
         if (!ON || shot == null) return;
         Minecraft mc = Minecraft.getInstance();
-        Screenshot.grab(mc.gameDirectory, shot, mc.getMainRenderTarget(), msg -> { });
+        com.botwclimb.client.ClientCompat.screenshot(mc.gameDirectory, shot);
         shot = null;
     }
 }

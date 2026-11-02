@@ -102,14 +102,20 @@ public final class WindTrails {
         }
     }
 
+    //? if >=1.21.11 {
+    /*@SubscribeEvent
+    public static void onRender(RenderLevelStageEvent.AfterParticles event) {
+        if (TRAILS.isEmpty()) return;
+    *///?} else {
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES || TRAILS.isEmpty()) return;
+    //?}
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
-        float pt = event.getPartialTick().getGameTimeDeltaPartialTick(false);
-        Vec3 cam = event.getCamera().getPosition();
-        PoseStack ps = event.getPoseStack();
+        float pt = com.botwclimb.client.ClientCompat.partialTick(false);
+        Vec3 cam = com.botwclimb.client.ClientCompat.cameraPos();
+        PoseStack ps = com.botwclimb.client.ClientCompat.levelPose(event);
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
         VertexConsumer vc = buffers.getBuffer(RenderType.debugQuads());
         boolean any = false;

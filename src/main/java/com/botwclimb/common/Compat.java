@@ -109,4 +109,42 @@ public final class Compat {
         return codec;
     }
     //?}
+
+    /** The player's name. */
+    public static String name(ServerPlayer p) {
+        //? if >=1.21.11 {
+        /*return p.getGameProfile().name();
+        *///?} else {
+        return p.getGameProfile().getName();
+        //?}
+    }
+
+    /** Where the world's spawn is. */
+    public static net.minecraft.core.BlockPos worldSpawn(ServerLevel level) {
+        //? if >=1.21.11 {
+        /*return level.getRespawnData().pos();
+        *///?} else {
+        return level.getSharedSpawnPos();
+        //?}
+    }
+
+    /** The damage an arrow is set to do (before speed). */
+    public static double baseDamage(net.minecraft.world.entity.projectile.AbstractArrow arrow) {
+        //? if >=1.21.11 {
+        /*return arrow.baseDamage; // public through this version's access transformer
+        *///?} else {
+        return arrow.getBaseDamage();
+        //?}
+    }
+
+    /** What a command source with this permission level (0 none, 2 game master) may do; for the tests. */
+    //? if >=1.21.11 {
+    /*public static net.minecraft.server.permissions.PermissionSet permission(int level) {
+        return level >= 2 ? net.minecraft.server.permissions.LevelBasedPermissionSet.GAMEMASTER : net.minecraft.server.permissions.PermissionSet.NO_PERMISSIONS;
+    }
+    *///?} else {
+    public static int permission(int level) {
+        return level;
+    }
+    //?}
 }

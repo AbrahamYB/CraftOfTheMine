@@ -5,7 +5,6 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -63,9 +62,28 @@ public final class PlotData extends SavedData {
         setDirty();
     }
 
+    //? if >=1.21.11 {
+    /*private static final com.mojang.serialization.Codec<PlotData> CODEC = CompoundTag.CODEC.xmap(PlotData::read, d -> d.write(new CompoundTag()));
+    private static final net.minecraft.world.level.saveddata.SavedDataType<PlotData> TYPE =
+            new net.minecraft.world.level.saveddata.SavedDataType<>(NAME, PlotData::new, CODEC, null);
+
+    public static PlotData get(MinecraftServer server) {
+        return server.overworld().getDataStorage().computeIfAbsent(TYPE);
+    }
+    *///?} else {
     public static PlotData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(PlotData::new, PlotData::load, null), NAME);
     }
+
+    @Override
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+        return write(tag);
+    }
+
+    public static PlotData load(CompoundTag tag, HolderLookup.Provider registries) {
+        return read(tag);
+    }
+    //?}
 
     /** The plot number in this slot, or -1 when the slot is still free. */
     public int plot(UUID player, int slot) {
@@ -102,13 +120,17 @@ public final class PlotData extends SavedData {
         setDirty();
     }
 
-    @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    /** A copy made by saving and loading (what the world does between sessions). */
+    public static PlotData roundTrip(PlotData d) {
+        return read(d.write(new CompoundTag()));
+    }
+
+    private CompoundTag write(CompoundTag tag) {
         tag.putInt("next", next);
         ListTag players = new ListTag();
         for (var e : plots.entrySet()) {
             CompoundTag t = new CompoundTag();
-            t.putUUID("id", e.getKey());
+            com.botwclimb.common.Nbt.putUuid(t, "id", e.getKey());
             t.putIntArray("plots", e.getValue());
             players.add(t);
         }
@@ -117,7 +139,7 @@ public final class PlotData extends SavedData {
         for (var e : returns.entrySet()) {
             Return r = e.getValue();
             CompoundTag t = new CompoundTag();
-            t.putUUID("id", e.getKey());
+            com.botwclimb.common.Nbt.putUuid(t, "id", e.getKey());
             t.putString("dim", r.dim().location().toString());
             t.putLong("terminal", r.terminal().asLong());
             t.putDouble("x", r.x());
@@ -137,7 +159,7 @@ public final class PlotData extends SavedData {
         ListTag gs = new ListTag();
         for (var e : guests.entrySet()) {
             CompoundTag t = new CompoundTag();
-            t.putUUID("id", e.getKey());
+            com.botwclimb.common.Nbt.putUuid(t, "id", e.getKey());
             t.putInt("plot", e.getValue());
             gs.add(t);
         }
@@ -145,26 +167,24 @@ public final class PlotData extends SavedData {
         return tag;
     }
 
-    public static PlotData load(CompoundTag tag, HolderLookup.Provider registries) {
+    private static PlotData read(CompoundTag tag) {
         PlotData d = new PlotData();
-        d.next = tag.getInt("next");
-        for (Tag raw : tag.getList("players", Tag.TAG_COMPOUND)) {
-            CompoundTag t = (CompoundTag) raw;
-            int[] saved = t.getIntArray("plots");
+        d.next = com.botwclimb.common.Nbt.getInt(tag, "next");
+        for (CompoundTag t : com.botwclimb.common.Nbt.list(tag, "players")) {
+            int[] saved = com.botwclimb.common.Nbt.getIntArray(t, "plots");
             int[] a = new int[SLOTS];
             Arrays.fill(a, -1);
             System.arraycopy(saved, 0, a, 0, Math.min(saved.length, SLOTS));
-            d.plots.put(t.getUUID("id"), a);
+            d.plots.put(com.botwclimb.common.Nbt.getUuid(t, "id"), a);
         }
-        for (Tag raw : tag.getList("returns", Tag.TAG_COMPOUND)) {
-            CompoundTag t = (CompoundTag) raw;
-            ResourceLocation dim = ResourceLocation.tryParse(t.getString("dim"));
+        for (CompoundTag t : com.botwclimb.common.Nbt.list(tag, "returns")) {
+            ResourceLocation dim = ResourceLocation.tryParse(com.botwclimb.common.Nbt.getString(t, "dim"));
             if (dim == null) continue;
-            d.returns.put(t.getUUID("id"), new Return(ResourceKey.create(Registries.DIMENSION, dim), BlockPos.of(t.getLong("terminal")),
-                    t.getDouble("x"), t.getDouble("y"), t.getDouble("z"), t.getFloat("yaw")));
+            d.returns.put(com.botwclimb.common.Nbt.getUuid(t, "id"), new Return(ResourceKey.create(Registries.DIMENSION, dim), BlockPos.of(com.botwclimb.common.Nbt.getLong(t, "terminal")),
+                    com.botwclimb.common.Nbt.getDouble(t, "x"), com.botwclimb.common.Nbt.getDouble(t, "y"), com.botwclimb.common.Nbt.getDouble(t, "z"), com.botwclimb.common.Nbt.getFloat(t, "yaw")));
         }
-        for (Tag raw : tag.getList("open", Tag.TAG_COMPOUND)) if (((CompoundTag) raw).contains("plot")) d.open.add(((CompoundTag) raw).getInt("plot"));
-        for (Tag raw : tag.getList("guests", Tag.TAG_COMPOUND)) d.guests.put(((CompoundTag) raw).getUUID("id"), ((CompoundTag) raw).getInt("plot"));
+        for (CompoundTag t : com.botwclimb.common.Nbt.list(tag, "open")) if (t.contains("plot")) d.open.add(com.botwclimb.common.Nbt.getInt(t, "plot"));
+        for (CompoundTag t : com.botwclimb.common.Nbt.list(tag, "guests")) d.guests.put(com.botwclimb.common.Nbt.getUuid(t, "id"), com.botwclimb.common.Nbt.getInt(t, "plot"));
         return d;
     }
 }

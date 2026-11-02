@@ -21,7 +21,20 @@ import org.joml.Matrix4f;
  * player's own upgrades (see {@link AltarFx}), so it differs from player to player. Both rings are always there, shadowed
  * until their quarters are unlocked; the runes on the four sides light up from the first upgrade.
  */
+//? if >=1.21.11 {
+/*public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntity, AltarRenderer.State> {
+    public static class State extends net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState {
+        float partial;
+    }
+*///?} else {
 public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntity> {
+//?}
+
+    /** Where the geometry goes: the buffer of a render type (a place to write vertices), however the version hands that out. */
+    private interface Out {
+        void geom(RenderType type, java.util.function.BiConsumer<PoseStack.Pose, VertexConsumer> write);
+    }
+
     private static final float TOP = 12f / 16f + 0.02f, SIDE = 0.02f; // far enough off the surface not to z-fight with it
     /** Ring radii in blocks: the outer ring is the first extra wheel, the inner one the second. */
     private static final float[][] RINGS = {{0.26f, 0.355f}, {0.125f, 0.195f}};
@@ -44,15 +57,43 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
 
     public AltarRenderer(net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider.Context ctx) {}
 
+    //? if >=1.21.11 {
+    /*@Override
+    public State createRenderState() {
+        return new State();
+    }
+
+    @Override
+    public void extractRenderState(StaminaAltarBlockEntity be, State state, float partialTick, net.minecraft.world.phys.Vec3 camera,
+                                   net.minecraft.client.renderer.feature.ModelFeatureRenderer.CrumblingOverlay crumbling) {
+        net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState.extractBase(be, state, crumbling);
+        state.partial = partialTick;
+        LocalPlayer p = Minecraft.getInstance().player;
+        if (p != null && p.hasData(BotwClimb.STAMINA_UPGRADES)) {
+            int upgrades = AltarFx.upgrades(p);
+            glyphs(be, upgrades, AltarFx.lit(upgrades, partialTick)); // the drifting letters are spawned as the altar is looked at, as before
+        }
+    }
+
+    @Override
+    public void submit(State state, PoseStack pose, net.minecraft.client.renderer.SubmitNodeCollector collector, net.minecraft.client.renderer.state.CameraRenderState camera) {
+        draw((type, write) -> collector.submitCustomGeometry(pose, type, write::accept), pose, state.partial, null);
+    }
+    *///?} else {
     @Override
     public void render(StaminaAltarBlockEntity be, float partialTick, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
+        draw((type, write) -> write.accept(pose.last(), buffers.getBuffer(type)), pose, partialTick, be);
+    }
+    //?}
+
+    /** All the glowing rings and runes (and, when a block entity is given, the drifting letters). */
+    private static void draw(Out out, PoseStack pose, float partialTick, StaminaAltarBlockEntity be) {
         LocalPlayer p = Minecraft.getInstance().player;
         if (p == null || !p.hasData(BotwClimb.STAMINA_UPGRADES)) return;
         int upgrades = AltarFx.upgrades(p);
         AltarFx.Look lit = AltarFx.lit(upgrades, partialTick);
         boolean dark = AltarFx.finaleActive() && lit.level() <= 0f; // all the way off: nothing is drawn
         if (dark) return;
-        Matrix4f m = pose.last().pose();
         boolean maxed = upgrades >= ClimbConstants.STAMINA_MAX_UPGRADES;
         float shadowFade = AltarFx.finaleActive() ? lit.level() : 1f; // the shadows go out with the lights during the finale
         for (int ring = 0; ring < 2; ring++) {
@@ -61,14 +102,14 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
                 int rgb = on ? lit.rgb() : AltarFx.SHADOW;
                 float a = on ? lit.level() : 0.9f * shadowFade;
                 if (a <= 0.01f) continue;
-                arcQuad(buffers, pose, m, ring, q, on, rgb, a);
+                arcQuad(out, ring, q, on, rgb, a);
             }
         }
-        glyphs(be, upgrades, lit);
+        if (be != null) glyphs(be, upgrades, lit);
         if (upgrades >= 1 || AltarFx.finaleActive()) {
-            if (lit.level() > 0.01f) runes(buffers, pose, m, lit.rgb(), lit.level(), true);
+            if (lit.level() > 0.01f) runes(out, lit.rgb(), lit.level(), true);
         } else {
-            runes(buffers, pose, m, AltarFx.SHADOW, 0.9f, false);
+            runes(out, AltarFx.SHADOW, 0.9f, false);
         }
     }
 
@@ -86,14 +127,14 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
         var pos = be.getBlockPos();
         var particle = Minecraft.getInstance().particleEngine.createParticle(BotwClimb.GLYPH.get(),
                 pos.getX() + s[0], pos.getY() + TOP + 0.15, pos.getZ() + s[1], rnd.nextInt(26), 0, 0);
-        if (particle != null) particle.setColor((lit.rgb() >> 16 & 255) / 255f, (lit.rgb() >> 8 & 255) / 255f, (lit.rgb() & 255) / 255f);
+        if (particle instanceof net.minecraft.client.particle.TextureSheetParticle sq) sq.setColor((lit.rgb() >> 16 & 255) / 255f, (lit.rgb() >> 8 & 255) / 255f, (lit.rgb() & 255) / 255f);
     }
 
     /**
      * A ring quarter on the top face. The 128x pattern of cells (same pixel grid as the stone, mottled per cell) is baked once
      * into a texture per ring and look, so a quarter is a single quad tinted by the current colour instead of thousands of cells.
      */
-    private static void arcQuad(MultiBufferSource buffers, PoseStack pose, Matrix4f m, int ring, int q, boolean lit, int rgb, float a) {
+    private static void arcQuad(Out out, int ring, int q, boolean lit, int rgb, float a) {
         final int GRID = grid();
         ResourceLocation tex = TOP_TEX[ring][lit ? 1 : 0];
         if (tex == null) tex = TOP_TEX[ring][lit ? 1 : 0] = bake("top" + ring + (lit ? "l" : "s"), GRID, GRID, (img, l) -> {
@@ -114,8 +155,9 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
         }, lit);
         // quarter q covers one quadrant of the block (counter-clockwise from north-west), so draw just that half-by-half square
         float x0 = (q == 0 || q == 1) ? 0f : 0.5f, z0 = (q == 0 || q == 3) ? 0f : 0.5f;
-        VertexConsumer vc = buffers.getBuffer(RenderType.entityTranslucentEmissive(tex));
-        quadUV(vc, pose, m, x0, TOP, z0, x0 + 0.5f, TOP, z0, x0 + 0.5f, TOP, z0 + 0.5f, x0, TOP, z0 + 0.5f, x0, z0, x0 + 0.5f, z0, x0 + 0.5f, z0 + 0.5f, x0, z0 + 0.5f, rgb, a, 0, 1, 0);
+        final float fx0 = x0, fz0 = z0;
+        out.geom(RenderType.entityTranslucentEmissive(tex), (last, vc) ->
+                quadUV(vc, last, fx0, TOP, fz0, fx0 + 0.5f, TOP, fz0, fx0 + 0.5f, TOP, fz0 + 0.5f, fx0, TOP, fz0 + 0.5f, fx0, fz0, fx0 + 0.5f, fz0, fx0 + 0.5f, fz0 + 0.5f, fx0, fz0 + 0.5f, rgb, a, 0, 1, 0));
     }
 
     private static final ResourceLocation[][] TOP_TEX = new ResourceLocation[2][2];
@@ -127,7 +169,11 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
         var img = new com.mojang.blaze3d.platform.NativeImage(w, h, true); // starts fully transparent
         painter.paint(img, lit);
         var id = ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "altar_" + name);
+        //? if >=1.21.11 {
+        /*Minecraft.getInstance().getTextureManager().register(id, new net.minecraft.client.renderer.texture.DynamicTexture(() -> id.toString(), img));
+        *///?} else {
         Minecraft.getInstance().getTextureManager().register(id, new net.minecraft.client.renderer.texture.DynamicTexture(img));
+        //?}
         return id;
     }
 
@@ -159,7 +205,7 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
     }
 
     /** The rune on each of the four sides, one baked texture (8 pieces per 1/16 cell, mottled like the rings) and one quad per side. */
-    private static void runes(MultiBufferSource buffers, PoseStack pose, Matrix4f m, int rgb, float a, boolean lit) {
+    private static void runes(Out out, int rgb, float a, boolean lit) {
         float top = 12f / 16f, o = SIDE;
         for (int side = 0; side < 4; side++) {
             int sd = side + 1;
@@ -172,30 +218,34 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
                             com.botwclimb.client.ClientCompat.setGrey(img, gu, gv, grey(tone(0xFFFFFF, gu, gv, sd, l)));
                         }
             }, lit);
-            VertexConsumer vc = buffers.getBuffer(RenderType.entityTranslucentEmissive(tex));
-            // north (z = 0), south (z = 1), west (x = 0), east (x = 1): u runs left to right as seen from outside
-            switch (side) {
-                case 0 -> quadUV(vc, pose, m, 1, top, -o, 0, top, -o, 0, 0, -o, 1, 0, -o, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, 0, 0, -1);
-                case 1 -> quadUV(vc, pose, m, 0, top, 1 + o, 1, top, 1 + o, 1, 0, 1 + o, 0, 0, 1 + o, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, 0, 0, 1);
-                case 2 -> quadUV(vc, pose, m, -o, top, 0, -o, top, 1, -o, 0, 1, -o, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, -1, 0, 0);
-                default -> quadUV(vc, pose, m, 1 + o, top, 1, 1 + o, top, 0, 1 + o, 0, 0, 1 + o, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, 1, 0, 0);
-            }
+            final int fs = side;
+            out.geom(RenderType.entityTranslucentEmissive(tex), (last, vc) -> {
+                // north (z = 0), south (z = 1), west (x = 0), east (x = 1): u runs left to right as seen from outside
+                switch (fs) {
+                    case 0 -> quadUV(vc, last, 1, top, -o, 0, top, -o, 0, 0, -o, 1, 0, -o, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, 0, 0, -1);
+                    case 1 -> quadUV(vc, last, 0, top, 1 + o, 1, top, 1 + o, 1, 0, 1 + o, 0, 0, 1 + o, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, 0, 0, 1);
+                    case 2 -> quadUV(vc, last, -o, top, 0, -o, top, 1, -o, 0, 1, -o, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, -1, 0, 0);
+                    default -> quadUV(vc, last, 1 + o, top, 1, 1 + o, top, 0, 1 + o, 0, 0, 1 + o, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, 1, 0, 0);
+                }
+            });
         }
     }
 
     /** A textured quad tinted by rgb; for the top face the uv is the position (u = x, v = z), for the sides u runs along the face and v down from its top. */
-    private static void quadUV(VertexConsumer vc, PoseStack pose, Matrix4f m,
+    private static void quadUV(VertexConsumer vc, PoseStack.Pose last,
                                float x0, float y0, float z0, float x1, float y1, float z1, float x2, float y2, float z2, float x3, float y3, float z3,
                                float u0, float v0, float u1, float v1, float u2, float v2, float u3, float v3, int rgb, float a, float nx, float ny, float nz) {
         float r = (rgb >> 16 & 255) / 255f, g = (rgb >> 8 & 255) / 255f, b = (rgb & 255) / 255f;
         float[][] p = {{x0, y0, z0, u0, v0}, {x1, y1, z1, u1, v1}, {x2, y2, z2, u2, v2}, {x3, y3, z3, u3, v3}};
         for (float[] c : p)
-            vc.addVertex(m, c[0], c[1], c[2]).setColor(r, g, b, a).setUv(c[3], c[4]).setOverlay(OverlayTexture.NO_OVERLAY)
-                    .setLight(LightTexture.FULL_BRIGHT).setNormal(pose.last(), nx, ny, nz);
+            vc.addVertex(last.pose(), c[0], c[1], c[2]).setColor(r, g, b, a).setUv(c[3], c[4]).setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setLight(LightTexture.FULL_BRIGHT).setNormal(last, nx, ny, nz);
     }
 
+    //? if <1.21.11 {
     @Override
     public boolean shouldRenderOffScreen(StaminaAltarBlockEntity be) {
         return false;
     }
+    //?}
 }

@@ -46,8 +46,9 @@ neoForge {
         }
     }
 
-    // This line is optional. Access Transformers are automatically detected
-    // accessTransformers = project.files('src/main/resources/META-INF/accesstransformer.cfg')
+    // the version's own access transformer when it has one (versions/<v>/resources/META-INF), else the shared one
+    def versionAt = rootProject.file("versions/${project.name}/resources/META-INF/accesstransformer.cfg")
+    accessTransformers.from(versionAt.exists() ? versionAt : rootProject.file('src/main/resources/META-INF/accesstransformer.cfg'))
 
     // Default run configurations.
     // These can be tweaked, removed, or duplicated as needed.
@@ -278,6 +279,21 @@ stonecutter {
             replace 'net.minecraft.client.renderer.RenderType', 'net.minecraft.client.renderer.rendertype.RenderType'
             replace 'net.minecraft.Util', 'net.minecraft.util.Util'
             replace 'ReceivingLevelScreen', 'LevelLoadingScreen'
+            replace 'import net.minecraft.client.particle.TextureSheetParticle;', 'import net.minecraft.client.particle.SingleQuadParticle;'
+            replace 'extends TextureSheetParticle', 'extends SingleQuadParticle'
+            replace 'client.particle.TextureSheetParticle sq', 'client.particle.SingleQuadParticle sq'
+            replace '.location()', '.identifier()'
+            // the render type factories moved to their own class
+            replace 'RenderType.debugQuads(', 'net.minecraft.client.renderer.rendertype.RenderTypes.debugQuads('
+            replace 'RenderType.entityCutoutNoCull(', 'net.minecraft.client.renderer.rendertype.RenderTypes.entityCutoutNoCull('
+            replace 'RenderType.entityTranslucentEmissive(', 'net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucentEmissive('
+            replace 'RenderType.eyes(', 'net.minecraft.client.renderer.rendertype.RenderTypes.eyes('
+            replace 'RenderType::entityCutoutNoCull', 'net.minecraft.client.renderer.rendertype.RenderTypes::entityCutoutNoCull'
+            replace 'g.renderTooltip(', 'g.setTooltipForNextFrame('
+            // the test annotations of the old framework are replaced by the mod's own
+            replace 'import net.minecraft.gametest.framework.GameTest;', 'import com.botwclimb.dev.GameTest;'
+            replace 'import net.neoforged.neoforge.gametest.GameTestHolder;', 'import com.botwclimb.dev.GameTestHolder;'
+            replace 'import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;', 'import com.botwclimb.dev.PrefixGameTestTemplate;'
             replace 'PlayerRenderState', 'AvatarRenderState'
             replace 'net.minecraft.client.resources.PlayerSkin', 'net.minecraft.world.entity.player.PlayerSkin'
         }

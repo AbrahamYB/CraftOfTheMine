@@ -1,6 +1,7 @@
 package com.botwclimb.client.paraglider;
 
 import com.botwclimb.BotwClimb;
+//? if <1.21.11
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.resources.PlayerSkin;
 import net.neoforged.api.distmarker.Dist;
@@ -24,10 +25,17 @@ public final class ParagliderClientSetup {
 
     @SubscribeEvent
     public static void addLayers(EntityRenderersEvent.AddLayers event) {
+        //? if >=1.21.11 {
+        /*for (net.minecraft.world.entity.player.PlayerModelType skin : event.getSkins()) {
+            var r = event.getPlayerRenderer(skin);
+            r.addLayer(new ParagliderLayer(r, new ParagliderModel(event.getEntityModels().bakeLayer(ParagliderModel.LAYER))));
+        }
+        *///?} else {
         for (PlayerSkin.Model skin : event.getSkins()) {
             if (event.getSkin(skin) instanceof PlayerRenderer r) {
                 r.addLayer(new ParagliderLayer(r, new ParagliderModel(event.getEntityModels().bakeLayer(ParagliderModel.LAYER))));
             }
         }
+        //?}
     }
 }

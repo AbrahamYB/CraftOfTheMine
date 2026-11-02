@@ -206,8 +206,8 @@ public final class FabricPicker {
         int selected = mc.player.getData(BotwClimb.PARAGLIDER).fabric;
         int unlocked = mc.player.getData(BotwClimb.FABRIC_UNLOCKS);
 
-        g.pose().pushPose();
-        g.pose().translate(0, 0, 400);
+        com.botwclimb.client.ClientCompat.pushPose(g);
+        com.botwclimb.client.ClientCompat.translate(g, 0, 0, 400);
         Component tooltipTitle = null;
         List<Component> tooltip = null;
         ItemStack itemTip = null;
@@ -247,10 +247,10 @@ public final class FabricPicker {
                 p = 1f - (1f - p) * (1f - p) * (1f - p);
                 float scale = 0.8f + 0.2f * p;
                 float px = panelOnRight(screen) ? c.x() : c.x() + c.w(), py = c.y() + 12;
-                g.pose().pushPose();
-                g.pose().translate(px, py, 0);
-                g.pose().scale(scale, scale, 1f);
-                g.pose().translate(-px, -py, 0);
+                com.botwclimb.client.ClientCompat.pushPose(g);
+                com.botwclimb.client.ClientCompat.translate(g, px, py, 0);
+                com.botwclimb.client.ClientCompat.scale(g, scale, scale);
+                com.botwclimb.client.ClientCompat.translate(g, -px, -py, 0);
                 panel(g, c.x(), c.y(), c.w(), c.h(), PANEL);
                 if (p > 0.5f) {
                     g.drawString(mc.font, mc.font.plainSubstrByWidth(Component.translatable("fabric.botwclimb." + all.get(info).id()).getString(), c.w() - PAD * 2), c.x() + PAD, c.y() + PAD, TEXT, false);
@@ -281,7 +281,7 @@ public final class FabricPicker {
                                 bx + bw / 2, c.btnY() + (BTN_H - 8) / 2, c.craftable() ? 0xFFFFFFFF : MUTED);
                     }
                 }
-                g.pose().popPose();
+                com.botwclimb.client.ClientCompat.popPose(g);
             }
         }
         // the button: a vanilla button with the worn fabric's pattern on it, pressed in while the menu is open
@@ -292,7 +292,7 @@ public final class FabricPicker {
         if (itemTip != null) g.renderTooltip(mc.font, itemTip, mx, my);
         else if (tooltip != null) g.renderTooltip(mc.font, tooltip, Optional.empty(), mx, my);
         else if (overButton && !open) g.renderTooltip(mc.font, Component.translatable("gui.botwclimb.cloth_button_tip"), mx, my);
-        g.pose().popPose();
+        com.botwclimb.client.ClientCompat.popPose(g);
     }
 
     @SubscribeEvent

@@ -139,7 +139,7 @@ public final class AutoShots {
         if (!ON || !shotNow || event.getScreen() instanceof net.minecraft.client.gui.screens.ReceivingLevelScreen) return;
         shotNow = false;
         Minecraft mc = Minecraft.getInstance();
-        Screenshot.grab(mc.gameDirectory, shotName, mc.getMainRenderTarget(), msg -> { });
+        com.botwclimb.client.ClientCompat.screenshot(mc.gameDirectory, shotName);
     }
 
     @SubscribeEvent
@@ -147,7 +147,7 @@ public final class AutoShots {
         if (!ON || !shotNow || Minecraft.getInstance().screen != null) return;
         shotNow = false;
         Minecraft mc = Minecraft.getInstance();
-        Screenshot.grab(mc.gameDirectory, shotName, mc.getMainRenderTarget(), msg -> { });
+        com.botwclimb.client.ClientCompat.screenshot(mc.gameDirectory, shotName);
     }
 
     /** A flat stone pad with air above it and a terminal beside the player, wherever in the world they are. */
