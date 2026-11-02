@@ -31,7 +31,7 @@ public final class ParagliderAnimator {
         return Mth.lerp(pt, g.pitchO, g.pitch);
     }
 
-    public static void apply(PlayerModel<?> m, ParagliderData g, float pt, float age, float netHeadYaw) {
+    public static void apply(PlayerModel m, ParagliderData g, float pt, float age, float netHeadYaw) {
         float w = open(g, pt);
         if (w <= 0.001f) return;
 

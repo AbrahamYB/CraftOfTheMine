@@ -40,7 +40,11 @@ public final class ParagliderModel extends Model {
     }
 
     public ParagliderModel(ModelPart root) {
+        //? if >=1.21.2 {
+        /*super(root, RenderType::entityCutoutNoCull);
+        *///?} else {
         super(RenderType::entityCutoutNoCull);
+        //?}
         this.root = root;
         this.ribbonLeft = root.getChild("ribbon_l");
         this.ribbonRight = root.getChild("ribbon_r");
@@ -176,8 +180,10 @@ public final class ParagliderModel extends Model {
         setShade(false);
     }
 
+    //? if <1.21.2 {
     @Override
     public void renderToBuffer(PoseStack poseStack, VertexConsumer buffer, int packedLight, int packedOverlay, int color) {
         root.render(poseStack, buffer, packedLight, packedOverlay, color);
     }
+    //?}
 }

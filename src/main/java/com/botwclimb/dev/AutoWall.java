@@ -43,16 +43,28 @@ public final class AutoWall {
         if (t == 320) { // marker gone: a jump with Shift held (set on the key mappings: no modifier reaches the game this way, so it is the plain-jump case only)
             startY = mc.player.getY();
             peak = startY;
+            BotwClimb.LOGGER.info("[autowall] at the jump: onGround {} y {}", mc.player.onGround(), startY);
             mc.options.keyShift.setDown(true);
             mc.options.keyJump.setDown(true);
         }
-        if (t > 320 && t < 340) peak = Math.max(peak, mc.player.getY());
+        if (t > 320 && t < 340) {
+            peak = Math.max(peak, mc.player.getY());
+            if (t % 4 == 0) BotwClimb.LOGGER.info("[autowall] t={} y+{} onGround {} jumpKey {}", t, mc.player.getY() - startY, mc.player.onGround(), mc.options.keyJump.isDown());
+        }
         if (t == 340) {
             BotwClimb.LOGGER.info("[autowall] shift + jump in the open: peak {} blocks above the start", peak - startY);
             mc.options.keyShift.setDown(false);
             mc.options.keyJump.setDown(false);
         }
         if (t == 345) shot = "wall_open.png";
+        if (t == 350) server.execute(() -> player().teleportTo(base.getX() + 0.5, base.getY(), base.getZ() - 0.5)); // back against the wall
+        if (t == 360) { // grab it on the client only, in third person, to see the climbing pose (the server will correct it a moment later)
+            var d = mc.player.getData(BotwClimb.CLIMB);
+            d.dir = net.minecraft.core.Direction.NORTH;
+            d.setState(com.botwclimb.common.climb.ClimbState.CLIMBING);
+            mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
+        }
+        if (t >= 361 && t <= 366) shot = "wall_climb_" + t + ".png";
         if (t == 400) {
             BotwClimb.LOGGER.info("AutoWall finished");
             mc.stop();
@@ -65,7 +77,7 @@ public final class AutoWall {
 
     private static void build() {
         ServerPlayer p = player();
-        if (p.serverLevel() != p.server.overworld()) p.teleportTo(p.server.overworld(), 0.5, 100, 0.5, 0f, 0f);
+        if (p.serverLevel() != p.server.overworld()) com.botwclimb.common.Compat.teleport(p, p.server.overworld(), 0.5, 100, 0.5, 0f, 0f);
         ServerLevel level = p.serverLevel();
         base = p.blockPosition();
         p.setGameMode(GameType.SURVIVAL);
@@ -75,7 +87,7 @@ public final class AutoWall {
         }
         for (int x = -6; x <= 6; x++) for (int y = 0; y <= 8; y++) level.setBlock(base.offset(x, y, -2), Blocks.STONE_BRICKS.defaultBlockState(), 2);
         level.setDayTime(6000);
-        p.teleportTo(level, base.getX() + 0.5, base.getY(), base.getZ() - 0.5 + 0.0, 180f, 5f); // the wall's face is at z = base - 1; 0.3 half width + 0.2 gap
+        com.botwclimb.common.Compat.teleport(p, level, base.getX() + 0.5, base.getY(), base.getZ() - 0.5 + 0.0, 180f, 5f); // the wall's face is at z = base - 1; 0.3 half width + 0.2 gap
     }
 
     @SubscribeEvent

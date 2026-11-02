@@ -14,6 +14,21 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 
 /** Draws the canopy above the player; it unfolds from the hands while the glider opens. */
+//? if >=1.21.2 {
+/*public final class ParagliderLayer extends RenderLayer<net.minecraft.client.renderer.entity.state.PlayerRenderState, PlayerModel> {
+    private final ParagliderModel model;
+
+    public ParagliderLayer(RenderLayerParent<net.minecraft.client.renderer.entity.state.PlayerRenderState, PlayerModel> parent, ParagliderModel model) {
+        super(parent);
+        this.model = model;
+    }
+
+    @Override
+    public void render(PoseStack ps, MultiBufferSource buffer, int light, net.minecraft.client.renderer.entity.state.PlayerRenderState state, float yRot, float xRot) {
+        AbstractClientPlayer p = com.botwclimb.client.RenderData.player(state);
+        if (p != null) draw(model, ps, buffer, light, p, Mth.clamp(state.ageInTicks - p.tickCount, 0f, 1f));
+    }
+*///?} else {
 public final class ParagliderLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
     private final ParagliderModel model;
 
@@ -26,6 +41,11 @@ public final class ParagliderLayer extends RenderLayer<AbstractClientPlayer, Pla
     @Override
     public void render(PoseStack ps, MultiBufferSource buffer, int light, AbstractClientPlayer p, float limbSwing,
                        float limbSwingAmount, float partialTick, float ageInTicks, float netHeadYaw, float headPitch) {
+        draw(model, ps, buffer, light, p, partialTick);
+    }
+//?}
+
+    private static void draw(ParagliderModel model, PoseStack ps, MultiBufferSource buffer, int light, AbstractClientPlayer p, float partialTick) {
         if (!p.hasData(BotwClimb.PARAGLIDER)) return;
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
         float open = ParagliderAnimator.open(g, partialTick);

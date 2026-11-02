@@ -35,23 +35,20 @@ public class BotwClimb {
             ATTACHMENTS.register("fabric", () -> AttachmentType.builder(() -> 0)
                     .serialize(com.mojang.serialization.Codec.INT).copyOnDeath().build());
 
-    /** Which paraglider fabrics the player has learned (one bit per fabric, see FabricUnlocks). Saved, kept on death, synced to the owner. */
+    /** Which paraglider fabrics the player has learned (one bit per fabric, see FabricUnlocks). Saved, kept on death, sent to the owner by PlayerStateSync. */
     public static final Supplier<AttachmentType<Integer>> FABRIC_UNLOCKS =
             ATTACHMENTS.register("fabric_unlocks", () -> AttachmentType.builder(() -> 0)
-                    .serialize(com.mojang.serialization.Codec.INT).copyOnDeath()
-                    .sync(net.minecraft.network.codec.ByteBufCodecs.VAR_INT).build());
+                    .serialize(com.mojang.serialization.Codec.INT).copyOnDeath().build());
 
-    /** Stamina capacity upgrades 0..8 (a quarter wheel, 187.5 units each, 4 per extra wheel). Saved, kept on death, synced to the client for the HUD. */
+    /** Stamina capacity upgrades 0..8 (a quarter wheel, 187.5 units each, 4 per extra wheel). Saved, kept on death, sent to the owner by PlayerStateSync. */
     public static final Supplier<AttachmentType<Integer>> STAMINA_UPGRADES =
             ATTACHMENTS.register("stamina_upgrades", () -> AttachmentType.builder(() -> 0)
-                    .serialize(com.mojang.serialization.Codec.INT).copyOnDeath()
-                    .sync(net.minecraft.network.codec.ByteBufCodecs.VAR_INT).build());
+                    .serialize(com.mojang.serialization.Codec.INT).copyOnDeath().build());
 
-    /** Points left over after an upgrade at the stamina altar, kept for the next one. Saved, kept on death, synced to the owner. */
+    /** Points left over after an upgrade at the stamina altar, kept for the next one. Saved, kept on death, sent to the owner by PlayerStateSync. */
     public static final Supplier<AttachmentType<Float>> ALTAR_CREDIT =
             ATTACHMENTS.register("altar_credit", () -> AttachmentType.builder(() -> 0f)
-                    .serialize(com.mojang.serialization.Codec.FLOAT).copyOnDeath()
-                    .sync(net.minecraft.network.codec.ByteBufCodecs.FLOAT).build());
+                    .serialize(com.mojang.serialization.Codec.FLOAT).copyOnDeath().build());
 
     // ---- the stamina altar
     private static final net.neoforged.neoforge.registries.DeferredRegister.Blocks BLOCKS =
@@ -66,8 +63,13 @@ public class BotwClimb {
                     net.minecraft.world.level.block.state.BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.ENDER_CHEST).noOcclusion().lightLevel(s -> 0));
     public static final net.neoforged.neoforge.registries.DeferredItem<net.minecraft.world.item.BlockItem> ALTAR_ITEM = ITEMS.registerSimpleBlockItem(ALTAR_BLOCK);
     public static final Supplier<net.minecraft.world.level.block.entity.BlockEntityType<com.botwclimb.common.altar.StaminaAltarBlockEntity>> ALTAR_BE =
-            BLOCK_ENTITIES.register("stamina_altar", () -> net.minecraft.world.level.block.entity.BlockEntityType.Builder
-                    .of(com.botwclimb.common.altar.StaminaAltarBlockEntity::new, ALTAR_BLOCK.get()).build(null));
+            BLOCK_ENTITIES.register("stamina_altar", () ->
+                    //? if >=1.21.2 {
+                    /*new net.minecraft.world.level.block.entity.BlockEntityType<>(com.botwclimb.common.altar.StaminaAltarBlockEntity::new, ALTAR_BLOCK.get()));
+                    *///?} else {
+                    net.minecraft.world.level.block.entity.BlockEntityType.Builder
+                            .of(com.botwclimb.common.altar.StaminaAltarBlockEntity::new, ALTAR_BLOCK.get()).build(null));
+                    //?}
 
     public static final net.neoforged.neoforge.registries.DeferredBlock<com.botwclimb.common.shrine.ShrineTerminalBlock> TERMINAL_BLOCK =
             BLOCKS.registerBlock("shrine_terminal", com.botwclimb.common.shrine.ShrineTerminalBlock::new,

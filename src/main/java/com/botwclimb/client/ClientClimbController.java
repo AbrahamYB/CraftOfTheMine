@@ -12,6 +12,7 @@ import com.botwclimb.network.ClimbInputPayload;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
+//? if <1.21.2
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.Direction;
@@ -47,22 +48,22 @@ public final class ClientClimbController {
     @SubscribeEvent
     public static void onMovementInput(MovementInputUpdateEvent event) {
         if (!(event.getEntity() instanceof LocalPlayer p)) return;
-        Input in = event.getInput();
+        var in = event.getInput();
         ClimbData d = p.getData(BotwClimb.CLIMB);
         float rawForward = in.forwardImpulse, rawStrafe = in.leftImpulse;
         // NeoForge hands a key press only to the bindings that match the held modifiers when there are any: Shift + Space goes to the climb and
         // glider bindings and vanilla's jump never sees it (so a jump with Shift held, bridging and pillaring, did nothing). Give it back here.
         var jumpKey = Minecraft.getInstance().options.keyJump.getKey();
-        if (!in.jumping && (ClimbKeys.CLIMB.isDown() && ClimbKeys.CLIMB.getKey().equals(jumpKey)
+        if (!ClientCompat.jumping(in) && (ClimbKeys.CLIMB.isDown() && ClimbKeys.CLIMB.getKey().equals(jumpKey)
                 || com.botwclimb.client.paraglider.ParagliderKeys.PARAGLIDE.isDown() && com.botwclimb.client.paraglider.ParagliderKeys.PARAGLIDE.getKey().equals(jumpKey))) {
-            in.jumping = true;
+            ClientCompat.jumping(in, true);
         }
         ClientParagliderController.handleChord(p, in); // must run before anything reads in.jumping
 
         // Shift that is part of the climb key combo must not count as "let go" while grabbing the wall,
         // nor afterwards until it has been released once. Sprint is not used at all.
         KeyModifier mod = ClimbKeys.CLIMB.getKeyModifier();
-        boolean sneak = in.shiftKeyDown;
+        boolean sneak = ClientCompat.shift(in);
         boolean comboShift = mod == KeyModifier.SHIFT;
         if (d.ignoreSneak && !sneak) d.ignoreSneak = false;
         if (comboShift && (d.ignoreSneak || !d.active())) sneak = false;
@@ -70,32 +71,32 @@ public final class ClientClimbController {
         if (d.ragdollTicks > 0) { // knocked off: no control until the fall is over
             in.forwardImpulse = 0;
             in.leftImpulse = 0;
-            in.up = in.down = in.left = in.right = false;
-            in.jumping = false;
-            in.shiftKeyDown = false;
+            ClientCompat.clearDirections(in);
+            ClientCompat.jumping(in, false);
+            ClientCompat.shift(in, false);
             return;
         }
         boolean climbKey = ClimbKeys.CLIMB.isDown();
-        boolean jump = in.jumping;
+        boolean jump = ClientCompat.jumping(in);
         if (!d.active() && climbKey && ClimbKeys.CLIMB.getKey().equals(Minecraft.getInstance().options.keyJump.getKey())
                 && ClimbController.findWall(p) != null) { // only next to a wall it can grab: in the open Shift + Space is an ordinary jump (bridging, pillaring)
-            in.jumping = false; // Space is part of the combo: no vanilla hop while holding it
+            ClientCompat.jumping(in, false); // Space is part of the combo: no vanilla hop while holding it
             // `jump` stays true on purpose: the climb tick must see Space as already held, otherwise the moment the
             // grab succeeds the held Space looks like a brand new press and fires a jump straight away
         }
         boolean wasActive = d.active();
         ClimbController.stepLocal(p, d, in.forwardImpulse, in.leftImpulse, jump, climbKey, sneak);
         if (!wasActive && d.active()) {
-            d.ignoreSneak = comboShift && in.shiftKeyDown;
+            d.ignoreSneak = comboShift && ClientCompat.shift(in);
         }
 
         ClientParagliderController.steer(p, in, rawForward, rawStrafe, d.active());
         if (d.active()) { // the climb simulation owns movement now: swallow vanilla walking, jumping and crouching
             in.forwardImpulse = 0;
             in.leftImpulse = 0;
-            in.up = in.down = in.left = in.right = false;
-            in.jumping = false;
-            in.shiftKeyDown = false;
+            ClientCompat.clearDirections(in);
+            ClientCompat.jumping(in, false);
+            ClientCompat.shift(in, false);
         }
         if (d.state != d.sentState || (d.active() && d.dir != d.sentDir)) {
             d.sentState = d.state;
@@ -223,8 +224,8 @@ public final class ClientClimbController {
 
     /** Turns the body to face the wall (head and camera stay free), snuggles it up to the wall and leans it. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onRenderPre(RenderLivingEvent.Pre<?, ?> event) {
-        if (!(event.getEntity() instanceof AbstractClientPlayer p) || !p.hasData(BotwClimb.CLIMB)) return;
+    public static void onRenderPre(RenderLivingEvent.Pre event) {
+        if (!(RenderData.entity(event) instanceof AbstractClientPlayer p) || !p.hasData(BotwClimb.CLIMB)) return;
         ClimbData d = p.getData(BotwClimb.CLIMB);
         float pt = event.getPartialTick();
         float w = ClimbAnimator.blend(d, pt);
@@ -233,8 +234,7 @@ public final class ClientClimbController {
         // render-only: the logical yaw is never touched, only the cosmetic body yaw
         float vanilla = Mth.rotLerp(pt, p.yBodyRotO, p.yBodyRot);
         float yaw = Mth.rotLerp(w, vanilla, Mth.rotLerp(pt, d.bodyYawO, d.bodyYaw));
-        p.yBodyRot = yaw;
-        p.yBodyRotO = yaw;
+        RenderData.setBodyYaw(event, p, yaw);
 
         PoseStack ps = event.getPoseStack();
         ps.pushPose();
@@ -259,7 +259,7 @@ public final class ClientClimbController {
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onRenderPost(RenderLivingEvent.Post<?, ?> event) {
+    public static void onRenderPost(RenderLivingEvent.Post event) {
         if (pushed) {
             event.getPoseStack().popPose();
             pushed = false;

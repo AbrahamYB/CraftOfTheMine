@@ -65,7 +65,7 @@ public final class PlotRules {
         if (!(event.getEntity() instanceof ServerPlayer p) || p.level().dimension() != PlotWorld.DIM || TerminalRide.isRiding(p)) return;
         if (PlotWorld.inSquare(p.getX(), p.getZ()) && !owns(p, p.blockPosition())) { // found someone else's plot some other way: sent straight back out
             PlotTravel.Arrival a = PlotTravel.arrival(p, PlotTravel.RETURN, 0);
-            p.teleportTo(a.level(), a.x(), a.y(), a.z(), a.yaw(), 0f);
+            com.botwclimb.common.Compat.teleport(p, a.level(), a.x(), a.y(), a.z(), a.yaw(), 0f);
             return;
         }
         if (PlotWorld.inSquare(p.getX(), p.getZ()) && PlotWorld.inSquare(p.getX() - 0.3, p.getZ() - 0.3) && PlotWorld.inSquare(p.getX() + 0.3, p.getZ() + 0.3)) return;
@@ -99,7 +99,7 @@ public final class PlotRules {
                 return 0;
             }
             PlotTravel.Arrival a = PlotTravel.arrival(p, PlotTravel.RETURN, 0);
-            p.teleportTo(a.level(), a.x(), a.y(), a.z(), a.yaw(), 0f);
+            com.botwclimb.common.Compat.teleport(p, a.level(), a.x(), a.y(), a.z(), a.yaw(), 0f);
             return 1;
         })));
     }

@@ -32,7 +32,7 @@ public final class ClimbController {
 
     /** Boots with the Climb Speed enchantment (a data-driven enchantment, so it is looked up in the registry). */
     public static boolean hasClimbSpeed(Player p) {
-        Holder<Enchantment> h = p.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolder(CLIMB_SPEED_ENCHANT).orElse(null);
+        Holder<Enchantment> h = com.botwclimb.common.Compat.holder(p.level(), CLIMB_SPEED_ENCHANT).orElse(null);
         return h != null && EnchantmentHelper.getEnchantmentLevel(h, p) > 0;
     }
 

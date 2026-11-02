@@ -108,7 +108,7 @@ public final class ClimbCamera {
     @SubscribeEvent
     public static void onDistance(CalculateDetachedCameraDistanceEvent event) {
         if (phase == Phase.OFF) return;
-        float z = Mth.lerp(Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true), zoomO, zoom);
+        float z = Mth.lerp(ClientCompat.partialTick(), zoomO, zoom);
         z = z * z * z * (z * (z * 6f - 15f) + 10f); // eased with a gentler start and finish than a plain smoothstep
         float mult = saved == CameraType.THIRD_PERSON_BACK
                 ? Mth.lerp(z, 1f, CAMERA_FARTHER)             // already third person: just ease out to the wider view

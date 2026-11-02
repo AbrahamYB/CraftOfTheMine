@@ -11,7 +11,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 /**
- * The motion blur of a fast terminal ride: one full-screen pass (shaders/program/motion_blur.fsh) run over the finished world,
+ * The motion blur of a fast terminal ride (not on Minecraft 1.21.2 and later yet: the post effect format changed there): one full-screen pass (shaders/program/motion_blur.fsh) run over the finished world,
  * and only while the rider is moving fast, so the rest of the time it costs nothing. If anything about it fails (a shader
  * pack that replaces the pipeline, say) it switches itself off for the session instead of breaking rendering.
  */
@@ -26,6 +26,7 @@ public final class MotionBlur {
 
     @SubscribeEvent
     public static void apply(RenderLevelStageEvent event) {
+        //? if <1.21.2 {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL || failed) return;
         float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         float strength = com.botwclimb.client.ClientConfig.style() == com.botwclimb.client.ClientConfig.RideStyle.TOTK ? com.botwclimb.client.shrine.totk.TotkRide.blur(partial)
@@ -54,5 +55,6 @@ public final class MotionBlur {
             failed = true;
             BotwClimb.LOGGER.warn("The ride's motion blur is off for this session", e);
         }
+        //?}
     }
 }

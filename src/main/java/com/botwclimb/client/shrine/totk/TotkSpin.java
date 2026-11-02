@@ -22,15 +22,18 @@ public final class TotkSpin {
     @SubscribeEvent
     public static void pre(RenderPlayerEvent.Pre event) {
         if (ClientConfig.style() != ClientConfig.RideStyle.TOTK || TotkRide.drawingHud()) return; // the void's own rider is turned by the void, smoothly
-        float angle = TotkRide.spin(event.getEntity().getId(), event.getPartialTick());
+        var rider = com.botwclimb.client.RenderData.player(event);
+        if (rider == null) return;
+        float angle = TotkRide.spin(rider.getId(), event.getPartialTick());
         if (angle == 0f) return;
         event.getPoseStack().pushPose();
         event.getPoseStack().mulPose(Axis.YP.rotationDegrees(angle));
-        TURNED.add(event.getEntity().getId());
+        TURNED.add(rider.getId());
     }
 
     @SubscribeEvent
     public static void post(RenderPlayerEvent.Post event) {
-        if (TURNED.remove(event.getEntity().getId())) event.getPoseStack().popPose();
+        var rider = com.botwclimb.client.RenderData.player(event);
+        if (rider != null && TURNED.remove(rider.getId())) event.getPoseStack().popPose();
     }
 }
