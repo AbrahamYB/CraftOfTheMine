@@ -17,7 +17,7 @@ stonecutter {
 
     create(rootProject) {
         // one project per Minecraft version this mod is built for; versions/<version>/gradle.properties holds that version's dependencies
-        versions '1.21.1'
+        versions '1.21.1', '1.21.4', '1.21.11'
     }
 }
 

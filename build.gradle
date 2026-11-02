@@ -204,6 +204,7 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.compilerArgs << '-Xmaxerrs' << '5000' // show every error: how much a version still needs porting
 }
 
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
@@ -250,3 +251,6 @@ if (localProps.getProperty('jbr')) {
 tasks.named('runClient') {
     doFirst { file('build/hotswap.stamp').with { it.parentFile.mkdirs(); it.text = '' } } // everything compiled from here on counts as new
 }
+
+// Stonecutter writes this version's processed sources into the build folder, and ModDevGradle's artifact task scans the project directory
+tasks.matching { it.name == 'createMinecraftArtifacts' }.configureEach { dependsOn 'stonecutterGenerate' }
