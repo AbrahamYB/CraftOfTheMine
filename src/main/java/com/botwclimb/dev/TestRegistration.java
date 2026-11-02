@@ -8,7 +8,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
  * Registers the headless tests with the test framework of Minecraft 1.21.5 and later (a registry of test functions, and test instances that
  * name them). Older versions find the annotated methods themselves, so there is nothing to do there.
  */
-@EventBusSubscriber(modid = BotwClimb.MOD_ID)
+//? if >=1.21.11
+/*@EventBusSubscriber(modid = BotwClimb.MOD_ID)*/
 public final class TestRegistration {
     private TestRegistration() {}
 

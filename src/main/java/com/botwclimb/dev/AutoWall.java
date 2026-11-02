@@ -12,7 +12,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
 
 /**
  * Dev only (gradlew runAutoClient -Pwall): stands the player in front of a stone wall, 0.2 blocks off it, and saves screenshots of the
@@ -56,6 +55,8 @@ public final class AutoWall {
             mc.options.keyShift.setDown(false);
             mc.options.keyJump.setDown(false);
         }
+        //? if >=1.21.2
+        /*if (t == 330 || t == 345) BotwClimb.LOGGER.info("[autowall] t={} input jump={} shift={} fwd={}", t, mc.player.input.keyPresses.jump(), mc.player.input.keyPresses.shift(), mc.player.input.getMoveVector());*/
         if (t == 345) shot = "wall_open.png";
         if (t == 350) server.execute(() -> player().teleportTo(base.getX() + 0.5, base.getY(), base.getZ() - 0.5)); // back against the wall
         if (t == 360) { // grab it on the client only, in third person, to see the climbing pose (the server will correct it a moment later)
@@ -64,7 +65,10 @@ public final class AutoWall {
             d.setState(com.botwclimb.common.climb.ClimbState.CLIMBING);
             mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
         }
-        if (t >= 361 && t <= 366) shot = "wall_climb_" + t + ".png";
+        if (t >= 361 && t <= 366) {
+            shot = "wall_climb_" + t + ".png";
+            BotwClimb.LOGGER.info("[autowall] t={} climb state {} onGround {} y {}", t, mc.player.getData(BotwClimb.CLIMB).state, mc.player.onGround(), mc.player.getY());
+        }
         if (t == 400) {
             BotwClimb.LOGGER.info("AutoWall finished");
             mc.stop();
@@ -91,7 +95,7 @@ public final class AutoWall {
     }
 
     @SubscribeEvent
-    public static void frame(RenderGuiEvent.Post event) {
+    public static void frame(net.neoforged.neoforge.client.event.RenderFrameEvent.Post event) {
         if (!ON || shot == null) return;
         Minecraft mc = Minecraft.getInstance();
         com.botwclimb.client.ClientCompat.screenshot(mc.gameDirectory, shot);

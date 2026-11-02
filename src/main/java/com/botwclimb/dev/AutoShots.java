@@ -17,7 +17,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
 
 import java.util.Set;
 
@@ -135,16 +134,8 @@ public final class AutoShots {
     }
 
     @SubscribeEvent
-    public static void screenFrame(net.neoforged.neoforge.client.event.ScreenEvent.Render.Post event) {
-        if (!ON || !shotNow || event.getScreen() instanceof net.minecraft.client.gui.screens.ReceivingLevelScreen) return;
-        shotNow = false;
-        Minecraft mc = Minecraft.getInstance();
-        com.botwclimb.client.ClientCompat.screenshot(mc.gameDirectory, shotName);
-    }
-
-    @SubscribeEvent
-    public static void frame(RenderGuiEvent.Post event) {
-        if (!ON || !shotNow || Minecraft.getInstance().screen != null) return;
+    public static void frame(net.neoforged.neoforge.client.event.RenderFrameEvent.Post event) {
+        if (!ON || !shotNow || Minecraft.getInstance().screen instanceof net.minecraft.client.gui.screens.ReceivingLevelScreen) return; // after the whole frame, GUI included
         shotNow = false;
         Minecraft mc = Minecraft.getInstance();
         com.botwclimb.client.ClientCompat.screenshot(mc.gameDirectory, shotName);

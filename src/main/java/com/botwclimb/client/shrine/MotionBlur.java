@@ -24,9 +24,9 @@ public final class MotionBlur {
 
     private MotionBlur() {}
 
+    //? if <1.21.2 {
     @SubscribeEvent
     public static void apply(RenderLevelStageEvent event) {
-        //? if <1.21.2 {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL || failed) return;
         float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         float strength = com.botwclimb.client.ClientConfig.style() == com.botwclimb.client.ClientConfig.RideStyle.TOTK ? com.botwclimb.client.shrine.totk.TotkRide.blur(partial)
@@ -55,6 +55,6 @@ public final class MotionBlur {
             failed = true;
             BotwClimb.LOGGER.warn("The ride's motion blur is off for this session", e);
         }
-        //?}
     }
+    //?}
 }
