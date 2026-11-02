@@ -47,3 +47,11 @@ run/
 local.properties
 run-gametest/
 run-auto/
+
+### Stonecutter version projects ###
+versions/*/build/
+versions/*/run/
+versions/*/run-auto/
+versions/*/run-gametest/
+versions/*/.gradle/
+build/
