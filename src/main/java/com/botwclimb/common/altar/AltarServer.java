@@ -37,11 +37,11 @@ public final class AltarServer {
         List<AltarRules.Offered> offered = new ArrayList<>();
         Set<Integer> seen = new HashSet<>();
         for (AltarOfferPayload.Entry e : offer.entries()) {
-            if (e.slot() < 0 || e.slot() >= inv.items.size() || !seen.add(e.slot())) {
+            if (e.slot() < 0 || e.slot() >= com.botwclimb.common.Compat.items(inv).size() || !seen.add(e.slot())) {
                 reply(p, false, "invalid", false);
                 return;
             }
-            ItemStack stack = inv.items.get(e.slot());
+            ItemStack stack = com.botwclimb.common.Compat.items(inv).get(e.slot());
             float unit = AltarValues.unitValue(stack);
             if (stack.isEmpty() || unit <= 0f || e.count() < 1 || e.count() > stack.getCount()) {
                 reply(p, false, "invalid", false);
@@ -54,7 +54,7 @@ public final class AltarServer {
             reply(p, false, r.reason(), false);
             return;
         }
-        for (AltarRules.Take t : r.take()) inv.items.get(t.slot()).shrink(t.count());
+        for (AltarRules.Take t : r.take()) com.botwclimb.common.Compat.items(inv).get(t.slot()).shrink(t.count());
         p.setData(BotwClimb.STAMINA_UPGRADES, r.upgradesAfter());
         p.setData(BotwClimb.ALTAR_CREDIT, r.creditAfter());
         inv.setChanged();

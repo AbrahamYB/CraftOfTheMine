@@ -140,7 +140,7 @@ public final class MudHandClient {
     @SubscribeEvent
     public static void sink(net.neoforged.neoforge.event.tick.PlayerTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
-        if (!event.getEntity().level().isClientSide || event.getEntity() != mc.player || mc.level == null) return;
+        if (!event.getEntity().level().isClientSide() || event.getEntity() != mc.player || mc.level == null) return;
         State s = RIDES.get(mc.player.getId());
         if (s != null && s.phase() == 1 && s.kind() == 1 && com.botwclimb.client.ClientConfig.style() == com.botwclimb.client.ClientConfig.RideStyle.TOTK) {
             // the Tears of the Kingdom Return: before anything else the ground takes hold and draws the rider part-way in (about a
@@ -165,8 +165,7 @@ public final class MudHandClient {
         com.botwclimb.client.ClientCompat.clearDirections(in);
         com.botwclimb.client.ClientCompat.jumping(in, false);
         com.botwclimb.client.ClientCompat.shift(in, false);
-        in.forwardImpulse = 0;
-        in.leftImpulse = 0;
+        com.botwclimb.client.ClientCompat.stopMoving(in);
     }
 
     @SubscribeEvent

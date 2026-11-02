@@ -50,7 +50,7 @@ public final class BulletFall {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         Player p = event.getEntity();
-        if (p.level().isClientSide || allowed(p)) return;
+        if (p.level().isClientSide() || allowed(p)) return;
         AttributeInstance gravity = p.getAttribute(Attributes.GRAVITY);
         if (gravity != null && gravity.hasModifier(ID)) gravity.removeModifier(ID);
     }

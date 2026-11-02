@@ -161,7 +161,7 @@ public class TerminalScreen extends Screen {
         if (button == 0) {
             for (int s = 0; s < PlotData.SLOTS; s++) {
                 if (claimed(s) && over(mx, my, cardX(s), top() + CARD_Y + 50, CARD_W, 14)) { // the friends line of a card; the server sends the screen back with the new state
-                    PacketDistributor.sendToServer(new TerminalActionPayload(state.pos(), PlotTravel.TOGGLE_OPEN + s));
+                    com.botwclimb.client.ClientCompat.sendToServer(new TerminalActionPayload(state.pos(), PlotTravel.TOGGLE_OPEN + s));
                     return true;
                 }
                 if (state.here() != s && over(mx, my, cardX(s), top() + CARD_Y, CARD_W, CARD_H)) return pick(s);
@@ -182,7 +182,7 @@ public class TerminalScreen extends Screen {
     }
 
     private boolean pick(int target) {
-        PacketDistributor.sendToServer(new TerminalActionPayload(state.pos(), target));
+        com.botwclimb.client.ClientCompat.sendToServer(new TerminalActionPayload(state.pos(), target));
         onClose();
         return true;
     }

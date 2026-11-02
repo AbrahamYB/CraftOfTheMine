@@ -16,8 +16,8 @@ public final class StaminaCommand {
 
     @SubscribeEvent
     public static void register(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal("cotm").requires(s -> s.hasPermission(2))
-                .then(Commands.literal("stamina").requires(s -> s.hasPermission(2))
+        event.getDispatcher().register(Commands.literal("cotm").requires(com.botwclimb.common.Compat.gamemaster())
+                .then(Commands.literal("stamina").requires(com.botwclimb.common.Compat.gamemaster())
                         .then(Commands.literal("reset").executes(ctx -> { // back to the start: no upgrades and no altar credit
                             ServerPlayer p = ctx.getSource().getPlayerOrException();
                             p.setData(BotwClimb.STAMINA_UPGRADES, 0);

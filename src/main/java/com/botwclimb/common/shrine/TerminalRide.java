@@ -221,7 +221,7 @@ public final class TerminalRide {
     /** A rider whose ride was cut short in the air (timeout, logout, crash) is put on the ground below, so letting go never means a long fall. */
     private static void setDown(ServerPlayer p) {
         if (p.onGround()) return;
-        ServerLevel level = p.serverLevel();
+        ServerLevel level = com.botwclimb.common.Compat.level(p);
         level.getChunkAt(p.blockPosition()); // a player just logged in may not have their chunk yet, and an unloaded chunk has no floor
         AABB box = p.getBoundingBox();
         if (!level.noCollision(box)) return; // inside something: leave it to the game
@@ -242,7 +242,7 @@ public final class TerminalRide {
 
     /** The terminal the ride began at (it may be in another dimension by now). */
     private static void setLit(ServerPlayer p, Ride r, boolean on) {
-        ServerLevel level = p.server.getLevel(r.origin);
+        ServerLevel level = p.level().getServer().getLevel(r.origin);
         if (level == null) return;
         BlockState s = level.getBlockState(r.terminal);
         if (s.is(BotwClimb.TERMINAL_BLOCK.get())) level.setBlock(r.terminal, s.setValue(ShrineTerminalBlock.ACTIVE, on), 3);

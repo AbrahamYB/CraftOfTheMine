@@ -77,8 +77,8 @@ public final class AutoWall {
 
     private static void build() {
         ServerPlayer p = player();
-        if (p.serverLevel() != p.server.overworld()) com.botwclimb.common.Compat.teleport(p, p.server.overworld(), 0.5, 100, 0.5, 0f, 0f);
-        ServerLevel level = p.serverLevel();
+        if (com.botwclimb.common.Compat.level(p) != p.level().getServer().overworld()) com.botwclimb.common.Compat.teleport(p, p.level().getServer().overworld(), 0.5, 100, 0.5, 0f, 0f);
+        ServerLevel level = com.botwclimb.common.Compat.level(p);
         base = p.blockPosition();
         p.setGameMode(GameType.SURVIVAL);
         for (int x = -8; x <= 8; x++) for (int z = -8; z <= 8; z++) {

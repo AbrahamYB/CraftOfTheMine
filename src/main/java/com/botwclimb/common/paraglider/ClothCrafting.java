@@ -22,11 +22,11 @@ public final class ClothCrafting {
      * missing. The same check runs on the client for the button and on the server for real.
      */
     public static int[] plan(Inventory inv, List<Item> ingredients) {
-        int[] used = new int[inv.items.size()], slotOf = new int[ingredients.size()];
+        int[] used = new int[com.botwclimb.common.Compat.items(inv).size()], slotOf = new int[ingredients.size()];
         for (int k = 0; k < ingredients.size(); k++) {
             slotOf[k] = -1;
-            for (int s = 0; s < inv.items.size(); s++) {
-                ItemStack st = inv.items.get(s);
+            for (int s = 0; s < com.botwclimb.common.Compat.items(inv).size(); s++) {
+                ItemStack st = com.botwclimb.common.Compat.items(inv).get(s);
                 if (!st.isEmpty() && st.getCount() - used[s] > 0 && st.is(ingredients.get(k))) {
                     used[s]++;
                     slotOf[k] = s;
@@ -42,7 +42,7 @@ public final class ClothCrafting {
         if (index <= 0 || index >= FabricRegistry.all().size() || FabricUnlocks.has(p, index)) return; // nothing to learn
         int[] slots = plan(p.getInventory(), FabricRegistry.byIndex(index).recipe());
         if (slots == null) return; // something is missing: nothing is taken
-        for (int s : slots) p.getInventory().items.get(s).shrink(1);
+        for (int s : slots) com.botwclimb.common.Compat.items(p.getInventory()).get(s).shrink(1);
         FabricUnlocks.unlock(p, index);
         p.displayClientMessage(Component.translatable("message.botwclimb.cloth_unlocked", Component.translatable("fabric.botwclimb." + FabricRegistry.byIndex(index).id())), true);
         p.level().playSound(null, p.blockPosition(), SoundEvents.ARMOR_EQUIP_ELYTRA.value(), SoundSource.PLAYERS, 1f, 1.1f);

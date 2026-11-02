@@ -265,3 +265,21 @@ tasks.named('processResources') { duplicatesStrategy = DuplicatesStrategy.INCLUD
 if (stonecutter.eval(stonecutter.current.version, ">=1.21.2")) {
     tasks.named('processResources') { exclude 'assets/botwclimb/shaders/**' }
 }
+
+// Minecraft 1.21.11 renamed ResourceLocation to Identifier: Stonecutter swaps the name in every source file for that version
+stonecutter {
+    replacements {
+        string {
+            direction = eval(current.version, '>=1.21.11')
+            replace 'ResourceLocation', 'Identifier'
+            // classes that moved or were renamed in 1.21.11
+            replace 'net.minecraft.client.model.PlayerModel', 'net.minecraft.client.model.player.PlayerModel'
+            replace 'net.minecraft.world.entity.projectile.AbstractArrow', 'net.minecraft.world.entity.projectile.arrow.AbstractArrow'
+            replace 'net.minecraft.client.renderer.RenderType', 'net.minecraft.client.renderer.rendertype.RenderType'
+            replace 'net.minecraft.Util', 'net.minecraft.util.Util'
+            replace 'ReceivingLevelScreen', 'LevelLoadingScreen'
+            replace 'PlayerRenderState', 'AvatarRenderState'
+            replace 'net.minecraft.client.resources.PlayerSkin', 'net.minecraft.world.entity.player.PlayerSkin'
+        }
+    }
+}

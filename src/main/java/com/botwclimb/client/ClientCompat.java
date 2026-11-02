@@ -69,6 +69,47 @@ public final class ClientCompat {
     }
     //?}
 
+    // the walking impulses of the movement input
+    //? if >=1.21.11 {
+    /*public static float forward(net.minecraft.client.player.ClientInput in) {
+        return in.getMoveVector().y;
+    }
+
+    public static float strafe(net.minecraft.client.player.ClientInput in) {
+        return in.getMoveVector().x;
+    }
+
+    public static void stopMoving(net.minecraft.client.player.ClientInput in) {
+        in.moveVector = net.minecraft.world.phys.Vec2.ZERO; // public through this version's access transformer
+    }
+    *///?} else if >=1.21.2 {
+    /*public static float forward(net.minecraft.client.player.ClientInput in) {
+        return in.forwardImpulse;
+    }
+
+    public static float strafe(net.minecraft.client.player.ClientInput in) {
+        return in.leftImpulse;
+    }
+
+    public static void stopMoving(net.minecraft.client.player.ClientInput in) {
+        in.forwardImpulse = 0;
+        in.leftImpulse = 0;
+    }
+    *///?} else {
+    public static float forward(net.minecraft.client.player.Input in) {
+        return in.forwardImpulse;
+    }
+
+    public static float strafe(net.minecraft.client.player.Input in) {
+        return in.leftImpulse;
+    }
+
+    public static void stopMoving(net.minecraft.client.player.Input in) {
+        in.forwardImpulse = 0;
+        in.leftImpulse = 0;
+    }
+    //?}
+
     // ---- drawing
 
     /** Draws part of a texture (the old blit argument order: size on screen, then the texture window). */
@@ -123,6 +164,24 @@ public final class ClientCompat {
         /*return inv.getGuiLeft() != (inv.width - inv.getXSize()) / 2;
         *///?} else {
         return inv.getRecipeBookComponent().isVisible();
+        //?}
+    }
+
+    /** Sends a message to the server. */
+    public static void sendToServer(net.minecraft.network.protocol.common.custom.CustomPacketPayload payload) {
+        //? if >=1.21.11 {
+        /*net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(payload);
+        *///?} else {
+        net.neoforged.neoforge.network.PacketDistributor.sendToServer(payload);
+        //?}
+    }
+
+    /** The native window handle (for the raw keyboard state). */
+    public static long windowHandle() {
+        //? if >=1.21.11 {
+        /*return Minecraft.getInstance().getWindow().handle();
+        *///?} else {
+        return Minecraft.getInstance().getWindow().getWindow();
         //?}
     }
 }

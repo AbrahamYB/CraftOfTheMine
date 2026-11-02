@@ -50,7 +50,7 @@ public final class ClientClimbController {
         if (!(event.getEntity() instanceof LocalPlayer p)) return;
         var in = event.getInput();
         ClimbData d = p.getData(BotwClimb.CLIMB);
-        float rawForward = in.forwardImpulse, rawStrafe = in.leftImpulse;
+        float rawForward = ClientCompat.forward(in), rawStrafe = ClientCompat.strafe(in);
         // NeoForge hands a key press only to the bindings that match the held modifiers when there are any: Shift + Space goes to the climb and
         // glider bindings and vanilla's jump never sees it (so a jump with Shift held, bridging and pillaring, did nothing). Give it back here.
         var jumpKey = Minecraft.getInstance().options.keyJump.getKey();
@@ -69,8 +69,7 @@ public final class ClientClimbController {
         if (comboShift && (d.ignoreSneak || !d.active())) sneak = false;
 
         if (d.ragdollTicks > 0) { // knocked off: no control until the fall is over
-            in.forwardImpulse = 0;
-            in.leftImpulse = 0;
+            ClientCompat.stopMoving(in);
             ClientCompat.clearDirections(in);
             ClientCompat.jumping(in, false);
             ClientCompat.shift(in, false);
@@ -85,15 +84,14 @@ public final class ClientClimbController {
             // grab succeeds the held Space looks like a brand new press and fires a jump straight away
         }
         boolean wasActive = d.active();
-        ClimbController.stepLocal(p, d, in.forwardImpulse, in.leftImpulse, jump, climbKey, sneak);
+        ClimbController.stepLocal(p, d, ClientCompat.forward(in), ClientCompat.strafe(in), jump, climbKey, sneak);
         if (!wasActive && d.active()) {
             d.ignoreSneak = comboShift && ClientCompat.shift(in);
         }
 
         ClientParagliderController.steer(p, in, rawForward, rawStrafe, d.active());
         if (d.active()) { // the climb simulation owns movement now: swallow vanilla walking, jumping and crouching
-            in.forwardImpulse = 0;
-            in.leftImpulse = 0;
+            ClientCompat.stopMoving(in);
             ClientCompat.clearDirections(in);
             ClientCompat.jumping(in, false);
             ClientCompat.shift(in, false);
@@ -101,7 +99,7 @@ public final class ClientClimbController {
         if (d.state != d.sentState || (d.active() && d.dir != d.sentDir)) {
             d.sentState = d.state;
             d.sentDir = d.dir;
-            PacketDistributor.sendToServer(new ClimbInputPayload(d.state, d.dir));
+            com.botwclimb.client.ClientCompat.sendToServer(new ClimbInputPayload(d.state, d.dir));
         }
     }
 
@@ -110,7 +108,7 @@ public final class ClientClimbController {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         Player p = event.getEntity();
-        if (!p.level().isClientSide || !(p instanceof AbstractClientPlayer)) return;
+        if (!p.level().isClientSide() || !(p instanceof AbstractClientPlayer)) return;
         if (!p.hasData(BotwClimb.CLIMB)) return;
         animTick(p, p.getData(BotwClimb.CLIMB));
     }

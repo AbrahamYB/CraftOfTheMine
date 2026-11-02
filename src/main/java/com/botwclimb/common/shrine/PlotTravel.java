@@ -37,7 +37,7 @@ public final class PlotTravel {
     // ------------------------------------------------------------------ the screen
 
     public static TerminalOpenPayload openPayload(ServerPlayer p, BlockPos terminal) {
-        PlotData data = PlotData.get(p.server);
+        PlotData data = PlotData.get(p.level().getServer());
         UUID id = p.getUUID();
         int claimed = 0;
         for (int s = 0; s < PlotData.SLOTS; s++) if (data.plot(id, s) >= 0) claimed |= 1 << s;
@@ -52,9 +52,9 @@ public final class PlotTravel {
 
     /** Every plot of another online player that is open to friends, in a fixed order the join buttons refer to. */
     private static List<Host> hosts(ServerPlayer p) {
-        PlotData data = PlotData.get(p.server);
+        PlotData data = PlotData.get(p.level().getServer());
         List<Host> out = new ArrayList<>();
-        for (ServerPlayer o : p.server.getPlayerList().getPlayers()) {
+        for (ServerPlayer o : p.level().getServer().getPlayerList().getPlayers()) {
             if (o == p) continue;
             for (int s = 0; s < PlotData.SLOTS; s++) {
                 int plot = data.plot(o.getUUID(), s);
@@ -69,7 +69,7 @@ public final class PlotTravel {
         if (!p.isAlive() || p.isSpectator() || TerminalRide.isRiding(p) || p.distanceToSqr(Vec3.atCenterOf(a.pos())) > 64
                 || !p.level().getBlockState(a.pos()).is(BotwClimb.TERMINAL_BLOCK.get())) return;
         boolean inPlot = p.level().dimension() == PlotWorld.DIM;
-        PlotData pd = PlotData.get(p.server);
+        PlotData pd = PlotData.get(p.level().getServer());
         if (a.target() >= TOGGLE_OPEN && a.target() < TOGGLE_OPEN + PlotData.SLOTS) { // the switch on one of the player's own plots; the screen comes back showing the new state
             int plot = pd.plot(p.getUUID(), a.target() - TOGGLE_OPEN);
             if (plot < 0) return;
@@ -87,7 +87,7 @@ public final class PlotTravel {
             target = VISIT;
             a = new TerminalActionPayload(a.pos(), VISIT);
         }
-        if (a.target() == RETURN ? !inPlot : inPlot && PlotData.get(p.server).slotOf(p.getUUID(), PlotWorld.plotAt(a.pos())) == a.target()) return; // return only from a plot; no ride to the plot you are in
+        if (a.target() == RETURN ? !inPlot : inPlot && PlotData.get(p.level().getServer()).slotOf(p.getUUID(), PlotWorld.plotAt(a.pos())) == a.target()) return; // return only from a plot; no ride to the plot you are in
         if (!prepare(p, a.pos(), a.target())) return;
         p.level().playSound(null, a.pos(), SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.6f, 1.4f);
         TerminalRide.start(p, a.pos(), a.target());
@@ -95,7 +95,7 @@ public final class PlotTravel {
 
     /** Claims the plot if it is new (building its island) and remembers where the trip began. False if the plots cannot be reached. */
     private static boolean prepare(ServerPlayer p, BlockPos terminal, int target) {
-        MinecraftServer server = p.server;
+        MinecraftServer server = p.level().getServer();
         ServerLevel plotLevel = server.getLevel(PlotWorld.DIM);
         if (plotLevel == null) {
             BotwClimb.LOGGER.warn("The plot dimension is missing; terminal trips are off");
@@ -117,7 +117,7 @@ public final class PlotTravel {
 
     /** Where the ride toward {@code target} comes down; null if there is no such place (the ride then just comes back down where it began). */
     public static Arrival arrival(ServerPlayer p, int target, double wantedRise) {
-        MinecraftServer server = p.server;
+        MinecraftServer server = p.level().getServer();
         PlotData data = PlotData.get(server);
         UUID id = p.getUUID();
         if (target >= 0) {
@@ -154,7 +154,7 @@ public final class PlotTravel {
     }
 
     private static Arrival worldSpawn(ServerPlayer p, double wantedRise) {
-        ServerLevel level = p.server.overworld();
+        ServerLevel level = p.level().getServer().overworld();
         BlockPos spawn = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, level.getSharedSpawnPos());
         double x = spawn.getX() + 0.5, z = spawn.getZ() + 0.5;
         return new Arrival(level, x, spawn.getY(), z, 0, riseThatFits(level, standingBox(p, level, x, spawn.getY(), z), wantedRise));

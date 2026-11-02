@@ -51,7 +51,7 @@ public class StaminaAltarBlock extends BaseEntityBlock {
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (level.isClientSide) com.botwclimb.client.altar.AltarClient.open(pos);
+        if (level.isClientSide()) com.botwclimb.client.altar.AltarClient.open(pos);
         return com.botwclimb.common.Compat.success(level);
     }
 }

@@ -25,7 +25,7 @@ public final class PlotRules {
 
     /** Whether the player may use the plot the position lies in: its owner, or a friend of an owner who has it open to friends. */
     private static boolean owns(Player p, BlockPos pos) {
-        return p.getServer() != null && PlotData.get(p.getServer()).mayUse(p.getUUID(), PlotWorld.plotAt(pos));
+        return p.level().getServer() != null && PlotData.get(p.level().getServer()).mayUse(p.getUUID(), PlotWorld.plotAt(pos));
     }
 
     /** Nobody but a plot's owner touches its blocks: not breaking, not placing, not opening a chest, not clicking a button. */
@@ -72,7 +72,7 @@ public final class PlotRules {
         double[] in = PlotWorld.clampToSquare(p.getX(), p.getZ(), 0.31);
         if (Math.abs(in[0] - p.getX()) + Math.abs(in[1] - p.getZ()) > PlotWorld.HALF * 2) { // far from any plot (the old spot of one that moved, a command): bring them to the nearest plot's terminal, building it if need be
             int plot = PlotWorld.plotAt(p.blockPosition());
-            if (!PlotWorld.isBuilt(p.serverLevel(), plot)) PlotWorld.buildIsland(p.serverLevel(), plot);
+            if (!PlotWorld.isBuilt(com.botwclimb.common.Compat.level(p), plot)) PlotWorld.buildIsland(com.botwclimb.common.Compat.level(p), plot);
             BlockPos t = PlotWorld.terminalPos(plot);
             p.teleportTo(t.getX() + 0.5, t.getY(), t.getZ() + 3.5);
             return;

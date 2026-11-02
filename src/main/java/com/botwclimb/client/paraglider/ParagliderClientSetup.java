@@ -9,7 +9,11 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 
 /** Registers the canopy model and adds its render layer to both player skin types. */
+//? if >=1.21.11 {
+/*@EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
+*///?} else {
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+//?}
 public final class ParagliderClientSetup {
     private ParagliderClientSetup() {}
 

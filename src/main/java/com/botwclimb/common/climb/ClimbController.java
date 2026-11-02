@@ -178,7 +178,7 @@ public final class ClimbController {
         double up = Math.abs(fwd) < 0.1f ? 0 : Math.signum(fwd);
         double side = Math.abs(str) < 0.1f ? 0 : Math.signum(str);
         boolean ledgePress = jumpPressed || d.jumpBuffer > 0; // the ledge jumps also take a Space pressed just before, during a hop
-        if (jumpPressed && level.isClientSide) { // diagnostics for a ledge jump that does not start: what the controller saw when Space went down
+        if (jumpPressed && level.isClientSide()) { // diagnostics for a ledge jump that does not start: what the controller saw when Space went down
             BotwClimb.LOGGER.info("[ledge] Space down: up={} side={} cooldown={} blockInReach={} blockAbove={} wallTop={} holds={} state={}", up, side, d.jumpCooldown,
                     blockInReach(level, p, box), blockAbove(level, p, box), wallTopAbove(level, p, box, dir), c.holds(HOLD_GAP), d.state);
         }
@@ -195,7 +195,7 @@ public final class ClimbController {
             d.pendingBlockJump = false;
             AABB tb = diagonal ? sideBox : box;
             int depth = ledgeDepth(level, p, tb, dir);
-            if (level.isClientSide) BotwClimb.LOGGER.info("[ledge] block jump: depth={} stamina={} exhausted={}", depth, d.stamina, d.exhausted);
+            if (level.isClientSide()) BotwClimb.LOGGER.info("[ledge] block jump: depth={} stamina={} exhausted={}", depth, d.stamina, d.exhausted);
             if (depth == 0) return; // no way out past it (too deep, or too thick for a long jump)
             if (!spendJump(d, depth > 1 ? STAMINA_LONG_LEDGE_COST : STAMINA_LEDGE_COST)) return;
             double top = box.maxY + 0.3, bottom = Double.MAX_VALUE;
@@ -367,7 +367,7 @@ public final class ClimbController {
      * onto it, else 0. One deep may be any thickness; two deep only one block thick (2x2 is not climbable).
      */
     private static int refuse(Level level, String why) {
-        if (BotwClimb.DEBUG && level.isClientSide) BotwClimb.LOGGER.info("ledge jump refused: {}", why);
+        if (BotwClimb.DEBUG && level.isClientSide()) BotwClimb.LOGGER.info("ledge jump refused: {}", why);
         return 0;
     }
 
@@ -433,7 +433,7 @@ public final class ClimbController {
         d.jumpStart = p.position();
         d.jumpTick = 0;
         d.setState(ClimbState.CLIMB_JUMP);
-        if (BotwClimb.DEBUG && p.level().isClientSide) debugPlan(p, d);
+        if (BotwClimb.DEBUG && p.level().isClientSide()) debugPlan(p, d);
     }
 
     private static void stepJump(Player p, ClimbData d) {
@@ -452,7 +452,7 @@ public final class ClimbController {
         int idx = (int) idxF;
         if (idx < plan.length()) {
             // follow the planned waypoint; vanilla collision still has the last word
-            if (BotwClimb.DEBUG && p.level().isClientSide) BotwClimb.LOGGER.info("jump tick {} rel=({}, {}) plan=({}, {})", idx, fmt(p.getY() - d.jumpStart.y), fmt(p.getZ() - d.jumpStart.z), fmt(plan.steps()[idx].y), fmt(plan.steps()[idx].z));
+            if (BotwClimb.DEBUG && p.level().isClientSide()) BotwClimb.LOGGER.info("jump tick {} rel=({}, {}) plan=({}, {})", idx, fmt(p.getY() - d.jumpStart.y), fmt(p.getZ() - d.jumpStart.z), fmt(plan.steps()[idx].y), fmt(plan.steps()[idx].z));
             Vec3 at = plan.steps()[idx];
             if (idx + 1 < plan.length()) at = at.lerp(plan.steps()[idx + 1], idxF - idx);
             Vec3 v = d.jumpStart.add(at).subtract(p.position());

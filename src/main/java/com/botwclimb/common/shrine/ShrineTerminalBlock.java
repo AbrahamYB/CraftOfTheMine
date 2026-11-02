@@ -50,7 +50,7 @@ public class ShrineTerminalBlock extends Block {
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (!level.isClientSide && player instanceof ServerPlayer sp && !TerminalRide.isRiding(sp)) { // lit does not matter: a ride cut short can leave the terminal lit
+        if (!level.isClientSide() && player instanceof ServerPlayer sp && !TerminalRide.isRiding(sp)) { // lit does not matter: a ride cut short can leave the terminal lit
             PacketDistributor.sendToPlayer(sp, PlotTravel.openPayload(sp, pos));
         }
         return com.botwclimb.common.Compat.success(level);
