@@ -34,7 +34,7 @@ Local only (never commit): `local.properties` (quickWorld, window, `prismMods`, 
 
 ## 3. How to build, test, run
 
-Run from the project root with `gradlew.bat` (Windows). On the `stonecutter` branch every task is per version: `:1.21.1:...`,
+Run from the project root with `gradlew.bat` (Windows). On `main` every task is per version: `:1.21.1:...`,
 `:1.21.4:...`, `:1.21.11:...`, `:26.1:...`; the versions are listed in `settings.gradle`.
 
 * `:V:build` builds `versions/V/build/libs/CraftOfTheMine-1.0.0+mcV.jar` and, via `deploy`, copies it into the Prism mods folder, but
