@@ -21,12 +21,9 @@ Owner: AbrahamYB on GitHub (`AbrahamYB/CraftOfTheMine`, public, "All rights rese
 
 ## 2. Repository state
 
-| Branch | Layout | State |
-|---|---|---|
-| `main` | single project, 1.21.1 only | what the GitHub release `mc1.21.1-1.0.0` was built from; last commit README downloads link |
-| `stonecutter` | one source tree built for several Minecraft versions | everything below under "Multi-version"; **not merged**, pushed to origin |
-
-Do day-to-day work on `stonecutter` (it still builds 1.21.1 exactly like `main`). Merge it to `main` only after the user agrees.
+`main` is the only branch: one source tree built for all ten Minecraft versions with Stonecutter (see "Multi-version"). The older
+`stonecutter` branch was merged into it and deleted. The first GitHub release, `mc1.21.1-1.0.0`, was built from the old single-version `main`;
+the current one is `v1.0.0`.
 
 Local only (never commit): `local.properties` (quickWorld, window, `prismMods`, `jbr`, optional `prismVersion`), `versions/*/run*`,
 `run*/`, `build/`, `concept/sheet_*.png` (possible game-footage frames, left out of the public repo on purpose), and
