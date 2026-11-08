@@ -55,3 +55,6 @@ versions/*/run-auto/
 versions/*/run-gametest/
 versions/*/.gradle/
 build/
+
+# screenshot harness output (tools/screenshots_all.ps1)
+tools/shots-out/

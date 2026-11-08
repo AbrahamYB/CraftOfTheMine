@@ -44,7 +44,7 @@ public final class ClothCrafting {
         if (slots == null) return; // something is missing: nothing is taken
         for (int s : slots) com.botwclimb.common.Compat.items(p.getInventory()).get(s).shrink(1);
         FabricUnlocks.unlock(p, index);
-        p.displayClientMessage(Component.translatable("message.botwclimb.cloth_unlocked", Component.translatable("fabric.botwclimb." + FabricRegistry.byIndex(index).id())), true);
+        com.botwclimb.common.Compat.overlay(p, Component.translatable("message.botwclimb.cloth_unlocked", Component.translatable("fabric.botwclimb." + FabricRegistry.byIndex(index).id())));
         p.level().playSound(null, p.blockPosition(), SoundEvents.ARMOR_EQUIP_ELYTRA.value(), SoundSource.PLAYERS, 1f, 1.1f);
         p.inventoryMenu.broadcastChanges();
     }

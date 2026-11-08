@@ -28,7 +28,8 @@ public final class AltarServer {
         if (!p.isAlive() || p.distanceToSqr(Vec3.atCenterOf(offer.pos())) > REACH_SQ
                 || !(p.level().getBlockState(offer.pos()).getBlock() instanceof StaminaAltarBlock)) return;
         int upgrades = Mth.clamp(p.getData(BotwClimb.STAMINA_UPGRADES), 0, ClimbConstants.STAMINA_MAX_UPGRADES);
-        float credit = Math.max(0f, p.getData(BotwClimb.ALTAR_CREDIT));
+        float credit = p.getData(BotwClimb.ALTAR_CREDIT);
+        if (!(credit >= 0f) || !Float.isFinite(credit)) credit = 0f; // NaN from a damaged save would be a free upgrade
         if (offer.isRefund()) {
             refund(p, upgrades, credit, offer);
             return;
@@ -88,6 +89,6 @@ public final class AltarServer {
     }
 
     private static void reply(ServerPlayer p, boolean ok, String reason, boolean finale) {
-        PacketDistributor.sendToPlayer(p, new AltarResultPayload(ok, reason, finale));
+        com.botwclimb.common.Net.toPlayer(p, new AltarResultPayload(ok, reason, finale));
     }
 }

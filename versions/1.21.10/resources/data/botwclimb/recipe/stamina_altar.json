@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "OOO",
+    "OEO",
+    "OOO"
+  ],
+  "key": {
+    "O": "minecraft:obsidian",
+    "E": "minecraft:emerald"
+  },
+  "result": {
+    "id": "botwclimb:stamina_altar",
+    "count": 1
+  }
+}

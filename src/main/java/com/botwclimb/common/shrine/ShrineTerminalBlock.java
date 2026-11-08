@@ -24,7 +24,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * ride lasts.
  */
 public class ShrineTerminalBlock extends Block {
+    //? if <26.3 {
     public static final MapCodec<ShrineTerminalBlock> CODEC = simpleCodec(ShrineTerminalBlock::new);
+    //?}
     public static final BooleanProperty ACTIVE = BlockStateProperties.LIT;
     private static final VoxelShape SHAPE = Shapes.or(Block.box(0, 0, 0, 16, 3, 16), Block.box(4, 3, 4, 12, 7, 12), Block.box(2, 7, 2, 14, 10, 14));
 
@@ -33,10 +35,12 @@ public class ShrineTerminalBlock extends Block {
         registerDefaultState(stateDefinition.any().setValue(ACTIVE, false));
     }
 
+    //? if <26.3 {
     @Override
     protected MapCodec<? extends Block> codec() {
         return CODEC;
     }
+    //?}
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
@@ -51,7 +55,7 @@ public class ShrineTerminalBlock extends Block {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (!level.isClientSide() && player instanceof ServerPlayer sp && !TerminalRide.isRiding(sp)) { // lit does not matter: a ride cut short can leave the terminal lit
-            PacketDistributor.sendToPlayer(sp, PlotTravel.openPayload(sp, pos));
+            com.botwclimb.common.Net.toPlayer(sp, PlotTravel.openPayload(sp, pos));
         }
         return com.botwclimb.common.Compat.success(level);
     }

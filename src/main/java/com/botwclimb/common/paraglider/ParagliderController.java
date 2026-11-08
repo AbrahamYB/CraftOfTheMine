@@ -133,12 +133,12 @@ public final class ParagliderController {
 
     public static void broadcast(ServerPlayer p, boolean gliding, boolean correction) {
         var payload = new ParagliderStatePayload(p.getId(), gliding, correction, p.getData(BotwClimb.PARAGLIDER).fabric);
-        PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, payload);
+        com.botwclimb.common.Net.toWatchers(p, payload, true);
     }
 
     /** Stores the player's own fabric choice (not tied to any item) and tells everyone who can see them. */
     public static void setFabric(ServerPlayer p, int index) {
-        if (index < 0 || index >= FabricRegistry.all().size() || !FabricUnlocks.has(p, index)) return; // only a fabric the player has learned
+        if (index < 0 || index >= FabricRegistry.all().size() || !FabricUnlocks.has(p, index) || index == p.getData(BotwClimb.FABRIC)) return; // only a fabric the player has learned
         forceFabric(p, index);
     }
 
@@ -169,6 +169,8 @@ public final class ParagliderController {
         }
     }
 
+    private static final double GLIDE_MAX_SINK = -1.0; // blocks per tick; the glide sinks far slower, free fall passes this in about 13 ticks
+
     /** Handles a client toggle request. Closing is always fine; opening must pass the same checks as the client. */
     public static void serverToggle(ServerPlayer p, boolean open) {
         ParagliderData g = p.getData(BotwClimb.PARAGLIDER);
@@ -186,7 +188,7 @@ public final class ParagliderController {
         }
         g.gliding = open;
         g.groundTicks = 0;
-        p.fallDistance = 0;
+        if (p.getDeltaMovement().y > GLIDE_MAX_SINK) p.fallDistance = 0; // a player plunging faster than any glide keeps the fall
         broadcast(p, open, false);
     }
 
@@ -199,15 +201,19 @@ public final class ParagliderController {
         if (!stateAllows(p) || g.groundTicks >= SERVER_GROUND_GRACE || p.getData(BotwClimb.CLIMB).sExhausted) { // the server's stamina account ran out
             g.gliding = false;
             broadcast(p, false, true);
+        } else if (p.getDeltaMovement().y < GLIDE_MAX_SINK) { // plunging faster than a glide ever sinks: not a glide, so close it and keep the fall damage
+            g.gliding = false;
+            broadcast(p, false, true);
         } else {
             p.fallDistance = 0;
+            if (p.connection != null) p.connection.aboveGroundTickCount = 0; // a glide the server's stamina account allows is not flying
         }
     }
 
     /** Development command: /cotm paraglider fabric ID picks the fabric of the player running it. */
     @SubscribeEvent
     public static void onCommands(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal("cotm").then(Commands.literal("paraglider").requires(com.botwclimb.common.Compat.gamemaster())
+        event.getDispatcher().register(Commands.literal("cotm").requires(com.botwclimb.common.Compat.gamemaster()).then(Commands.literal("paraglider").requires(com.botwclimb.common.Compat.gamemaster())
                 .then(Commands.literal("fabric").then(Commands.argument("id", StringArgumentType.word())
                         .suggests((c, b) -> SharedSuggestionProvider.suggest(
                                 FabricRegistry.all().stream().map(FabricDefinition::id), b))
@@ -229,7 +235,7 @@ public final class ParagliderController {
     public static void onStartTracking(PlayerEvent.StartTracking event) {
         if (event.getEntity() instanceof ServerPlayer viewer && event.getTarget() instanceof ServerPlayer target) {
             ParagliderData g = target.getData(BotwClimb.PARAGLIDER);
-            PacketDistributor.sendToPlayer(viewer, new ParagliderStatePayload(target.getId(), g.gliding, false, g.fabric));
+            com.botwclimb.common.Net.toPlayer(viewer, new ParagliderStatePayload(target.getId(), g.gliding, false, g.fabric));
         }
     }
 }

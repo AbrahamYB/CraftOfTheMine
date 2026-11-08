@@ -2,7 +2,7 @@
 
 Craft of the Mine brings Breath-of-the-Wild-style movement to Minecraft: you climb walls, jump from ledge to ledge, glide on a
 paraglider and manage a stamina wheel. It also adds an altar for growing that wheel, bullet time for bows and crossbows, and personal
-plots reached through shrine terminals. It is one small jar for NeoForge, with no other mods needed.
+plots reached through shrine terminals. It is one small jar per Minecraft version for NeoForge, with no other mods needed.
 
 This is an unofficial fan project. It is not affiliated with or endorsed by Nintendo or Mojang.
 
@@ -19,17 +19,25 @@ The full description of every feature and its numbers is in the [player guide](d
 
 ## Downloads
 
-Download `CraftOfTheMine-1.0.0.jar` from the [Releases page](../../releases/latest). Each release lists what changed (the full history is
-in the [changelog](CHANGELOG.md)) and a SHA-256 checksum of the jar. You can also build the jar yourself (see below).
+Download the jar for your Minecraft version from the [Releases page](../../releases/latest). Each release lists what changed (the full
+history is in the [changelog](CHANGELOG.md)) and a SHA-256 checksum of every jar. You can also build the jars yourself (see below).
+
+| Minecraft | Jar | Java |
+|-----------|-----|------|
+| 1.21.1, 1.21.3, 1.21.4, 1.21.5, 1.21.8, 1.21.10, 1.21.11 | `CraftOfTheMine-1.0.0+mc<version>.jar` | 21 |
+| 26.1.x, 26.2, 26.3 | `CraftOfTheMine-1.0.0+mc<version>.jar` | 25 |
+
+Only these stable versions are built. Pick the jar that matches your game exactly.
 
 ## Installation
 
-1. Install NeoForge 21.1.x for Minecraft 1.21.1 (the mod was developed on 21.1.259 and is built to load on any 21.1 release).
-2. Put the jar in your `mods` folder.
+1. Install NeoForge for your Minecraft version.
+2. Put the matching jar in your `mods` folder.
 3. On a server, put the **same** jar on the server too: the mod uses its own network messages, and a client and server with
    different versions refuse each other's connection.
 
-Java 21 is required, the same as Minecraft 1.21.1.
+No other mods are needed. Worlds keep the mod's data (stamina upgrades, fabrics, altar credit) when moved between versions, but
+Minecraft itself does not support loading a world on an older version, so back up before you downgrade.
 
 ## Getting help and reporting issues
 
@@ -39,10 +47,11 @@ are welcome there too.
 
 ## Building from sources
 
-The project uses Gradle and needs a JDK 21.
+The project uses Gradle and Stonecutter (one source tree, ten versions). It needs a JDK 21, and a JDK 25 for the 26.x versions.
 
 ```
-./gradlew build              # the jar is written to build/libs
+./gradlew build              # every version; jars are in versions/<version>/build/libs
+./gradlew :1.21.1:build      # one version
 ./gradlew runClient          # a development client
 ./gradlew runGameTestServer  # the headless game tests
 ```

@@ -20,7 +20,7 @@ public final class FabricCommand {
     @SubscribeEvent
     public static void register(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("cotm").requires(com.botwclimb.common.Compat.gamemaster())
-                .then(Commands.literal("cloth")
+                .then(Commands.literal("cloth").requires(com.botwclimb.common.Compat.gamemaster())
                         .then(Commands.literal("unlock").then(Commands.argument("fabric", StringArgumentType.word())
                                 .suggests((c, b) -> SharedSuggestionProvider.suggest(
                                         Stream.concat(Stream.of("all"), FabricRegistry.all().stream().map(FabricDefinition::id)), b))

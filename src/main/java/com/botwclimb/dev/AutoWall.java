@@ -31,6 +31,7 @@ public final class AutoWall {
     public static void tick(ClientTickEvent.Post event) {
         if (!ON) return;
         Minecraft mc = Minecraft.getInstance();
+        AutoConfirm.pump(mc);
         if (mc.level == null || mc.player == null || mc.getSingleplayerServer() == null) return;
         if (mc.player.isDeadOrDying()) { mc.player.respawn(); return; }
         t++;

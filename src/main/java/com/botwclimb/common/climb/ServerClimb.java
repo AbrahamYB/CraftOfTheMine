@@ -49,7 +49,7 @@ public final class ServerClimb {
         if (event.getEntity() instanceof ServerPlayer viewer && event.getTarget() instanceof ServerPlayer target) {
             ClimbData d = target.getData(BotwClimb.CLIMB);
             if (d.active()) {
-                PacketDistributor.sendToPlayer(viewer, new ClimbStatePayload(target.getId(), d.state, d.dir, false));
+                com.botwclimb.common.Net.toPlayer(viewer, new ClimbStatePayload(target.getId(), d.state, d.dir, false));
             }
         }
     }
@@ -62,13 +62,17 @@ public final class ServerClimb {
         // the server's own stamina account: moving on a wall and gliding drain it, a modified client cannot cheat it away
         boolean moved = p.position().distanceToSqr(d.sPos) > 0.0004;
         d.sPos = p.position();
-        Stamina.serverStep(d, ClimbController.maxStamina(p), d.state == ClimbState.CLIMBING && moved, p.getData(BotwClimb.PARAGLIDER).gliding);
+        Stamina.serverStep(d, ClimbController.maxStamina(p), d.state == ClimbState.CLIMBING && moved, p.getData(BotwClimb.PARAGLIDER).gliding,
+                p.onGround() || p.getAbilities().flying);
         if (d.active() && d.sExhausted) { // out of stamina on the server: let go, whatever the client claims
             d.claim = ClimbState.NONE;
             reject(p, d);
             return;
         }
-        if (d.active()) p.fallDistance = 0;
+        if (d.active() && d.badTicks == 0) { // only while the wall is really there: a claim without one gets no fall protection
+            p.fallDistance = 0;
+            if (p.connection != null) p.connection.aboveGroundTickCount = 0; // a validated climb hangs in the air as far as the fly check can tell (a dedicated server kicks after 80 ticks)
+        }
 
         ClimbState claim = d.claim;
         // Sneak only lets go of a wall that has been held for a moment: the packet that clears the client's own
@@ -104,7 +108,7 @@ public final class ServerClimb {
             case CLIMBING -> {
                 boolean hanging = SurfaceSampler.sample(level, p, box, d.claimDir).holds(gap)
                         || !Double.isNaN(SurfaceSampler.findLedge(level, p, box, d.claimDir));
-                if (hanging || d.grace > 0) {
+                if (hanging || d.grace > 0 && d.state != ClimbState.LEDGE_TRANSITION) { // the grace of a fresh attach covers the latch hop; a ledge state never gets a free regrab
                     if (hanging) {
                         d.badTicks = 0;
                         d.lastValidPos = pos;
@@ -142,7 +146,7 @@ public final class ServerClimb {
                 }
             }
             case LEDGE_TRANSITION -> {
-                if (d.state == ClimbState.CLIMBING || d.state == ClimbState.CLIMB_JUMP) {
+                if (d.state == ClimbState.CLIMBING) { // the client starts a ledge only from a wall hold; chaining jump -> ledge -> grab -> ledge in open air was free flight
                     d.jumpStart = pos;
                     d.ledgeTicks = 0;
                     enter(p, d, ClimbState.LEDGE_TRANSITION);
@@ -174,7 +178,7 @@ public final class ServerClimb {
     }
 
     private static void enter(ServerPlayer p, ClimbData d, ClimbState s) {
-        d.grace = SERVER_GRACE_TICKS;
+        d.grace = s == ClimbState.CLIMBING ? SERVER_GRACE_TICKS : 0; // only a hold earns grace: it must not be re-armed by jump or ledge claims
         d.badTicks = 0;
         if (s == ClimbState.CLIMBING) d.lastValidPos = p.position();
         setState(p, d, s, false);
@@ -183,11 +187,15 @@ public final class ServerClimb {
     /** Rejecting never moves the player: the client is told to let go and falls from where it is. */
     private static void reject(ServerPlayer p, ClimbData d) {
         d.claim = ClimbState.NONE;
-        setState(p, d, ClimbState.NONE, true);
+        if (d.active()) {
+            setState(p, d, ClimbState.NONE, true);
+        } else if (p.tickCount % 8 == 0) { // nothing changed: a spammed claim costs one small correction to the sender now and then, not a broadcast per packet
+            com.botwclimb.common.Net.toPlayer(p, new ClimbStatePayload(p.getId(), ClimbState.NONE, d.dir, true));
+        }
     }
 
     private static void setState(ServerPlayer p, ClimbData d, ClimbState s, boolean correction) {
         d.setState(s);
-        PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, new ClimbStatePayload(p.getId(), s, d.dir, correction));
+        com.botwclimb.common.Net.toWatchers(p, new ClimbStatePayload(p.getId(), s, d.dir, correction), true);
     }
 }

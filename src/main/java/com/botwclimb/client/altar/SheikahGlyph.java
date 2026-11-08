@@ -18,7 +18,7 @@ public class SheikahGlyph extends TextureSheetParticle {
     private final double bx, by, bz, rise, swayX, swayZ;
 
     private SheikahGlyph(ClientLevel level, double x, double y, double z, SpriteSet sprites, int letter) {
-        //? if >=1.21.11 {
+        //? if >=1.21.9 {
         /*super(level, x, y, z, sprites.get(letter, 25));
         *///?} else {
         super(level, x, y, z);
@@ -53,13 +53,13 @@ public class SheikahGlyph extends TextureSheetParticle {
         alpha = Math.min(1f, Math.min(age / (float) FADE_IN, (lifetime - age) / (float) FADE_OUT)) * 1.0f;
     }
 
-    //? if >=1.21.11 {
+    //? if >=1.21.9 {
     /*// a faint dark copy a hair down and to the side, behind the letter, so it lifts off bright backgrounds
     @Override
     public void extract(net.minecraft.client.renderer.state.QuadParticleRenderState state, net.minecraft.client.Camera camera, float partialTick) {
         float r = rCol, g = gCol, b = bCol, a = alpha;
         double px = x, py = y, pz = z, pxo = xo, pyo = yo, pzo = zo;
-        var left = camera.leftVector();
+        var left = camera.getLeftVector();
         double dx = -left.x() * SHADOW, dy = -SHADOW, dz = -left.z() * SHADOW;
         rCol = gCol = bCol = 0f;
         alpha = a * 0.3f;
@@ -103,7 +103,7 @@ public class SheikahGlyph extends TextureSheetParticle {
     }
 
     public record Provider(SpriteSet sprites) implements ParticleProvider<SimpleParticleType> {
-        //? if >=1.21.11 {
+        //? if >=1.21.9 {
         /*@Override
         public Particle createParticle(SimpleParticleType type, ClientLevel level, double x, double y, double z, double xd, double yd, double zd,
                                        net.minecraft.util.RandomSource random) {

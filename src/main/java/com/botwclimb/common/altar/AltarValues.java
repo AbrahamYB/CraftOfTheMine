@@ -48,11 +48,12 @@ public final class AltarValues {
     /** The data map value of a loose item (0 when it is not listed). */
     public static float looseValue(Item item) {
         Float v = item.builtInRegistryHolder().getData(ALTAR_VALUE);
-        return v == null ? 0f : v;
+        return v == null || !Float.isFinite(v) || v <= 0f ? 0f : Math.min(v, 1000f); // a data pack value that is NaN, infinite or absurd must not size the altar search
     }
 
     public static boolean isGear(ItemStack stack) {
-        return GEAR.matcher(BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath()).matches();
+        var key = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        return key.getNamespace().equals("minecraft") && GEAR.matcher(key.getPath()).matches(); // another mod's iron_pickaxe is not worth vanilla gear
     }
 
     /** Durability left as a fraction, 1 for items that do not wear. */

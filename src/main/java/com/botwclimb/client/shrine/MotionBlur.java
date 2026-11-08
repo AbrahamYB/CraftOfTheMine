@@ -15,6 +15,8 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
  * and only while the rider is moving fast, so the rest of the time it costs nothing. If anything about it fails (a shader
  * pack that replaces the pipeline, say) it switches itself off for the session instead of breaking rendering.
  */
+// newer versions have no listener here, and the event bus refuses a subscriber class without one
+//? if <1.21.2
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
 public final class MotionBlur {
     private static final ResourceLocation CHAIN = ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "shaders/post/motion_blur.json");

@@ -26,7 +26,7 @@ off in the settings, in which case the glider leaves your camera alone.
 
 **Climb Speed enchantment** (boots, enchanting table only, needs the top slot): 25% faster climbing and 15% faster wall jumps.
 
-**Bullet time.** Holding a bow or crossbow in the air slows the fall and nearby mobs on your screen; shots cost stamina. See `client/bullettime`.
+**Bullet time.** Holding a bow or crossbow in the air slows the fall and really slows the mobs around you (they get about 1 tick in 7 within 8 chunks of you, so what you see is where they are and arrows hit what is drawn); other players near you are slowed down too (their walking, falling, jumping and hitting), but never creative players, riders or Create contraptions. Shots cost stamina. See `common/bullettime` and `client/bullettime`.
 
 **Shrine terminals and plots.** A shrine terminal (creative inventory or `/give`) lists the plots, lets you claim one and travel to it. The plot
 dimension is a void with a grass island per plot, and only a plot's owner (or a friend they have opened it to) can build in it. Riding

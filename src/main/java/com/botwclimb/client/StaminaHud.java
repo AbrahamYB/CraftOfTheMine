@@ -55,7 +55,7 @@ public final class StaminaHud {
         GuiShapes.end();
     }
 
-    //? if >=1.21.11 {
+    //? if >=1.21.8 {
     /*@EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
     *///?} else {
     @EventBusSubscriber(modid = BotwClimb.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)

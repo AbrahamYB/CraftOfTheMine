@@ -145,7 +145,7 @@ public final class TerminalRide {
         r.y = a.y();
         r.z = a.z();
         if (a.level() != p.level()) { // players watching from the world the rider leaves must not keep drawing mud on nobody
-            PacketDistributor.sendToPlayersTrackingEntity(p, new TerminalRidePayload(p.getId(), 0, (float) r.y, r.sink ? 1 : 0));
+            com.botwclimb.common.Net.toWatchers(p, new TerminalRidePayload(p.getId(), 0, (float) r.y, r.sink ? 1 : 0), false);
         }
         com.botwclimb.common.Compat.teleport(p, a.level(), a.x(), a.y() + a.rise(), a.z(), a.yaw(), 0f);
         p.noPhysics = false;
@@ -174,11 +174,21 @@ public final class TerminalRide {
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer p)) return;
         boolean cut = p.getPersistentData().contains(RIDING_TAG);
-        if (!cut && !(p.isNoGravity() && !p.isCreative() && !p.isSpectator())) return;
+        if (!cut) return; // only a ride that was cut off: no-gravity from another mod or command is left alone
         p.getPersistentData().remove(RIDING_TAG);
         p.setNoGravity(false);
         p.setDeltaMovement(0, 0, 0);
         setDown(p);
+    }
+
+    /** A rider who died must not keep the ride: the respawned player has the same id. */
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer p) || !RIDES.containsKey(p.getUUID())) return;
+        RIDES.remove(p.getUUID());
+        p.getPersistentData().remove(RIDING_TAG);
+        p.setNoGravity(false);
+        p.noPhysics = false;
     }
 
     @SubscribeEvent
@@ -215,7 +225,7 @@ public final class TerminalRide {
         p.hurtMarked = true;
         setDown(p);
         setLit(p, r, false);
-        PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, new TerminalRidePayload(p.getId(), 0, (float) r.y, r.sink ? 1 : 0));
+        com.botwclimb.common.Net.toWatchers(p, new TerminalRidePayload(p.getId(), 0, (float) r.y, r.sink ? 1 : 0), true);
     }
 
     /** A rider whose ride was cut short in the air (timeout, logout, crash) is put on the ground below, so letting go never means a long fall. */
@@ -237,7 +247,7 @@ public final class TerminalRide {
     }
 
     private static void send(ServerPlayer p, Ride r) {
-        PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, new TerminalRidePayload(p.getId(), r.phase, (float) r.y, r.sink ? 1 : 0));
+        com.botwclimb.common.Net.toWatchers(p, new TerminalRidePayload(p.getId(), r.phase, (float) r.y, r.sink ? 1 : 0), true);
     }
 
     /** The terminal the ride began at (it may be in another dimension by now). */

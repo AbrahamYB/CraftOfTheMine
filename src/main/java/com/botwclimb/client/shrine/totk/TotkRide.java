@@ -79,7 +79,19 @@ public final class TotkRide {
     /** True while the rider is being drawn into the void on the HUD (that draw goes through the player renderer, whose events must leave it alone). */
     /** The render type the ride's glowing geometry is drawn with. */
     public static RenderType glowType() {
+        return glow();
+    }
+
+    /**
+     * The glow's render type. Up to 1.21.1 the "eyes" type adds its light to the picture; from 1.21.2 it blends with alpha and the ride's
+     * light came out thin and pale, so there it is the additive lightning type (no texture: see {@link #quad}, which feathers the edges).
+     */
+    private static RenderType glow() {
+        //? if >=1.21.2 {
+        /*return RenderType.lightning();
+        *///?} else {
         return RenderType.eyes(GLOW);
+        //?}
     }
 
     public static boolean drawingHud() {
@@ -248,7 +260,7 @@ public final class TotkRide {
     // ------------------------------------------------------------------------------------------------ world layer
 
     /** Drawn for every player riding a terminal (the rider and anyone watching), in the same space as the mud layer: origin at the feet, y up. */
-    public static void layer(PoseStack ps, MultiBufferSource buffer, int light, AbstractClientPlayer p, MudHandClient.State s, float partial, boolean hud) {
+    public static void layer(PoseStack ps, com.botwclimb.client.Buffers buffer, int light, AbstractClientPlayer p, MudHandClient.State s, float partial, boolean hud) {
         if (hud) return; // the rider drawn into the void on the HUD must not carry the world effects with them
         float now = p.level().getGameTime() + partial, t = now - s.since(), tp = now - s.phaseSince();
         float h = (float) (Mth.lerp(partial, p.yo, p.getY()) - s.startY());
@@ -256,7 +268,7 @@ public final class TotkRide {
         ps.pushPose();
         ps.translate(0, 1.501, 0);
         ps.scale(-1, -1, 1);
-        VertexConsumer vc = buffer.getBuffer(RenderType.eyes(GLOW));
+        VertexConsumer vc = buffer.getBuffer(glow());
         PoseStack.Pose pose = ps.last();
         switch (s.phase()) {
             case 1 -> { // a soft glow gathers at the feet; the ribbons grow in round the rider over the last ticks
@@ -298,8 +310,31 @@ public final class TotkRide {
                 .setLight(LightTexture.FULL_BRIGHT).setNormal(pose, 0, 1, 0);
     }
 
-    /** A quad, written both ways round (the glow type culls back faces). */
+    /**
+     * A glowing quad. From 1.21.2 the glow type has no texture to soften the sides, so the quad is written three times, each narrower
+     * and stronger than the last: the light is faint at the edges and brightest down the middle.
+     */
     private static void quad(VertexConsumer vc, PoseStack.Pose pose, float[] p, int r, int g, int b, int a, float u0, float u1) {
+        //? if >=1.21.2 {
+        /*float[] narrow = {1f, 0.62f, 0.3f}, weight = {0.3f, 0.35f, 0.45f};
+        for (int i = 0; i < 3; i++) {
+            float[] q = new float[12];
+            for (int c = 0; c < 4; c++) { // a corner moves toward the middle of its own edge (corners 0-1 and 2-3 are the two ends)
+                int mate = c ^ 1, base = (c < 2 ? 0 : 6);
+                for (int k = 0; k < 3; k++) {
+                    float mid = (p[c * 3 + k] + p[mate * 3 + k]) * 0.5f;
+                    q[c * 3 + k] = mid + (p[c * 3 + k] - mid) * narrow[i];
+                }
+            }
+            quadOnce(vc, pose, q, r, g, b, (int) (a * weight[i]), u0, u1);
+        }
+        if (true) return;
+        *///?}
+        quadOnce(vc, pose, p, r, g, b, a, u0, u1);
+    }
+
+    /** One quad, written both ways round (the glow type culls back faces). */
+    private static void quadOnce(VertexConsumer vc, PoseStack.Pose pose, float[] p, int r, int g, int b, int a, float u0, float u1) {
         v(vc, pose, p[0], p[1], p[2], u0, 0.5f, r, g, b, a);
         v(vc, pose, p[3], p[4], p[5], u1, 0.5f, r, g, b, a);
         v(vc, pose, p[6], p[7], p[8], u1, 0.5f, r, g, b, a);
@@ -352,6 +387,23 @@ public final class TotkRide {
     /** A flat glowing blob on the ground (the soft texture does the fading). */
     private static void disc(VertexConsumer vc, PoseStack.Pose pose, float y, float rad, int r, int g, int b, int a) {
         if (a <= 2) return;
+        //? if >=1.21.2 {
+        /*// no texture to give the disc its round, soft edge: a fan of triangles, solid at the middle and clear at the rim, written both ways round
+        int n = 24;
+        for (int i = 0; i < n; i++) {
+            double a0 = i * 2 * Math.PI / n, a1 = (i + 1) * 2 * Math.PI / n;
+            float x0 = rad * (float) Math.cos(a0), z0 = rad * (float) Math.sin(a0), x1 = rad * (float) Math.cos(a1), z1 = rad * (float) Math.sin(a1);
+            v(vc, pose, 0, y, 0, 0.5f, 0.5f, r, g, b, a);
+            v(vc, pose, x0, y, z0, 0.5f, 0.5f, r, g, b, 0);
+            v(vc, pose, x1, y, z1, 0.5f, 0.5f, r, g, b, 0);
+            v(vc, pose, 0, y, 0, 0.5f, 0.5f, r, g, b, a);
+            v(vc, pose, 0, y, 0, 0.5f, 0.5f, r, g, b, a);
+            v(vc, pose, x1, y, z1, 0.5f, 0.5f, r, g, b, 0);
+            v(vc, pose, x0, y, z0, 0.5f, 0.5f, r, g, b, 0);
+            v(vc, pose, 0, y, 0, 0.5f, 0.5f, r, g, b, a);
+        }
+        if (true) return;
+        *///?}
         float[] p = {-rad, y, -rad, rad, y, -rad, rad, y, rad, -rad, y, rad};
         for (int i = 0; i < 4; i++) { // full texture, whole square
             v(vc, pose, p[i * 3], p[i * 3 + 1], p[i * 3 + 2], i == 0 || i == 3 ? 0f : 1f, i < 2 ? 0f : 1f, r, g, b, a);
@@ -470,9 +522,11 @@ public final class TotkRide {
             }
             voidAngleClk = c;
             drawVoid(g, m, w, h, age, c);
-            //? if <1.21.11
+            //? if >=1.21.6
+            /*if (kind != 1) drawHelixFlat(g, w, h, c, 1f);*/
+            //? if <1.21.6
             g.flush();
-            //? if <1.21.11
+            //? if <1.21.6
             if (kind != 1) drawHelix3d(mc, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight(), c, kind == 1 ? -1f : 1f);
             if (!(mc.screen instanceof ReceivingLevelScreen) && mc.player != null) rider(g, mc, w, h, partial);
             return;
@@ -487,8 +541,7 @@ public final class TotkRide {
         }
         if (cutClk > 0 && after < 60f) { // back in the world: a pale haze that thins out, over a lasting green tint
             if (s.kind() == 0) {
-                haze = 0.55f * (1f - smooth(after / 8f));
-                tint = 0.3f * (1f - smooth(after / 45f));
+                haze = 0.4f * (1f - smooth(after / 8f)); // a short pale haze; the lasting green tint it once left behind read as a stray overlay
             } else {
                 flash = 0.35f * (1f - smooth(after / 5f));
             }
@@ -515,7 +568,7 @@ public final class TotkRide {
 
     /** One screen quad with a colour at each corner. The gui type culls back faces, so the corners are written counter-clockwise whichever way they were given. */
     private static void tri(VertexConsumer vc, Matrix4f m, float x0, float y0, int c0, float x1, float y1, int c1, float x2, float y2, int c2, float x3, float y3, int c3) {
-        //? if >=1.21.11 {
+        //? if >=1.21.6 {
         /*com.botwclimb.client.GuiShapes.quad(x0, y0, c0, x1, y1, c1, x2, y2, c2, x3, y3, c3);
         if (true) return;
         *///?}
@@ -554,7 +607,7 @@ public final class TotkRide {
         // base: black at the cut, teal within 7 ticks (footage: (0,70,60) at rest)
         float bk = smooth(age / 7f), dir = kind == 1 ? -1f : 1f;
         // everything is raw quads in one buffer, drawn in this order (no fills: they may or may not flush the buffer, and the order must be certain)
-        //? if >=1.21.11 {
+        //? if >=1.21.6 {
         /*VertexConsumer vc = null; // the shapes are collected and handed to the GUI as one element (GuiShapes)
         com.botwclimb.client.GuiShapes.begin(g);
         *///?} else {
@@ -613,9 +666,73 @@ public final class TotkRide {
                 tri(vc, m, x2 - bw * 0.7f, yb, bright, x2 + bw * 0.7f, yb, bright, x2 + bw * 0.1f, yb + sgn * len2, tip, x2 - bw * 0.1f, yb + sgn * len2, tip);
             }
         }
-        //? if >=1.21.11
+        //? if >=1.21.6
         /*com.botwclimb.client.GuiShapes.end();*/
     }
+
+    //? if >=1.21.6 {
+    /*// From 1.21.6 the GUI is drawn in one go after the screens, with no way to swap in a 3D projection, so the helix is projected by hand:
+    // the quads it writes are caught here, turned into screen positions with the same 70 degree camera, and handed to the GUI as flat shapes.
+    private static final class Flat implements VertexConsumer {
+        private final float w, h, focal;
+        private final float[] sx = new float[4], sy = new float[4];
+        private final int[] col = new int[4];
+        private final boolean[] ok = new boolean[4];
+        private float px, py;
+        private boolean pok;
+        private int n, quads;
+
+        Flat(float w, float h) {
+            this.w = w;
+            this.h = h;
+            this.focal = (float) (1.0 / Math.tan(Math.toRadians(35)));
+        }
+
+        public VertexConsumer addVertex(float x, float y, float z) {
+            pok = z < -0.05f; // the camera looks down -z; nothing behind or on it is drawn
+            if (pok) {
+                px = w * 0.5f * (1f + x * focal / -z / (w / h));
+                py = h * 0.5f * (1f - y * focal / -z);
+            }
+            return this;
+        }
+
+        public VertexConsumer setColor(int r, int g, int b, int a) {
+            return setColor(Mth.clamp(a, 0, 255) << 24 | r << 16 | g << 8 | b);
+        }
+
+        public VertexConsumer setColor(int argb) {
+            sx[n] = px;
+            sy[n] = py;
+            ok[n] = pok;
+            col[n] = argb;
+            if (++n == 4) {
+                n = 0;
+                if ((quads++ & 1) == 0 && ok[0] && ok[1] && ok[2] && ok[3]) { // every quad is written twice, once each way round: keep one
+                    com.botwclimb.client.GuiShapes.quad(sx[0], sy[0], col[0], sx[1], sy[1], col[1], sx[2], sy[2], col[2], sx[3], sy[3], col[3]);
+                }
+            }
+            return this;
+        }
+
+        public VertexConsumer setUv(float u, float v) { return this; }
+        public VertexConsumer setUv1(int u, int v) { return this; }
+        public VertexConsumer setUv2(int u, int v) { return this; }
+        public VertexConsumer setUv3(float u, float v) { return this; }
+        public VertexConsumer setNormal(float x, float y, float z) { return this; }
+        public VertexConsumer setLineWidth(float width) { return this; }
+    }
+
+    private static void drawHelixFlat(GuiGraphics g, int w, int h, float time, float dir) {
+        PoseStack ps = new PoseStack();
+        ps.translate(0, 0, -7f);
+        ps.scale(1.8f, 1f, 1.8f);
+        ps.translate(0, -13f + dir * (time * 0.01f % 5f), 0); // as drawHelix3d placed it
+        com.botwclimb.client.GuiShapes.begin(g);
+        helix(new Flat(w, h), ps.last(), time * 0.2f, 2.4f, 80f, 255f, 150f);
+        com.botwclimb.client.GuiShapes.end();
+    }
+    *///?}
 
     /**
      * The same 3D double helix as in the world, put into the void: drawn with its own perspective camera 7 blocks away (the
@@ -624,7 +741,7 @@ public final class TotkRide {
      */
     private static void drawHelix3d(Minecraft mc, int w, int h, float time, float dir) {
         com.mojang.blaze3d.systems.RenderSystem.backupProjectionMatrix();
-        //? if >=1.21.11 {
+        //? if >=1.21.6 {
         /*// this version has no way to swap the projection from here: the helix is not drawn on it (see hud)
         *///?} else if >=1.21.2 {
         /*com.mojang.blaze3d.systems.RenderSystem.setProjectionMatrix(new Matrix4f().perspective((float) Math.toRadians(70), (float) w / h, 0.05f, 100f), com.mojang.blaze3d.ProjectionType.PERSPECTIVE);
@@ -634,8 +751,10 @@ public final class TotkRide {
         var mv = com.mojang.blaze3d.systems.RenderSystem.getModelViewStack();
         mv.pushMatrix();
         mv.identity();
-        //? if >=1.21.11 {
+        //? if >=1.21.6 {
         /*// nothing to clear here
+        *///?} else if >=1.21.5 {
+        /*com.mojang.blaze3d.systems.RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(mc.getMainRenderTarget().getDepthTexture(), 1.0); // the world's depth must not hide it
         *///?} else if >=1.21.2 {
         /*com.mojang.blaze3d.systems.RenderSystem.clear(256); // the world's depth must not hide it
         *///?} else {
@@ -646,10 +765,10 @@ public final class TotkRide {
         ps.translate(0, 0, -7f);
         ps.scale(1.8f, 1f, 1.8f);
         ps.translate(0, -13f + dir * (time * 0.01f % 5f), 0); // 26 blocks long, middle at the screen's middle; it creeps up to 5 blocks the way the rider travels, never far enough to show an end
-        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
-        VertexConsumer vc = buffers.getBuffer(RenderType.eyes(GLOW));
+        com.botwclimb.client.Buffers buffers = com.botwclimb.client.ClientCompat.immediateBuffers(mc);
+        VertexConsumer vc = buffers.getBuffer(glow());
         helix(vc, ps.last(), time * 0.2f, 2.4f, 80f, 255f, 150f);
-        buffers.endBatch(RenderType.eyes(GLOW));
+        buffers.endBatch(glow());
         mv.popMatrix();
         //? if <1.21.2
         com.mojang.blaze3d.systems.RenderSystem.applyModelViewMatrix();
@@ -673,7 +792,7 @@ public final class TotkRide {
             p.hurtTime = 0; // no red flash
             Quaternionf rot = kind == 1 ? new Quaternionf().rotateZ((float) Math.PI)
                     : diveRotation(clk() - voidClk); // going up: no turn, they dive
-            //? if >=1.21.11 {
+            //? if >=1.21.9 {
             /*var dispatcher = mc.getEntityRenderDispatcher();
             var state = dispatcher.getRenderer(p).createRenderState(p, 1.0f);
             state.lightCoords = 15728880;
@@ -689,6 +808,8 @@ public final class TotkRide {
                 living.scale = 1f;
             }
             g.submitEntityRenderState(state, h * RIDER_SIZE, new Vector3f(0, p.getBbHeight() / 2f + 0.0625f, 0), rot, null, 0, 0, w, h);
+            *///?} else if >=1.21.6 {
+            /*InventoryScreen.renderEntityInInventory(g, 0, 0, w, h, h * RIDER_SIZE, new Vector3f(0, p.getBbHeight() / 2f + 0.0625f, 0), rot, null, p);
             *///?} else {
             InventoryScreen.renderEntityInInventory(g, w * 0.5f, riderY(h, clk() - voidClk), h * RIDER_SIZE, new Vector3f(0, p.getBbHeight() / 2f + 0.0625f, 0), rot, null, p);
             //?}
@@ -708,7 +829,7 @@ public final class TotkRide {
     public static void tick(Minecraft mc) {
         sync(mc);
         if (mc.level == null) return;
-        var rand = mc.level.random;
+        var rand = mc.level.getRandom();
         long now = mc.level.getGameTime();
         SPIN.keySet().removeIf(id -> MudHandClient.get(id) == null); // a ride that ended stands the rider straight again
         for (var e : MudHandClient.all().entrySet()) {

@@ -403,14 +403,14 @@ public class AltarScreen extends Screen {
 
     // ------------------------------------------------------------------ input
 
-    //? if >=1.21.11 {
+    //? if >=1.21.9 {
     /*@Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
         return mouseClicked(event.x(), event.y(), event.button());
     }
     *///?}
 
-    //? if <1.21.11
+    //? if <1.21.9
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (pickerFor >= 0) {
@@ -468,7 +468,7 @@ public class AltarScreen extends Screen {
             com.botwclimb.client.ClientCompat.sendToServer(new AltarOfferPayload(pos, entries, AltarOfferPayload.NO_REFUND));
             return true;
         }
-        //? if >=1.21.11 {
+        //? if >=1.21.9 {
         /*return super.mouseClicked(new net.minecraft.client.input.MouseButtonEvent(mx, my, new net.minecraft.client.input.MouseButtonInfo(button, 0)), false);
         *///?} else {
         return super.mouseClicked(mx, my, button);
@@ -484,6 +484,17 @@ public class AltarScreen extends Screen {
         }
         if (maxed()) {
             refundScroll += d;
+            return true;
+        }
+        for (int i = 0; i < 9; i++) { // over a filled slot: scroll up offers one more of it, down one fewer (none left empties the slot)
+            AltarOffer o = offer[i];
+            if (o == null || !over(mx, my, slotX(i), slotY(i), SLOT, SLOT)) continue;
+            var items = com.botwclimb.common.Compat.items(me().getInventory());
+            ItemStack have = o.invSlot() < items.size() ? items.get(o.invSlot()) : ItemStack.EMPTY;
+            int max = have.getItem() == o.icon().getItem() ? have.getCount() : 0;
+            int count = Mth.clamp(o.count() - d, 0, max); // d is -1 when scrolling up
+            offer[i] = count < 1 ? null : new AltarOffer(o.invSlot(), count, o.unit(), o.icon());
+            message = "";
             return true;
         }
         return super.mouseScrolled(mx, my, sx, sy);

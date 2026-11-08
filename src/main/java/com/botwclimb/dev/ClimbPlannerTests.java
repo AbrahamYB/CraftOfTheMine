@@ -454,10 +454,17 @@ public class ClimbPlannerTests {
         Player p = sim(h, 4.0, false);
         ClimbData d = p.getData(BotwClimb.CLIMB);
         grab(p, d);
-        for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < 8.9; i++) tick(p, d, 1, 0, false, false, false);
+        StringBuilder trace = new StringBuilder("after grab y=" + (p.getY() - h.absoluteVec(Vec3.ZERO).y) + " " + d.state);
+        int steps = 0;
+        for (int i = 0; i < 60 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 8.9, 0)).y; i++) {
+            tick(p, d, 1, 0, false, false, false);
+            steps++;
+            if (i % 10 == 0) trace.append(" | ").append(i).append(": y=").append(p.getY() - h.absoluteVec(Vec3.ZERO).y).append(" ").append(d.state).append(" stam=").append(d.stamina);
+        }
+        trace.append(" steps=").append(steps);
         double top = h.absoluteVec(new Vec3(0, 10.0, 0)).y;
         tick(p, d, 1, 0, true, false, false); // Space
-        if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("Space under the block did not start the jump onto it, state " + d.state);
+        if (d.state != ClimbState.LEDGE_TRANSITION) h.fail("Space under the block did not start the jump onto it, state " + d.state + " " + trace + " goal=" + (d.plan == null ? "none" : d.plan.goal()));
         double best = p.getY();
         for (int i = 0; i < 60; i++) {
             tick(p, d, 0, 0, false, false, false);
@@ -641,6 +648,44 @@ public class ClimbPlannerTests {
         h.succeed();
     }
 
+    /** The one-block jump onto a block above you still works when a slab or a stair (any facing, either half) sits right under that block. */
+    @GameTest(template = "empty", timeoutTicks = 400)
+    public static void jumpOntoBlockWithSlabOrStairUnderIt(GameTestHelper h) {
+        var slab = net.minecraft.world.level.block.SlabBlock.TYPE;
+        var stairs = (net.minecraft.world.level.block.StairBlock) Blocks.STONE_STAIRS;
+        java.util.List<net.minecraft.world.level.block.state.BlockState> under = new java.util.ArrayList<>();
+        under.add(Blocks.STONE_SLAB.defaultBlockState());
+        under.add(Blocks.STONE_SLAB.defaultBlockState().setValue(slab, net.minecraft.world.level.block.state.properties.SlabType.TOP));
+        for (var f : net.minecraft.core.Direction.Plane.HORIZONTAL) for (var half : net.minecraft.world.level.block.state.properties.Half.values()) {
+            under.add(stairs.defaultBlockState().setValue(net.minecraft.world.level.block.StairBlock.FACING, f).setValue(net.minecraft.world.level.block.StairBlock.HALF, half));
+        }
+        double top = h.absoluteVec(new Vec3(0, 10.0, 0)).y;
+        StringBuilder bad = new StringBuilder();
+        java.util.List<net.minecraft.world.level.block.state.BlockState[]> combos = new java.util.ArrayList<>();
+        for (var u : under) combos.add(new net.minecraft.world.level.block.state.BlockState[]{Blocks.STONE.defaultBlockState(), u}); // full block with the piece under it
+        for (var u : under) combos.add(new net.minecraft.world.level.block.state.BlockState[]{u, Blocks.AIR.defaultBlockState()});   // the piece itself is the ledge
+        for (var u : under) combos.add(new net.minecraft.world.level.block.state.BlockState[]{u, u});                                 // the piece on a piece
+        for (var combo : combos) {
+            var below = combo[1];
+            for (int x = 0; x < 12; x++) for (int y = 1; y <= 14; y++) for (int z = 5; z <= 8; z++) h.setBlock(x, y, z, Blocks.AIR);
+            wall(h, 14);
+            h.setBlock(5, 9, 7, combo[0]);
+            h.setBlock(5, 8, 7, below);
+            Player p = sim(h, 4.0, false);
+            ClimbData d = p.getData(BotwClimb.CLIMB);
+            grab(p, d);
+            for (int i = 0; i < 80 && d.state == ClimbState.CLIMBING && p.getY() < h.absoluteVec(new Vec3(0, 6.2, 0)).y; i++) tick(p, d, 1, 0, false, false, false);
+            tick(p, d, 1, 0, true, false, false);
+            boolean started = d.state == ClimbState.LEDGE_TRANSITION;
+            for (int i = 0; i < 80; i++) tick(p, d, 0, 0, false, false, false);
+            double expect = h.absoluteVec(new Vec3(0, 9.0 + h.getLevel().getBlockState(h.absolutePos(new net.minecraft.core.BlockPos(5, 9, 7))).getCollisionShape(h.getLevel(), h.absolutePos(new net.minecraft.core.BlockPos(5, 9, 7))).max(net.minecraft.core.Direction.Axis.Y), 0)).y;
+            if (!started || p.getY() < expect - 0.05) bad.append(" | top=").append(combo[0]).append(" under=").append(below).append(": started=").append(started).append(" y=").append(p.getY()).append(" top=").append(top);
+            d.setState(ClimbState.NONE);
+        }
+        if (bad.length() > 0) h.fail("the one-block jump failed with:" + bad);
+        h.succeed();
+    }
+
     /** A slab in the top half of its space has its underside higher: the ledge jump must still work. */
     @GameTest(template = "empty")
     public static void ledgeJumpOntoTopSlab(GameTestHelper h) {
@@ -781,6 +826,10 @@ public class ClimbPlannerTests {
         com.botwclimb.common.bullettime.BulletFall.apply(p, true);
         if (gravity.hasModifier(id)) h.fail("slow fall applied without a bow");
         p.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BOW));
+        p.setPos(h.absoluteVec(new Vec3(5.5, 30.0, 5.5)));
+        com.botwclimb.common.bullettime.BulletFall.apply(p, true);
+        if (gravity.hasModifier(id)) h.fail("slow fall must not apply on the way up (nothing has fallen yet): a client could jump far higher with it");
+        p.fallDistance = 1f;
         com.botwclimb.common.bullettime.BulletFall.apply(p, true);
         if (!gravity.hasModifier(id)) h.fail("slow fall should apply with a bow in the air");
         p.setOnGround(true);
@@ -801,15 +850,14 @@ public class ClimbPlannerTests {
                 if (back.state() != st || back.dir() != dir) h.fail("climb input changed in transit: " + st + "/" + dir + " -> " + back);
             }
         }
-        var snaps = java.util.List.of(new com.botwclimb.network.BulletPositionsPayload.Snap(7, 1.5, 2.5, -3.5, 90f));
-        com.botwclimb.network.BulletPositionsPayload.CODEC.encode(buf, new com.botwclimb.network.BulletPositionsPayload(snaps));
-        var got = com.botwclimb.network.BulletPositionsPayload.CODEC.decode(buf).snaps();
-        if (got.size() != 1 || got.get(0).id() != 7 || got.get(0).z() != -3.5) h.fail("bullet positions changed in transit: " + got);
+        com.botwclimb.network.BulletSlowPayload.CODEC.encode(buf, new com.botwclimb.network.BulletSlowPayload(new int[]{7, 300, 70000}));
+        var got = com.botwclimb.network.BulletSlowPayload.CODEC.decode(buf).ids();
+        if (got.length != 3 || got[0] != 7 || got[1] != 300 || got[2] != 70000) h.fail("slowed ids changed in transit: " + java.util.Arrays.toString(got));
         buf.clear();
         buf.writeVarInt(1_000_000);
         try {
-            com.botwclimb.network.BulletPositionsPayload.CODEC.decode(buf);
-            h.fail("a huge bullet positions list must be refused");
+            com.botwclimb.network.BulletSlowPayload.CODEC.decode(buf);
+            h.fail("a huge slowed list must be refused");
         } catch (io.netty.handler.codec.DecoderException expected) {
             // good
         }
@@ -841,7 +889,6 @@ public class ClimbPlannerTests {
     /** The shooter's picture lag keeps growing while reports keep coming and closes quickly once they stop. */
     @GameTest(template = "empty")
     public static void bulletLagExtrapolation(GameTestHelper h) {
-        var c = com.botwclimb.common.bullettime.BulletConstants.class;
         if (com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10, 0) != 10) h.fail("no age: unchanged");
         if (com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10, 2) != 12) h.fail("2 ticks of slow-motion add about 2 ticks of lag");
         int later = com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10, 5);
@@ -851,57 +898,352 @@ public class ClimbPlannerTests {
         h.succeed();
     }
 
+    /** Bullet positions of the other players survive the trip, and an absurd list is refused. */
+    @GameTest(template = "empty")
+    public static void bulletPositionsRoundTrip(GameTestHelper h) {
+        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        var snaps = java.util.List.of(new com.botwclimb.network.BulletPositionsPayload.Snap(7, 1.5, 2.5, -3.5, 90f));
+        com.botwclimb.network.BulletPositionsPayload.CODEC.encode(buf, new com.botwclimb.network.BulletPositionsPayload(snaps));
+        var got = com.botwclimb.network.BulletPositionsPayload.CODEC.decode(buf).snaps();
+        if (got.size() != 1 || got.get(0).id() != 7 || got.get(0).z() != -3.5) h.fail("bullet positions changed in transit: " + got);
+        buf.clear();
+        buf.writeVarInt(1_000_000);
+        try {
+            com.botwclimb.network.BulletPositionsPayload.CODEC.decode(buf);
+            h.fail("a huge bullet positions list must be refused");
+        } catch (io.netty.handler.codec.DecoderException expected) {
+            // good
+        }
+        h.succeed();
+    }
+
+    /** Ticks each entity really ran in these tests: NeoForge fires the Post event only for a tick that was not cancelled. */
+    private static final java.util.Map<Integer, Integer> RAN = new java.util.concurrent.ConcurrentHashMap<>();
+
+    static {
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
+                (net.neoforged.neoforge.event.tick.EntityTickEvent.Post e) -> RAN.merge(e.getEntity().getId(), 1, Integer::sum));
+    }
+
+    private static net.minecraft.world.entity.Mob baby(GameTestHelper h, Vec3 at) {
+        net.minecraft.world.entity.Mob cow = h.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW, at);
+        cow.setNoGravity(true); // the empty test area has no floor on every version: a falling mob would leave the world
+        return cow;
+    }
+
+    /** How many ticks an entity has really run so far. */
+    private static int ran(net.minecraft.world.entity.Entity e) {
+        return RAN.getOrDefault(e.getId(), 0);
+    }
+
     /**
-     * End to end on the server: a cow stands still, the shooter reports a picture lag, the cow is moved far away, then a
-     * bullet arrow is fired at where the cow was. With the right lag it must hit the cow where it was drawn; with no lag it
-     * must not (the real cow is far away).
+     * A slowed mob gets one tick in every 11 while the clock around it keeps going: its age (one per tick it runs) grows about a
+     * tenth as fast as a free mob's, its tick count does not stop, and its hurt timer still runs out on the real clock.
      */
-    private static void bulletShotScenario(GameTestHelper h, int reportedLag, boolean expectHit, boolean slowArrow) {
-        var owner = h.makeMockPlayer(GameType.SURVIVAL); // a plain player: a real connection is not needed for the hit logic
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void bulletSlowRunsOneTickInEleven(GameTestHelper h) {
         var level = h.getLevel();
-        Vec3 spot = h.absoluteVec(new Vec3(5.5, 2.0, 5.5)), far = h.absoluteVec(new Vec3(5.5, 2.0, 25.5));
-        var cow = h.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW, new Vec3(5.5, 2.0, 5.5));
-        cow.setNoGravity(true);
+        var free = baby(h, new Vec3(3.5, 2.0, 3.5));
+        var slow = baby(h, new Vec3(6.5, 2.0, 6.5));
+        int freeAge = ran(free), slowAge = ran(slow), freeTicks = free.tickCount, slowTicks = slow.tickCount;
+        int[] t = {0};
+        h.onEachTick(() -> {
+            t[0]++;
+            com.botwclimb.common.bullettime.BulletSlow.slow(slow, level.getGameTime()); // what the shooter's scan does every tick
+            if (t[0] == 1) slow.invulnerableTime = 20;
+            if (t[0] == 33) {
+                int ranFree = ran(free) - freeAge, ranSlow = ran(slow) - slowAge;
+                if (ranFree < 30) h.fail("the free mob should run nearly every tick, ran " + ranFree);
+                if (ranSlow < 3 || ranSlow > 6) h.fail("33 ticks slowed should give about 5 turns (1 in " + com.botwclimb.common.bullettime.BulletConstants.PERIOD + "), got " + ranSlow);
+                int ticked = (slow.tickCount - slowTicks) - (free.tickCount - freeTicks);
+                if (Math.abs(ticked) > 1) h.fail("a slowed mob's tick count must keep counting with the clock, differs by " + ticked);
+                if (slow.invulnerableTime > 2) h.fail("a slowed mob's hurt immunity must run out on the real clock, still " + slow.invulnerableTime);
+                h.succeed();
+            }
+        });
+    }
+
+    /** When bullet time ends the mob runs every tick again at once: nothing is left half stuck. */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void bulletSlowEndsAtOnce(GameTestHelper h) {
+        var level = h.getLevel();
+        var cow = baby(h, new Vec3(3.5, 2.0, 3.5));
+        int[] age = new int[3];
+        int[] t = {0};
+        h.onEachTick(() -> {
+            t[0]++;
+            if (t[0] == 1) age[0] = ran(cow);
+            if (t[0] <= 22) com.botwclimb.common.bullettime.BulletSlow.slow(cow, level.getGameTime());
+            if (t[0] == 22 + com.botwclimb.common.bullettime.BulletConstants.GRACE) age[1] = ran(cow); // the grace has run out
+            if (t[0] == 22 + com.botwclimb.common.bullettime.BulletConstants.GRACE + 11) {
+                age[2] = ran(cow);
+                int slowed = age[1] - age[0], after = age[2] - age[1];
+                if (slowed > 5) h.fail("it should have been slowed, ran " + slowed + " ticks in " + (22 + com.botwclimb.common.bullettime.BulletConstants.GRACE));
+                if (after < 10) h.fail("11 ticks after bullet time it must run every one of them, ran " + after);
+                h.succeed();
+            }
+        });
+    }
+
+    /** Only mobs are slowed, only on the ticks that are not their turn, and only for a moment after the shooter's last scan. */
+    @GameTest(template = "empty")
+    public static void bulletSlowSkipRules(GameTestHelper h) {
+        var cow = h.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW, new Vec3(2.5, 2.0, 2.5));
+        var player = h.makeMockPlayer(GameType.SURVIVAL);
+        long now = 5000;
+        var slow = com.botwclimb.common.bullettime.BulletSlow.class;
+        if (com.botwclimb.common.bullettime.BulletSlow.shouldSkip(cow, now)) h.fail("a mob nobody slowed must not be skipped");
+        com.botwclimb.common.bullettime.BulletSlow.slow(cow, now);
+        cow.tickCount = 5;
+        if (!com.botwclimb.common.bullettime.BulletSlow.shouldSkip(cow, now)) h.fail("a slowed mob sits out a tick that is not its turn");
+        cow.tickCount = 11 * 7;
+        if (com.botwclimb.common.bullettime.BulletSlow.shouldSkip(cow, now)) h.fail("a slowed mob runs the tick that is its turn");
+        cow.tickCount = 5;
+        if (com.botwclimb.common.bullettime.BulletSlow.shouldSkip(cow, now + com.botwclimb.common.bullettime.BulletConstants.GRACE + 1)) h.fail("it must run freely once the grace is over");
+        com.botwclimb.common.bullettime.BulletSlow.slow(player, now);
+        player.tickCount = 5;
+        if (com.botwclimb.common.bullettime.BulletSlow.shouldSkip(player, now)) h.fail("a player is never slowed");
+        h.succeed();
+    }
+
+    /** A player held in the air with a bow, in the level: what a shooter in bullet time looks like to the server. */
+    private static Player airborneShooter(GameTestHelper h, Vec3 at) {
+        var sp = h.makeMockPlayer(GameType.SURVIVAL);
+        sp.setPos(h.absoluteVec(at));
+        sp.setNoGravity(true);
+        sp.setOnGround(false);
+        sp.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BOW));
+        return sp;
+    }
+
+    /**
+     * The server loop with a shooter: while its heartbeat comes, the mobs within range run about 1 tick in 11 and mobs out of range
+     * do not; players are never slowed; and once the heartbeat stops everything runs freely again.
+     */
+    @GameTest(template = "empty", timeoutTicks = 160)
+    public static void bulletTimeScanSlowsMobsInRangeAndNeverPlayers(GameTestHelper h) {
+        var level = h.getLevel();
+        var shooter = airborneShooter(h, new Vec3(5.5, 3.0, 5.5));
+        var other = airborneShooter(h, new Vec3(8.5, 3.0, 5.5));
+        var near = baby(h, new Vec3(7.5, 2.0, 7.5));
+        near.setNoGravity(true);
+        var far = baby(h, new Vec3(5.5, 2.0, 5.5 + 20)); // beyond the range
+        far.setNoGravity(true);
+        int nearAge = ran(near);
+        int[] mark = new int[2];
         int[] t = {0};
         h.onEachTick(() -> {
             t[0]++;
             long now = level.getGameTime();
-            if (t[0] == 1) com.botwclimb.common.bullettime.BulletShots.track(cow, now);
-            int lagNow = t[0] < 12 ? 0 : reportedLag + (slowArrow ? Math.round(0.9f * (t[0] - 12)) : 0); // a real client's lag keeps growing while it stays in bullet time
-            com.botwclimb.common.bullettime.BulletShots.report(owner.getUUID(), lagNow, now); // the picture only falls behind once the cow has left
-            if (t[0] == 10) cow.setPos(far);
-            if (t[0] == 12) {
+            if (t[0] <= 33) {
+                shooter.fallDistance = 1f; // the server checks for itself that a shooter is falling
+                com.botwclimb.common.bullettime.BulletSlow.markActive(shooter.getUUID(), now); // the client's heartbeat
+                com.botwclimb.common.bullettime.BulletSlow.scan(level, java.util.List.of(shooter, other), now, 8.0); // what the level tick does, with a small range so parallel tests are left alone
+            }
+            if (t[0] == 33) {
+                int ranNear = ran(near) - nearAge;
+                if (ranNear > 5) h.fail("a mob near the shooter should be slowed (about 3 of 33 ticks), it ran " + ranNear);
+                if (com.botwclimb.common.bullettime.BulletSlow.isSlowed(far, now)) h.fail("a mob out of range must not be slowed"); // (it sits in an unloaded chunk, so its age says nothing)
+                if (com.botwclimb.common.bullettime.BulletSlow.isSlowed(other, now)) h.fail("another player must never be slowed on the server");
+                if (com.botwclimb.common.bullettime.BulletSlow.isSlowed(shooter, now)) h.fail("the shooter must never be slowed");
+                mark[0] = ran(near);
+            }
+            if (t[0] == 33 + 12) { // the heartbeat stopped 12 ticks ago: the grace is long over
+                mark[1] = ran(near);
+                if (mark[1] - mark[0] < 10) h.fail("the mob must run every tick once the heartbeat has stopped, it ran " + (mark[1] - mark[0]) + " of 12");
+                h.succeed();
+            }
+        });
+    }
+
+    /** Another player near a shooter is slowed through attributes and freed again, a shooter in bullet time or a creative player is not. */
+    @GameTest(template = "empty", timeoutTicks = 60)
+    public static void bulletTimeSlowsOtherPlayersThroughAttributes(GameTestHelper h) {
+        var level = h.getLevel();
+        var shooter = airborneShooter(h, new Vec3(5.5, 3.0, 5.5));
+        var other = airborneShooter(h, new Vec3(8.5, 3.0, 5.5));
+        var creative = h.makeMockPlayer(GameType.CREATIVE);
+        creative.setPos(h.absoluteVec(new Vec3(6.5, 3.0, 5.5)));
+        long now = level.getGameTime();
+        com.botwclimb.common.bullettime.BulletSlow.markActive(shooter.getUUID(), now);
+        com.botwclimb.common.bullettime.BulletSlow.scan(level, java.util.List.of(shooter, other, creative), now, 8.0);
+        com.botwclimb.common.bullettime.BulletSlow.markPlayer(other, now); // mock players are not in the level, so the range query cannot find them
+        com.botwclimb.common.bullettime.BulletSlow.markPlayer(shooter, now);
+        com.botwclimb.common.bullettime.BulletSlow.markPlayer(creative, now);
+        if (!com.botwclimb.common.bullettime.BulletSlow.playerSlowed(other, now)) h.fail("a player near the shooter should be slowed");
+        if (com.botwclimb.common.bullettime.BulletSlow.playerSlowed(shooter, now)) h.fail("the shooter must not be slowed");
+        if (com.botwclimb.common.bullettime.BulletSlow.playerSlowed(creative, now)) h.fail("a creative player must not be slowed");
+        double base = other.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+        com.botwclimb.common.bullettime.BulletSlow.applyToPlayer(other, true);
+        double slowed = other.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+        if (slowed > base * 0.2) h.fail("walking should be about 1/7 of normal, was " + slowed + " of " + base);
+        com.botwclimb.common.bullettime.BulletSlow.applyToPlayer(other, false);
+        if (other.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED) != base) h.fail("the slowdown must come off completely");
+        h.succeed();
+    }
+
+    /** A player without the mod can be on the server (its connection knows none of the mod's payloads); nothing the server does may throw because of it. */
+    @GameTest(template = "empty")
+    public static void packetsToAPlayerWithoutTheModAreSkipped(GameTestHelper h) {
+        //? if <1.21.2 {
+        // NeoForge 21.1 syncs our attachments itself and throws at login for a connection that knows no channels at all, so there is no such player here
+        if (true) {
+            h.succeed();
+            return;
+        }
+        //?}
+        var modless = h.makeMockServerPlayerInLevel(); // a connection with no channels, like a vanilla client's
+        try {
+            com.botwclimb.common.paraglider.ParagliderController.broadcast(modless, true, false);
+            com.botwclimb.common.Net.toPlayer(modless, new com.botwclimb.network.BulletSlowPayload(new int[0]));
+            com.botwclimb.common.Net.toWatchers(modless, new com.botwclimb.network.BulletSlowPayload(new int[0]), true);
+            com.botwclimb.common.shrine.TerminalRide.start(modless, h.absolutePos(new net.minecraft.core.BlockPos(5, 1, 5)), 0);
+            com.botwclimb.common.shrine.TerminalRide.onLogout(new net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent(modless));
+        } catch (RuntimeException e) {
+            h.fail("sending to a player without the mod threw: " + e);
+        }
+        h.succeed();
+    }
+
+    /** A client that says it is in the air while it stands on the ground gets no bullet time, and bullet time does not run for ever. */
+    @GameTest(template = "empty", timeoutTicks = 520)
+    public static void bulletHeartbeatIsCheckedByTheServer(GameTestHelper h) {
+        var level = h.getLevel();
+        var bow = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.BOW);
+        var grounded = h.makeMockPlayer(GameType.SURVIVAL); // not in the level: another test's mobs are not slowed by it
+        h.setBlock(5, 0, 5, Blocks.STONE); // a floor to stand on (the empty template has none)
+        grounded.setPos(h.absoluteVec(new Vec3(5.5, 1.0, 5.5)));
+        grounded.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, bow.copy());
+        grounded.setOnGround(false); // the lie: "airborne", while the floor is right under the feet
+        var flying = h.makeMockPlayer(GameType.SURVIVAL);
+        flying.setPos(h.absoluteVec(new Vec3(8.5, 40.0, 5.5)));
+        flying.setNoGravity(true);
+        flying.setOnGround(false);
+        flying.fallDistance = 1f; // it has been falling
+        flying.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, bow.copy());
+        int[] t = {0};
+        h.onEachTick(() -> {
+            t[0]++;
+            long now = level.getGameTime();
+            grounded.setOnGround(false);
+            flying.setOnGround(false);
+            com.botwclimb.common.bullettime.BulletSlow.accept(grounded);
+            com.botwclimb.common.bullettime.BulletSlow.accept(flying);
+            if (t[0] == 20) {
+                if (com.botwclimb.common.bullettime.BulletSlow.active(grounded, now)) h.fail("standing on the ground must not give bullet time, whatever the client says");
+                if (!com.botwclimb.common.bullettime.BulletSlow.active(flying, now)) h.fail("a player really in the air with a bow must get bullet time");
+            }
+            if (t[0] == 500) {
+                if (com.botwclimb.common.bullettime.BulletSlow.active(flying, now)) h.fail("bullet time must run out after its budget of " + com.botwclimb.common.bullettime.BulletConstants.SERVER_BUDGET + " ticks");
+                h.succeed();
+            }
+        });
+    }
+
+    /** A slowed mob is where the server has it: an arrow of a shooter in bullet time hits its real hitbox the ordinary way. */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void bulletArrowHitsASlowedMobWhereItIs(GameTestHelper h) {
+        var level = h.getLevel();
+        var shooter = airborneShooter(h, new Vec3(1.5, 3.0, 5.5));
+        var cow = h.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW, new Vec3(5.5, 2.0, 5.5));
+        cow.setNoGravity(true);
+        Vec3 spot = h.absoluteVec(new Vec3(5.5, 2.0, 5.5));
+        int[] t = {0};
+        h.onEachTick(() -> {
+            t[0]++;
+            long now = level.getGameTime();
+            shooter.fallDistance = 1f; // the server checks for itself that a shooter is falling
+            com.botwclimb.common.bullettime.BulletSlow.markActive(shooter.getUUID(), now);
+            com.botwclimb.common.bullettime.BulletSlow.scan(level, java.util.List.of(shooter), now, 8.0);
+            com.botwclimb.common.bullettime.BulletShots.report(shooter.getUUID(), 0, now); // a bullet arrow, as a real shot would be
+            if (t[0] == 15) {
                 var arrow = com.botwclimb.common.Compat.create(net.minecraft.world.entity.EntityType.ARROW, level);
-                arrow.setOwner(owner);
+                arrow.setOwner(shooter);
                 arrow.setNoGravity(true);
-                arrow.setPos(spot.add(slowArrow ? 3.5 : 2.0, 0.6, 0.0));
-                arrow.setDeltaMovement(slowArrow ? -0.2 : -2.5, 0, 0); // the slow one flies for ~17 ticks, long after the cow left
+                arrow.setPos(spot.add(-3.0, 0.6, 0.0));
+                arrow.setDeltaMovement(1.5, 0, 0);
                 arrow.setBaseDamage(2.0);
                 level.addFreshEntity(arrow);
-                if (!com.botwclimb.common.bullettime.BulletShots.tagShot(arrow, owner, level.dimension(), now)) h.fail("the arrow was not tagged as a bullet arrow");
+                com.botwclimb.common.bullettime.BulletShots.tagShot(arrow, shooter, level.dimension(), now);
             }
-            if (t[0] == (slowArrow ? 45 : 20)) {
-                boolean hurt = cow.getHealth() < cow.getMaxHealth();
-                if (hurt != expectHit) h.fail(expectHit ? "the arrow did not hit the cow where it was drawn" : "the arrow hit although the picture was not lagging");
+            if (t[0] == 40) {
+                if (!com.botwclimb.common.bullettime.BulletSlow.isSlowed(cow, now)) h.fail("the cow should be slowed");
+                if (cow.getHealth() >= cow.getMaxHealth()) h.fail("an arrow aimed at a slowed mob's real position must hit it");
+                h.succeed();
+            }
+        });
+    }
+
+    /**
+     * Other players cannot be slowed on the server, so their hits keep the rewind: another player stands still, then is moved far
+     * away; an arrow fired where they stood must hit them only if the shooter's picture was lagging behind.
+     */
+    private static void otherPlayerShotScenario(GameTestHelper h, int reportedLag, boolean expectHit) {
+        var level = h.getLevel();
+        var shooter = airborneShooter(h, new Vec3(2.5, 3.0, 5.5));
+        var victim = h.makeMockPlayer(GameType.SURVIVAL);
+        victim.setNoGravity(true);
+        Vec3 spot = h.absoluteVec(new Vec3(5.5, 2.0, 5.5)), far = h.absoluteVec(new Vec3(5.5, 2.0, 25.5));
+        victim.setPos(spot);
+        int[] t = {0};
+        h.onEachTick(() -> {
+            t[0]++;
+            long now = level.getGameTime();
+            if (t[0] == 1) com.botwclimb.common.bullettime.BulletShots.track(victim, now);
+            int lagNow = t[0] < 12 ? 0 : reportedLag; // the picture only falls behind once the victim has left
+            com.botwclimb.common.bullettime.BulletShots.report(shooter.getUUID(), lagNow, now);
+            if (t[0] == 10) victim.setPos(far);
+            if (t[0] == 12) {
+                var arrow = com.botwclimb.common.Compat.create(net.minecraft.world.entity.EntityType.ARROW, level);
+                arrow.setOwner(shooter);
+                arrow.setNoGravity(true);
+                arrow.setPos(spot.add(2.0, 0.6, 0.0));
+                arrow.setDeltaMovement(-2.5, 0, 0);
+                arrow.setBaseDamage(2.0);
+                level.addFreshEntity(arrow);
+                if (!com.botwclimb.common.bullettime.BulletShots.tagShot(arrow, shooter, level.dimension(), now)) h.fail("the arrow was not tagged as a bullet arrow");
+            }
+            if (t[0] == 22) {
+                boolean hurt = victim.getHealth() < victim.getMaxHealth();
+                if (hurt != expectHit) h.fail(expectHit ? "the arrow did not hit the other player where they were drawn" : "the arrow hit although the picture was not lagging");
                 h.succeed();
             }
         });
     }
 
     @GameTest(template = "empty", timeoutTicks = 100)
-    public static void bulletArrowHitsWhereTheMobWasDrawn(GameTestHelper h) {
-        bulletShotScenario(h, 10, true, false);
+    public static void bulletArrowHitsAnotherPlayerWhereTheyWereDrawn(GameTestHelper h) {
+        otherPlayerShotScenario(h, 10, true);
     }
 
     @GameTest(template = "empty", timeoutTicks = 100)
-    public static void bulletArrowMissesWithoutLag(GameTestHelper h) {
-        bulletShotScenario(h, 0, false, false);
+    public static void bulletArrowMissesAnotherPlayerWithoutLag(GameTestHelper h) {
+        otherPlayerShotScenario(h, 0, false);
     }
 
-    /** A slow arrow keeps flying while bullet time goes on: the picture's lag keeps growing and the hit must follow it. */
-    @GameTest(template = "empty", timeoutTicks = 100)
-    public static void bulletArrowStillHitsWhileTheLagGrows(GameTestHelper h) {
-        bulletShotScenario(h, 10, true, true);
+    /** Nothing that rides or carries something is slowed (a mob on a Create contraption seat, a boat), and machinery never is. */
+    @GameTest(template = "empty")
+    public static void bulletSlowLeavesRidersAndMachinesAlone(GameTestHelper h) {
+        var cow = h.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW, new Vec3(2.5, 2.0, 2.5));
+        var boat = h.spawn(net.minecraft.world.entity.EntityType.MINECART, new Vec3(5.5, 2.0, 5.5));
+        var rider = h.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW, new Vec3(5.5, 2.0, 5.5));
+        rider.startRiding(boat);
+        var free = h.spawnWithNoFreeWill(net.minecraft.world.entity.EntityType.COW, new Vec3(8.5, 2.0, 8.5));
+        long now = 7000;
+        var bs = com.botwclimb.common.bullettime.BulletSlow.class;
+        com.botwclimb.common.bullettime.BulletSlow.slow(boat, now);
+        com.botwclimb.common.bullettime.BulletSlow.slow(rider, now);
+        com.botwclimb.common.bullettime.BulletSlow.slow(free, now);
+        free.tickCount = 5;
+        boat.tickCount = 5;
+        rider.tickCount = 5;
+        if (com.botwclimb.common.bullettime.BulletSlow.isSlowed(boat, now)) h.fail("a minecart (like a contraption) is not a living thing and must never be slowed");
+        if (com.botwclimb.common.bullettime.BulletSlow.shouldSkip(boat, now)) h.fail("a vehicle's tick must never be skipped");
+        if (com.botwclimb.common.bullettime.BulletSlow.shouldSkip(rider, now)) h.fail("a passenger must never be slowed: it moves with what carries it");
+        if (!com.botwclimb.common.bullettime.BulletSlow.shouldSkip(free, now)) h.fail("a free-standing mob should be slowed");
+        rider.startRiding(free); // a slowed mob that picks up a passenger is released at once
+        if (com.botwclimb.common.bullettime.BulletSlow.shouldSkip(free, now)) h.fail("a mob that now carries something must run freely");
+        h.succeed();
     }
 
     private static net.minecraft.world.item.ItemStack stack(net.minecraft.world.item.Item i) {

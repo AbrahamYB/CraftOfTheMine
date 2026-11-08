@@ -19,11 +19,15 @@ public final class AltarClient {
     }
 
     public static void onResult(AltarResultPayload result) {
+        // the server is the authority: if it says everything is bought, show that even if its state never reached us (an older server build syncs differently)
+        var me = Minecraft.getInstance().player;
+        if (!result.ok() && "maxed".equals(result.reason()) && me != null)
+            me.setData(BotwClimb.STAMINA_UPGRADES, com.botwclimb.common.climb.ClimbConstants.STAMINA_MAX_UPGRADES);
         if (result.finale()) AltarFx.onFinale();
         if (Minecraft.getInstance().screen instanceof AltarScreen screen) screen.onResult(result);
     }
 
-    //? if >=1.21.11 {
+    //? if >=1.21.8 {
     /*@EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
     *///?} else {
     @EventBusSubscriber(modid = BotwClimb.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)

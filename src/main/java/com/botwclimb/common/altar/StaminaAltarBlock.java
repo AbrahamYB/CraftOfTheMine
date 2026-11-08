@@ -22,17 +22,21 @@ import net.minecraft.world.level.block.Block;
  * runes are drawn by a block entity renderer from the viewing player's own upgrades, so every player sees their own progress.
  */
 public class StaminaAltarBlock extends BaseEntityBlock {
+    //? if <26.3 {
     public static final MapCodec<StaminaAltarBlock> CODEC = simpleCodec(StaminaAltarBlock::new);
+    //?}
     private static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 12, 16);
 
     public StaminaAltarBlock(Properties properties) {
         super(properties);
     }
 
+    //? if <26.3 {
     @Override
     protected MapCodec<? extends BaseEntityBlock> codec() {
         return CODEC;
     }
+    //?}
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {

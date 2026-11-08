@@ -38,7 +38,7 @@ public final class BulletFall {
     public static void apply(Player p, boolean on) {
         AttributeInstance gravity = p.getAttribute(Attributes.GRAVITY);
         if (gravity == null) return;
-        boolean ok = on && allowed(p);
+        boolean ok = on && BulletSlow.accept(p); // the same server budget that limits the slowing of mobs
         if (ok && !gravity.hasModifier(ID)) {
             gravity.addTransientModifier(new AttributeModifier(ID, MODIFIER, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
         } else if (!ok) {
@@ -50,7 +50,7 @@ public final class BulletFall {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         Player p = event.getEntity();
-        if (p.level().isClientSide() || allowed(p)) return;
+        if (p.level().isClientSide() || allowed(p) && BulletSlow.reallyInTheAir(p) && BulletSlow.active(p, p.level().getGameTime())) return;
         AttributeInstance gravity = p.getAttribute(Attributes.GRAVITY);
         if (gravity != null && gravity.hasModifier(ID)) gravity.removeModifier(ID);
     }

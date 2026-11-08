@@ -19,6 +19,8 @@ public final class PlotWorld {
             ResourceKey.create(Registries.DIMENSION, ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "plot"));
     /** Distance between two plots. Nothing stops a walker covering it; it is only far enough that nobody stumbles into another plot. */
     public static final int SPACING = 5120;
+    /** Most plots a world can hand out; an endless claim of them (many accounts) ends here, well inside the world border. */
+    public static final int MAX_PLOTS = 2000;
     /** Where plot 0 is: well away from the dimension's origin, the first place anyone would look. */
     public static final int ORIGIN_X = 48_016, ORIGIN_Z = -36_032;
     /** Height of the island's grass layer. */

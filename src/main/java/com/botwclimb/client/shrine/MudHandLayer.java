@@ -11,7 +11,7 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.util.Mth;
 
 /** Draws the magic mud on any player who is riding a terminal, so everyone nearby sees it. */
-//? if >=1.21.11 {
+//? if >=1.21.9 {
 /*public final class MudHandLayer extends RenderLayer<net.minecraft.client.renderer.entity.state.PlayerRenderState, PlayerModel> {
     public MudHandLayer(RenderLayerParent<net.minecraft.client.renderer.entity.state.PlayerRenderState, PlayerModel> parent) {
         super(parent);

@@ -98,6 +98,36 @@ public class PlotTests {
         h.succeed();
     }
 
+    /** Broken saved data: a bad entry is skipped, numbers stay in range and unique, and a plot is never handed out twice. */
+    @GameTest(template = "empty")
+    public static void plotDataSurvivesCorruption(GameTestHelper h) {
+        net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+        tag.putInt("next", -3);
+        net.minecraft.nbt.ListTag players = new net.minecraft.nbt.ListTag();
+        net.minecraft.nbt.CompoundTag noId = new net.minecraft.nbt.CompoundTag();
+        noId.putIntArray("plots", new int[] {5, 6});
+        players.add(noId);
+        UUID good = UUID.randomUUID(), dupe = UUID.randomUUID();
+        net.minecraft.nbt.CompoundTag g = new net.minecraft.nbt.CompoundTag();
+        com.botwclimb.common.Nbt.putUuid(g, "id", good);
+        g.putIntArray("plots", new int[] {5, -7});
+        players.add(g);
+        net.minecraft.nbt.CompoundTag dd = new net.minecraft.nbt.CompoundTag();
+        com.botwclimb.common.Nbt.putUuid(dd, "id", dupe);
+        dd.putIntArray("plots", new int[] {5, 2_000_000_000});
+        players.add(dd);
+        tag.put("players", players);
+        PlotData d = PlotData.read(tag);
+        if (d.plot(good, 0) != 5 || d.plot(good, 1) != -1) h.fail("the good entry must survive, the bad number must go");
+        if (d.plot(dupe, 0) != -1 || d.plot(dupe, 1) != -1) h.fail("a plot number must belong to one player only");
+        int fresh = d.claim(UUID.randomUUID(), 0);
+        if (fresh < 6 || fresh >= PlotWorld.MAX_PLOTS) h.fail("a new claim must not reuse a stored plot, got " + fresh);
+        PlotData full = PlotData.read(new net.minecraft.nbt.CompoundTag());
+        for (int i = 0; i < PlotWorld.MAX_PLOTS; i++) full.claim(UUID.randomUUID(), 0);
+        if (full.claim(UUID.randomUUID(), 0) != -1) h.fail("the world must run out of plots, not hand out endless ones");
+        h.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void plotDataSaves(GameTestHelper h) {
         PlotData d = new PlotData();

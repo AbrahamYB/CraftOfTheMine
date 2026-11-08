@@ -46,7 +46,7 @@ public final class LaunchEffects {
         if (f < 0.12f) return;
         MudHandClient.State s = MudHandClient.get(mc.player.getId());
         boolean rising = s.rising(); // lines drift down the screen while rising, up while falling or sinking
-        GuiGraphics g = event.getGuiGraphics();
+        GuiGraphics g = com.botwclimb.client.ClientCompat.gui(event);
         int w = g.guiWidth(), h = g.guiHeight();
         double time = (mc.level.getGameTime() + event.getPartialTick().getGameTimeDeltaPartialTick(false)) * 0.09;
         int alpha = (int) (70 * Mth.clamp(f, 0f, 1f)) << 24;

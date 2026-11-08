@@ -55,18 +55,18 @@ public final class CloudVeil {
     @SubscribeEvent
     public static void onHud(RenderGuiEvent.Post event) {
         if (com.botwclimb.client.ClientConfig.style() == com.botwclimb.client.ClientConfig.RideStyle.TOTK) {
-            com.botwclimb.client.shrine.totk.TotkRide.hud(event.getGuiGraphics(), event.getPartialTick().getGameTimeDeltaPartialTick(false));
+            com.botwclimb.client.shrine.totk.TotkRide.hud(com.botwclimb.client.ClientCompat.gui(event), event.getPartialTick().getGameTimeDeltaPartialTick(false));
             return;
         }
-        draw(event.getGuiGraphics(), alpha(Minecraft.getInstance(), event.getPartialTick().getGameTimeDeltaPartialTick(false)));
+        draw(com.botwclimb.client.ClientCompat.gui(event), alpha(Minecraft.getInstance(), event.getPartialTick().getGameTimeDeltaPartialTick(false)));
     }
 
     @SubscribeEvent
     public static void onScreen(ScreenEvent.Render.Post event) {
         if (com.botwclimb.client.ClientConfig.style() == com.botwclimb.client.ClientConfig.RideStyle.TOTK) {
-            if (event.getScreen() instanceof ReceivingLevelScreen) com.botwclimb.client.shrine.totk.TotkRide.hud(event.getGuiGraphics(), event.getPartialTick());
+            if (event.getScreen() instanceof ReceivingLevelScreen) com.botwclimb.client.shrine.totk.TotkRide.hud(com.botwclimb.client.ClientCompat.gui(event), event.getPartialTick());
             return;
         }
-        if (event.getScreen() instanceof ReceivingLevelScreen) draw(event.getGuiGraphics(), alpha(Minecraft.getInstance(), event.getPartialTick()));
+        if (event.getScreen() instanceof ReceivingLevelScreen) draw(com.botwclimb.client.ClientCompat.gui(event), alpha(Minecraft.getInstance(), event.getPartialTick()));
     }
 }

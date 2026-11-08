@@ -38,10 +38,15 @@ public final class Stamina {
 
     /** One server tick: drains while hanging and moving on a wall or gliding, recovers otherwise. */
     public static void serverStep(ClimbData d, float max, boolean climbingMoving, boolean gliding) {
+        serverStep(d, max, climbingMoving, gliding, true);
+    }
+
+    /** {@code grounded}: only a player on the ground (or flying) recovers, so closing the glider for a tick in mid-air buys nothing. */
+    public static void serverStep(ClimbData d, float max, boolean climbingMoving, boolean gliding, boolean grounded) {
         if (d.sStamina < 0f || d.sStamina > max) d.sStamina = max;
         if (gliding) d.sStamina -= ParagliderConstants.PARAGLIDER_STAMINA_DRAIN_PER_TICK * SERVER_DRAIN;
         else if (climbingMoving) d.sStamina -= STAMINA_CLIMB_DRAIN * SERVER_DRAIN;
-        else if (d.state == ClimbState.NONE) d.sStamina = Math.min(max, d.sStamina + STAMINA_REGEN * SERVER_REGEN);
+        else if (grounded && d.state == ClimbState.NONE) d.sStamina = Math.min(max, d.sStamina + STAMINA_REGEN * SERVER_REGEN);
         if (d.sStamina <= 0f) {
             d.sStamina = 0f;
             d.sExhausted = true;

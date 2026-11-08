@@ -103,7 +103,7 @@ public final class AltarRules {
 
     /** How many of an item the leftover credit is paid back as: rounded to the nearest, so a credit that just reaches counts. */
     public static int refundCount(float credit, float unit) {
-        if (credit <= 0f || unit <= 0f) return 0;
-        return (int) Math.floor(credit / unit + 0.5);
+        if (!(credit > 0f) || !(unit > 0f) || !Float.isFinite(credit) || !Float.isFinite(unit)) return 0;
+        return (int) Math.min(2304, Math.floor(credit / unit + 0.5)); // capped: a tiny datapack value must not spawn endless stacks
     }
 }

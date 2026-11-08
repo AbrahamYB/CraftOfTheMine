@@ -25,6 +25,7 @@ public final class PlotRules {
 
     /** Whether the player may use the plot the position lies in: its owner, or a friend of an owner who has it open to friends. */
     private static boolean owns(Player p, BlockPos pos) {
+        if (p instanceof net.neoforged.neoforge.common.util.FakePlayer) return true; // Create deployers and the like act for the contraption's owner, who could only build it on their own plot
         return p.level().getServer() != null && PlotData.get(p.level().getServer()).mayUse(p.getUUID(), PlotWorld.plotAt(pos));
     }
 
@@ -71,13 +72,49 @@ public final class PlotRules {
         if (PlotWorld.inSquare(p.getX(), p.getZ()) && PlotWorld.inSquare(p.getX() - 0.3, p.getZ() - 0.3) && PlotWorld.inSquare(p.getX() + 0.3, p.getZ() + 0.3)) return;
         double[] in = PlotWorld.clampToSquare(p.getX(), p.getZ(), 0.31);
         if (Math.abs(in[0] - p.getX()) + Math.abs(in[1] - p.getZ()) > PlotWorld.HALF * 2) { // far from any plot (the old spot of one that moved, a command): bring them to the nearest plot's terminal, building it if need be
-            int plot = PlotWorld.plotAt(p.blockPosition());
-            if (!PlotWorld.isBuilt(com.botwclimb.common.Compat.level(p), plot)) PlotWorld.buildIsland(com.botwclimb.common.Compat.level(p), plot);
+            PlotData data = PlotData.get(p.level().getServer());
+            int plot = Math.min(PlotWorld.plotAt(p.blockPosition()), PlotWorld.MAX_PLOTS - 1);
+            if (!data.isBuilt(plot) && plot < data.claimed()) { // only a plot that was claimed gets an island
+                PlotWorld.buildIsland(com.botwclimb.common.Compat.level(p), plot);
+                data.markBuilt(plot);
+            }
             BlockPos t = PlotWorld.terminalPos(plot);
             p.teleportTo(t.getX() + 0.5, t.getY(), t.getZ() + 3.5);
             return;
         }
         p.teleportTo(in[0], p.getY(), in[1]);
+    }
+
+    /** Falling out of the world through a hole in the island would lose the whole inventory: put the player back on the plot instead. */
+    @SubscribeEvent
+    public static void onVoid(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer p) || p.level().dimension() != PlotWorld.DIM || p.getY() > PlotWorld.Y - 40 || TerminalRide.isRiding(p)) return;
+        BlockPos t = PlotWorld.terminalPos(Math.min(PlotWorld.plotAt(p.blockPosition()), PlotWorld.MAX_PLOTS - 1));
+        p.teleportTo(t.getX() + 0.5, t.getY(), t.getZ() + 3.5);
+        p.fallDistance = 0;
+        p.setDeltaMovement(0, 0, 0);
+    }
+
+    /** A friend stays only while the owner is here: logging out closes the owner's plots, and a crash or restart closes all of them. */
+    @SubscribeEvent
+    public static void onLogout(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer p && p.level().getServer() != null) PlotData.get(p.level().getServer()).closeOf(p.getUUID());
+    }
+
+    @SubscribeEvent
+    public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
+        PlotData.get(event.getServer()).closeAll();
+    }
+
+    /** Another player's animals, villagers, item frames and minecart chests are not yours to use or hit in a plot that is not yours either. */
+    @SubscribeEvent
+    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        if (event.getLevel() instanceof ServerLevel level && level.dimension() == PlotWorld.DIM && !owns(event.getEntity(), event.getTarget().blockPosition())) event.setCanceled(true);
+    }
+
+    @SubscribeEvent
+    public static void onAttack(net.neoforged.neoforge.event.entity.player.AttackEntityEvent event) {
+        if (event.getEntity().level() instanceof ServerLevel level && level.dimension() == PlotWorld.DIM && !owns(event.getEntity(), event.getTarget().blockPosition())) event.setCanceled(true);
     }
 
     @SubscribeEvent

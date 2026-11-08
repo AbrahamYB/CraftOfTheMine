@@ -21,7 +21,7 @@ public final class PlotVeil {
     @SubscribeEvent
     public static void fog(ViewportEvent.RenderFog event) {
         if (!outside()) return;
-        //? if >=1.21.11 {
+        //? if >=1.21.8 {
         /*var fog = event.getFogData();
         fog.environmentalStart = fog.renderDistanceStart = 0f;
         fog.environmentalEnd = fog.renderDistanceEnd = 3f;

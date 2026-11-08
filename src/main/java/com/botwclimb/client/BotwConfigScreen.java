@@ -185,14 +185,14 @@ public class BotwConfigScreen extends Screen {
 
     // ---- input
 
-    //? if >=1.21.11 {
+    //? if >=1.21.9 {
     /*@Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
         return mouseClicked(event.x(), event.y(), event.button());
     }
     *///?}
 
-    //? if <1.21.11
+    //? if <1.21.9
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         int by = footY(), bw = (W - 2 * PAD - 8) / 2;
@@ -205,7 +205,7 @@ public class BotwConfigScreen extends Screen {
             return true;
         }
         int i = rowAt(mx, my);
-        if (i < 0 || button > 1) //? if >=1.21.11 {
+        if (i < 0 || button > 1) //? if >=1.21.9 {
         /*return super.mouseClicked(new net.minecraft.client.input.MouseButtonEvent(mx, my, new net.minecraft.client.input.MouseButtonInfo(button, 0)), false);
         *///?} else {
         return super.mouseClicked(mx, my, button);
@@ -226,39 +226,39 @@ public class BotwConfigScreen extends Screen {
         return true;
     }
 
-    //? if >=1.21.11 {
+    //? if >=1.21.9 {
     /*@Override
     public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dx, double dy) {
         return mouseDragged(event.x(), event.y(), event.button(), dx, dy);
     }
     *///?}
 
-    //? if <1.21.11
+    //? if <1.21.9
     @Override
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
         if (dragging != null) {
             drag(dragging, mx);
             return true;
         }
-        //? if >=1.21.11 {
+        //? if >=1.21.9 {
         /*return super.mouseDragged(new net.minecraft.client.input.MouseButtonEvent(mx, my, new net.minecraft.client.input.MouseButtonInfo(button, 0)), dx, dy);
         *///?} else {
         return super.mouseDragged(mx, my, button, dx, dy);
         //?}
     }
 
-    //? if >=1.21.11 {
+    //? if >=1.21.9 {
     /*@Override
     public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
         return mouseReleased(event.x(), event.y(), event.button());
     }
     *///?}
 
-    //? if <1.21.11
+    //? if <1.21.9
     @Override
     public boolean mouseReleased(double mx, double my, int button) {
         dragging = null;
-        //? if >=1.21.11 {
+        //? if >=1.21.9 {
         /*return super.mouseReleased(new net.minecraft.client.input.MouseButtonEvent(mx, my, new net.minecraft.client.input.MouseButtonInfo(button, 0)));
         *///?} else {
         return super.mouseReleased(mx, my, button);

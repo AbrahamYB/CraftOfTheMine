@@ -156,14 +156,14 @@ public class TerminalScreen extends Screen {
         g.drawCenteredString(font, Component.translatable("gui.botwclimb.terminal." + key), cx, by + (BUTTON_H - 8) / 2, here ? 0xFF7F8998 : 0xFFFFFFFF);
     }
 
-    //? if >=1.21.11 {
+    //? if >=1.21.9 {
     /*@Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
         return mouseClicked(event.x(), event.y(), event.button());
     }
     *///?}
 
-    //? if <1.21.11
+    //? if <1.21.9
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (button == 0) {
@@ -186,7 +186,7 @@ public class TerminalScreen extends Screen {
                 }
             }
         }
-        //? if >=1.21.11 {
+        //? if >=1.21.9 {
         /*return super.mouseClicked(new net.minecraft.client.input.MouseButtonEvent(mx, my, new net.minecraft.client.input.MouseButtonInfo(button, 0)), false);
         *///?} else {
         return super.mouseClicked(mx, my, button);
