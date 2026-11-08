@@ -39,6 +39,17 @@ Only these stable versions are built. Pick the jar that matches your game exactl
 No other mods are needed. Worlds keep the mod's data (stamina upgrades, fabrics, altar credit) when moved between versions, but
 Minecraft itself does not support loading a world on an older version, so back up before you downgrade.
 
+## Credits
+
+Made by AbrahamYB, with Claude (Anthropic's AI assistant) writing much of the code.
+
+* **AbrahamYB** designed the mod and tuned how it feels: how climbing, ledge jumps, gliding and bullet time should move, which ideas
+  stay and which go, the look of the fabrics, altar and ride, and all the playtesting that decided what was right.
+* **Claude** wrote and ported the code (one source tree for ten Minecraft versions), built the automated tests and screenshot
+  harness, and ran the security reviews of the server checks.
+
+Every behaviour in the mod was chosen and checked by playing it, not just generated.
+
 ## Getting help and reporting issues
 
 If something breaks or behaves oddly, please open an issue on the [issue tracker](../../issues). The templates ask for what is
