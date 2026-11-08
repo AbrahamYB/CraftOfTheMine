@@ -2,11 +2,11 @@
 
 ## Gradle tasks
 
-* `gradlew build` - jar in `build/libs`
-* `gradlew runClient` / `runServer` - dev run (add `-Dbotwclimb.debug=true` to draw jump paths and log state changes)
-* `gradlew runGameTestServer` - headless game tests (close the client first; client-only mods such as Sodium must not be in `run/mods`)
-* `gradlew deploy` - copies the built jar into the launcher mods folder named by `prismMods` in `local.properties` (also runs after `build`)
-* `gradlew runAutoClient` (add `-Pwall` for the wall check) - a second client that plays a scripted scene and saves screenshots to `run-auto/screenshots`
+* `gradlew :V:build` (V = a version such as 1.21.1; plain `build` does every version) - jar in `versions/V/build/libs`
+* `gradlew :V:runClient` / `:V:runServer` - dev run (add `-Dbotwclimb.debug=true` to draw jump paths and log state changes)
+* `gradlew :V:runGameTestServer` - headless game tests (close the client first; client-only mods such as Sodium must not be in `run/mods`)
+* `gradlew deploy` - copies the built jar of the version named by `prismVersion` (default 1.21.1) into the launcher mods folder named by `prismMods` in `local.properties` (also runs after `build`)
+* `gradlew :V:runAutoClient` (add `-Pwall` for the wall check) - a second client that plays a scripted scene and saves screenshots to `run-auto/screenshots`
 * Optional `local.properties` (not in git): `quickWorld=<save folder>` boots straight into that world, `window=1280x720` sets the window size.
 
 ## Updating the running dev client without a restart
