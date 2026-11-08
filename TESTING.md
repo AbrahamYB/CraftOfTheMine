@@ -1,6 +1,6 @@
 # Craft of the Mine – manual test plan
 
-Run with `gradlew runClient` (add `-Dbotwclimb.debug=true` to the client JVM args to draw the planned jump path as
+Run with `gradlew :1.21.1:runClient` (add `-Dbotwclimb.debug=true` to the client JVM args to draw the planned jump path as
 end-rod particles). Use creative mode + a stone brick/stone build area. Third person (F5) for animation checks.
 
 Legend: `#` stone, `P` the player hanging on the wall, side view, wall is on the right.
@@ -8,7 +8,7 @@ Start climbing: **hold the Climb key (default Shift + Space, rebind in Options >
 Controls while hanging: W/S up/down, A/D sideways, Space (release it first, then press) = climb jump, **Sneak = let go** (sprint no longer affects climbing).
 
 Automatic geometry check of the jump planner (no game window needed):
-`gradlew runGameTestServer` – 36 headless tests (jump planning, ledge and long jumps, stamina, enchantment, server checks, packets). All must pass. Close the client first.
+`gradlew :1.21.1:runGameTestServer` – 66 headless tests (jump planning, ledge and long jumps, stamina, enchantment, server checks, packets). All must pass. Close the client first.
 
 ## TEST 1 – basic wall
 Build a 12-high, 5-wide wall. Stand next to it and hold the Climb key for 0.2 s.
