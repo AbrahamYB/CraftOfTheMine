@@ -50,6 +50,16 @@ Made by AbrahamYB, with Claude (Anthropic's AI assistant) writing much of the co
 
 Every behaviour in the mod was chosen and checked by playing it, not just generated.
 
+### How it was tuned
+
+The numbers were found by playing, one change at a time (the commit history shows the steps):
+
+* Falls went from vanilla to 20% slower, then 35%, and finally back to vanilla gravity with only bullet time slowing a fall.
+* The glider shortcut opens after a 2-block fall, a plain jump only after 4.5 blocks; a wall grab needs the wall within 0.30 blocks.
+* Glider ribbons, tassels and wind trails were redone several times until they followed the real speed instead of looking busy.
+* Bullet time first faked the slowdown on the client; it was rebuilt so the server really slows mobs (1 tick in 7, within 8 chunks).
+* A wall marker, a permanent slow-fall and the shift-sprint climb were tried and removed.
+
 ## Getting help and reporting issues
 
 If something breaks or behaves oddly, please open an issue on the [issue tracker](../../issues). The templates ask for what is
