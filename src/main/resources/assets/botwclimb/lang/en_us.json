@@ -91,6 +91,7 @@
   "gui.botwclimb.terminal.friends.on": "Friends: on",
   "gui.botwclimb.terminal.friends.off": "Friends: off",
   "gui.botwclimb.terminal.join": "Join %s",
+  "message.botwclimb.plots_full": "This world has no free plots left.",
   "message.botwclimb.plot_return_only": "You can only use this inside a plot.",
   "message.botwclimb.plot_return_busy": "Wait until the ride is over."
 }

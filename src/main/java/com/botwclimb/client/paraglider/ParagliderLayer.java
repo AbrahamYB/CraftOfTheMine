@@ -16,7 +16,7 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 
 /** Draws the canopy above the player; it unfolds from the hands while the glider opens. */
-//? if >=1.21.11 {
+//? if >=1.21.9 {
 /*public final class ParagliderLayer extends RenderLayer<net.minecraft.client.renderer.entity.state.PlayerRenderState, PlayerModel> {
     private final ParagliderModel model;
 

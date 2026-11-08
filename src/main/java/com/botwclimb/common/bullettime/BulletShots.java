@@ -33,17 +33,18 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Server side of bullet time. While a player is in bullet time the server keeps a per-tick history of the hitboxes of
- * the living entities around them, and a bullet arrow is tested before each move against the hitboxes the shooter's
- * screen was showing at that moment (their reported lag, kept up to date every tick, plus their ping). Blocks still stop
- * the arrow. A hit applies arrow damage once (with crit and flame) and discards the arrow. Nothing is recorded or
- * scanned while nobody is in bullet time.
+ * The part of bullet time for other PLAYERS, who cannot be slowed on the server (their movement belongs to their own client): the
+ * shooter's screen draws them late, so while a player is in bullet time the server keeps a per-tick history of the hitboxes of the
+ * other players around them, and a bullet arrow is tested before each move against the hitboxes the shooter's screen was showing at
+ * that moment (their reported lag, kept up to date every tick, plus their ping). Mobs are really slowed instead (see BulletSlow), so
+ * arrows meet them the ordinary way. Blocks still stop the arrow. A hit applies arrow damage once (with crit and flame) and discards
+ * the arrow. Nothing is recorded or scanned while nobody is in bullet time.
  * shortcut: no knockback, piercing or tipped-arrow effects on these hits (those hooks are protected in vanilla).
  */
 @EventBusSubscriber(modid = BotwClimb.MOD_ID)
 public final class BulletShots {
     private static final int RING = BulletConstants.SERVER_RING, MAX_LAG = BulletConstants.MAX_LAG;
-    private static final int FRESH = 5, SCAN_RADIUS = 48, SEND_RADIUS = 64, KEEP_AFTER = 100, ARROW_LIFE = 400;
+    private static final int FRESH = 5, SCAN_RADIUS = 128, SEND_RADIUS = 144, KEEP_AFTER = 100, ARROW_LIFE = 400;
     private static final double MOVE_EPS = 0.001, HIT_MARGIN = 0.3; // vanilla arrows hit within about 0.3 blocks of a box
     private static final float YAW_EPS = 0.5f;
 
@@ -92,8 +93,10 @@ public final class BulletShots {
     @SubscribeEvent
     public static void onJoin(EntityJoinLevelEvent event) {
         if (event.loadedFromDisk() || !(event.getEntity() instanceof AbstractArrow arrow) || !(arrow.getOwner() instanceof ServerPlayer sp)) return;
-        if (tagShot(arrow, sp, ((Level) event.getLevel()).dimension(), event.getLevel().getGameTime())) {
-            PacketDistributor.sendToPlayer(sp, new com.botwclimb.network.BulletShotConfirmPayload());
+        // an arrow is no longer tagged for the hit rewind (players are slowed for real now, so vanilla's own hit on the real hitbox stands);
+        // the shooter is only told the arrow flew in bullet time, which is what pays for the shot
+        if (BulletSlow.active(sp, event.getLevel().getGameTime())) {
+            com.botwclimb.common.Net.toPlayer(sp, new com.botwclimb.network.BulletShotConfirmPayload());
         }
     }
 
@@ -105,11 +108,11 @@ public final class BulletShots {
         return true;
     }
 
-    /** Vanilla's hit on the real hitbox is cancelled for bullet arrows: only the drawn picture can be hit. */
+    /** Vanilla's hit on a player's real hitbox is cancelled for bullet arrows: only the picture the shooter saw can be hit. Mobs are hit the ordinary way. */
     @SubscribeEvent
     public static void onImpact(ProjectileImpactEvent event) {
         if (event.getProjectile() instanceof AbstractArrow arrow && TAGGED.containsKey(arrow.getUUID())
-                && event.getRayTraceResult().getType() == HitResult.Type.ENTITY) {
+                && event.getRayTraceResult() instanceof net.minecraft.world.phys.EntityHitResult hit && hit.getEntity() instanceof net.minecraft.world.entity.player.Player) {
             event.setCanceled(true);
         }
     }
@@ -167,7 +170,7 @@ public final class BulletShots {
 
     private static void damage(ServerLevel level, AbstractArrow arrow, LivingEntity target) {
         int damage = Mth.ceil(Mth.clamp(arrow.getDeltaMovement().length() * com.botwclimb.common.Compat.baseDamage(arrow), 0, Integer.MAX_VALUE / 2));
-        if (arrow.isCritArrow()) damage += level.random.nextInt(damage / 2 + 2);
+        if (arrow.isCritArrow()) damage += level.getRandom().nextInt(damage / 2 + 2);
         if (arrow.isOnFire()) target.setRemainingFireTicks(100);
         target.hurt(level.damageSources().arrow(arrow, arrow.getOwner()), damage);
     }
@@ -191,7 +194,7 @@ public final class BulletShots {
         }
         if (running) {
             for (ServerPlayer sp : level.players()) {
-                for (LivingEntity e : level.getEntitiesOfClass(LivingEntity.class, sp.getBoundingBox().inflate(SCAN_RADIUS),
+                for (LivingEntity e : level.getEntitiesOfClass(net.minecraft.world.entity.player.Player.class, sp.getBoundingBox().inflate(SCAN_RADIUS),
                         e -> e != sp && e.isAlive() && !e.isPassenger() && !e.isVehicle())) {
                     track(e, now);
                 }
@@ -245,7 +248,7 @@ public final class BulletShots {
             }
         }
         for (int i = 0; i < changed.size(); i += BulletPositionsPayload.MAX_SNAPS) {
-            PacketDistributor.sendToPlayer(sp, new BulletPositionsPayload(changed.subList(i, Math.min(changed.size(), i + BulletPositionsPayload.MAX_SNAPS))));
+            com.botwclimb.common.Net.toPlayer(sp, new BulletPositionsPayload(changed.subList(i, Math.min(changed.size(), i + BulletPositionsPayload.MAX_SNAPS))));
         }
         sent.keySet().removeIf(id -> !HISTORY.containsKey(id)); // forget mobs that left, so SENT cannot grow
     }

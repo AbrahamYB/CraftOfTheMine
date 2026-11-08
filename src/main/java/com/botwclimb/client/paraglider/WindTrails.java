@@ -102,22 +102,42 @@ public final class WindTrails {
         }
     }
 
-    //? if >=1.21.11 {
+    //? if >=26.2 {
+    /*@SubscribeEvent
+    public static void onSubmit(net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent event) {
+        if (TRAILS.isEmpty() || Minecraft.getInstance().level == null) return;
+        Minecraft mc = Minecraft.getInstance();
+        event.getSubmitNodeCollector().submitCustomGeometry(event.getPoseStack(), RenderType.debugQuads(),
+                (pose, vc) -> draw(mc, com.botwclimb.client.ClientCompat.poseStackOf(pose), vc));
+    }
+    *///?} else if >=1.21.8 {
     /*@SubscribeEvent
     public static void onRender(RenderLevelStageEvent.AfterParticles event) {
-        if (TRAILS.isEmpty()) return;
+        if (!TRAILS.isEmpty()) render(event);
+    }
     *///?} else {
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES || TRAILS.isEmpty()) return;
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_PARTICLES && !TRAILS.isEmpty()) render(event);
+    }
     //?}
+
+    //? if >=26.2 {
+    /*// 26.2 has no immediate buffers: the geometry is submitted from onSubmit
+    *///?} else {
+    private static void render(RenderLevelStageEvent event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
+        PoseStack ps = com.botwclimb.client.ClientCompat.levelPose(event);
+        com.botwclimb.client.Buffers buffers = com.botwclimb.client.ClientCompat.immediateBuffers(mc);
+        VertexConsumer vc = buffers.getBuffer(RenderType.debugQuads());
+        if (draw(mc, ps, vc)) buffers.endBatch(RenderType.debugQuads());
+    }
+    //?}
+
+    private static boolean draw(Minecraft mc, PoseStack ps, VertexConsumer vc) {
         float pt = com.botwclimb.client.ClientCompat.partialTick(false);
         Vec3 cam = com.botwclimb.client.ClientCompat.cameraPos();
-        PoseStack ps = com.botwclimb.client.ClientCompat.levelPose(event);
-        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
-        VertexConsumer vc = buffers.getBuffer(RenderType.debugQuads());
         boolean any = false;
         for (Player p : mc.level.players()) {
             Trail t = TRAILS.get(p.getUUID());
@@ -132,8 +152,8 @@ public final class WindTrails {
                 any |= ribbon(vc, ps, cam, t, s, head, 1f, 1f, 0.97f, 0.99f, 1f);                     // white core on top
             }
         }
-        if (any) buffers.endBatch(RenderType.debugQuads());
         TRAILS.keySet().removeIf(id -> mc.level.getPlayerByUUID(id) == null); // a player who unloaded mid-trail leaves no entry behind
+        return any;
     }
 
     /** Draws one streak from the (optional) live head back through the stored points, cut off at the trail length. */

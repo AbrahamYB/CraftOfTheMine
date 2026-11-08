@@ -30,11 +30,40 @@ public final class PlotData extends SavedData {
     public record Return(ResourceKey<Level> dim, BlockPos terminal, double x, double y, double z, float yaw) {}
 
     private int next;
+    /** The plots whose island has been built; a built island is never put right again, so nothing a player dug out is refilled or cleared. */
+    private final Set<Integer> built = new HashSet<>();
     private final Map<UUID, int[]> plots = new HashMap<>();
     private final Map<UUID, Return> returns = new HashMap<>();
     /** The plots (by number) friends may join, and the plot each guest last joined. */
     private final Set<Integer> open = new HashSet<>();
     private final Map<UUID, Integer> guests = new HashMap<>();
+
+    /** How many plot numbers have been handed out. */
+    public int claimed() {
+        return next;
+    }
+
+    public boolean isBuilt(int plot) {
+        return built.contains(plot);
+    }
+
+    public void markBuilt(int plot) {
+        if (built.add(plot)) setDirty();
+    }
+
+    /** Closes the plots of one player to friends (they log out), so no friend stays on in a plot whose owner is away. */
+    public void closeOf(UUID owner) {
+        int[] p = plots.get(owner);
+        if (p == null) return;
+        for (int plot : p) if (plot >= 0 && open.remove(plot)) setDirty();
+    }
+
+    public void closeAll() {
+        if (!open.isEmpty()) {
+            open.clear();
+            setDirty();
+        }
+    }
 
     public boolean isOpen(int plot) {
         return open.contains(plot);
@@ -62,7 +91,7 @@ public final class PlotData extends SavedData {
         setDirty();
     }
 
-    //? if >=1.21.11 {
+    //? if >=1.21.5 {
     /*private static final com.mojang.serialization.Codec<PlotData> CODEC = CompoundTag.CODEC.xmap(PlotData::read, d -> d.write(new CompoundTag()));
     private static final net.minecraft.world.level.saveddata.SavedDataType<PlotData> TYPE =
             new net.minecraft.world.level.saveddata.SavedDataType<>(NAME, PlotData::new, CODEC, null);
@@ -99,6 +128,7 @@ public final class PlotData extends SavedData {
             return a;
         });
         if (p[slot] < 0) {
+            if (next >= PlotWorld.MAX_PLOTS) return -1; // the world is full of plots
             p[slot] = next++;
             setDirty();
         }
@@ -164,27 +194,63 @@ public final class PlotData extends SavedData {
             gs.add(t);
         }
         tag.put("guests", gs);
+        tag.putIntArray("built", built.stream().mapToInt(Integer::intValue).toArray());
         return tag;
     }
 
-    private static PlotData read(CompoundTag tag) {
+    /** Reads saved plots. One broken entry is skipped (and logged), never the whole file, so a bad byte cannot hand out the plots again. */
+    public static PlotData read(CompoundTag tag) {
         PlotData d = new PlotData();
-        d.next = com.botwclimb.common.Nbt.getInt(tag, "next");
+        int max = PlotWorld.MAX_PLOTS;
+        d.next = Math.max(0, Math.min(max, com.botwclimb.common.Nbt.getInt(tag, "next")));
+        Set<Integer> seen = new HashSet<>();
         for (CompoundTag t : com.botwclimb.common.Nbt.list(tag, "players")) {
-            int[] saved = com.botwclimb.common.Nbt.getIntArray(t, "plots");
-            int[] a = new int[SLOTS];
-            Arrays.fill(a, -1);
-            System.arraycopy(saved, 0, a, 0, Math.min(saved.length, SLOTS));
-            d.plots.put(com.botwclimb.common.Nbt.getUuid(t, "id"), a);
+            try {
+                UUID owner = com.botwclimb.common.Nbt.getUuid(t, "id"); // first: an entry without an owner must not use up plot numbers
+                int[] saved = com.botwclimb.common.Nbt.getIntArray(t, "plots");
+                int[] a = new int[SLOTS];
+                Arrays.fill(a, -1);
+                for (int i = 0; i < Math.min(saved.length, SLOTS); i++) {
+                    if (saved[i] >= 0 && saved[i] < max && seen.add(saved[i])) { // a plot number belongs to one player only
+                        a[i] = saved[i];
+                        d.next = Math.max(d.next, saved[i] + 1);
+                    }
+                }
+                d.plots.put(owner, a);
+            } catch (RuntimeException e) {
+                com.botwclimb.BotwClimb.LOGGER.warn("Skipped an unreadable plot owner entry: {}", e.toString());
+            }
         }
         for (CompoundTag t : com.botwclimb.common.Nbt.list(tag, "returns")) {
-            ResourceLocation dim = ResourceLocation.tryParse(com.botwclimb.common.Nbt.getString(t, "dim"));
-            if (dim == null) continue;
-            d.returns.put(com.botwclimb.common.Nbt.getUuid(t, "id"), new Return(ResourceKey.create(Registries.DIMENSION, dim), BlockPos.of(com.botwclimb.common.Nbt.getLong(t, "terminal")),
-                    com.botwclimb.common.Nbt.getDouble(t, "x"), com.botwclimb.common.Nbt.getDouble(t, "y"), com.botwclimb.common.Nbt.getDouble(t, "z"), com.botwclimb.common.Nbt.getFloat(t, "yaw")));
+            try {
+                ResourceLocation dim = ResourceLocation.tryParse(com.botwclimb.common.Nbt.getString(t, "dim"));
+                double x = com.botwclimb.common.Nbt.getDouble(t, "x"), y = com.botwclimb.common.Nbt.getDouble(t, "y"), z = com.botwclimb.common.Nbt.getDouble(t, "z");
+                float yaw = com.botwclimb.common.Nbt.getFloat(t, "yaw");
+                ResourceKey<Level> key = dim == null ? null : ResourceKey.create(Registries.DIMENSION, dim);
+                if (key == null || key.equals(PlotWorld.DIM) || !Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z) || !Float.isFinite(yaw)
+                        || Math.abs(x) > 3e7 || Math.abs(z) > 3e7 || y < -2048 || y > 4096) continue;
+                d.returns.put(com.botwclimb.common.Nbt.getUuid(t, "id"), new Return(key, BlockPos.of(com.botwclimb.common.Nbt.getLong(t, "terminal")), x, y, z, yaw));
+            } catch (RuntimeException e) {
+                com.botwclimb.BotwClimb.LOGGER.warn("Skipped an unreadable return point: {}", e.toString());
+            }
         }
-        for (CompoundTag t : com.botwclimb.common.Nbt.list(tag, "open")) if (t.contains("plot")) d.open.add(com.botwclimb.common.Nbt.getInt(t, "plot"));
-        for (CompoundTag t : com.botwclimb.common.Nbt.list(tag, "guests")) d.guests.put(com.botwclimb.common.Nbt.getUuid(t, "id"), com.botwclimb.common.Nbt.getInt(t, "plot"));
+        for (CompoundTag t : com.botwclimb.common.Nbt.list(tag, "open")) {
+            int plot = t.contains("plot") ? com.botwclimb.common.Nbt.getInt(t, "plot") : -1;
+            if (plot >= 0 && plot < max) d.open.add(plot);
+        }
+        for (CompoundTag t : com.botwclimb.common.Nbt.list(tag, "guests")) {
+            try {
+                int plot = com.botwclimb.common.Nbt.getInt(t, "plot");
+                if (plot >= 0 && plot < max) d.guests.put(com.botwclimb.common.Nbt.getUuid(t, "id"), plot);
+            } catch (RuntimeException e) {
+                com.botwclimb.BotwClimb.LOGGER.warn("Skipped an unreadable guest entry: {}", e.toString());
+            }
+        }
+        if (tag.contains("built")) {
+            for (int plot : com.botwclimb.common.Nbt.getIntArray(tag, "built")) if (plot >= 0 && plot < max) d.built.add(plot);
+        } else {
+            for (int plot = 0; plot < d.next; plot++) d.built.add(plot); // a world from before this flag: every plot claimed so far is already built
+        }
         return d;
     }
 }

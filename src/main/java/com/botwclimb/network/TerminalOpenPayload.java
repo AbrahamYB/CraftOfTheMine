@@ -27,13 +27,24 @@ public record TerminalOpenPayload(BlockPos pos, int claimed, int here, boolean i
                 buf.writeVarInt(p.here + 1);
                 buf.writeBoolean(p.inPlot);
                 buf.writeVarInt(p.open);
-                buf.writeCollection(p.hosts, (b, h) -> {
-                    b.writeUUID(h.id);
-                    b.writeUtf(h.name);
-                    b.writeVarInt(h.slot);
-                });
+                buf.writeVarInt(p.hosts.size());
+                for (Host h : p.hosts) {
+                    buf.writeUUID(h.id);
+                    buf.writeUtf(h.name);
+                    buf.writeVarInt(h.slot);
+                }
             },
-            buf -> new TerminalOpenPayload(buf.readBlockPos(), buf.readVarInt(), buf.readVarInt() - 1, buf.readBoolean(), buf.readVarInt(), buf.readList(b -> new Host(b.readUUID(), b.readUtf(32), b.readVarInt()))));
+            buf -> {
+                var pos = buf.readBlockPos();
+                int claimed = buf.readVarInt(), here = buf.readVarInt() - 1;
+                boolean inPlot = buf.readBoolean();
+                int open = buf.readVarInt();
+                int n = buf.readVarInt();
+                if (n < 0 || n > 16) throw new io.netty.handler.codec.DecoderException("too many hosts: " + n);
+                var hosts = new java.util.ArrayList<Host>(n);
+                for (int i = 0; i < n; i++) hosts.add(new Host(buf.readUUID(), buf.readUtf(32), buf.readVarInt()));
+                return new TerminalOpenPayload(pos, claimed, here, inPlot, open, hosts);
+            });
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

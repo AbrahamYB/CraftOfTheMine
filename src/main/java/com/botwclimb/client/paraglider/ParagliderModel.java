@@ -21,7 +21,7 @@ import net.minecraft.resources.ResourceLocation;
  * two struts down to the hands. Coordinates are in player-model pixels (y down, shoulders at y = 0, hands at about
  * y = -10). Fabrics only differ in texture.
  */
-//? if >=1.21.11 {
+//? if >=1.21.9 {
 /*public final class ParagliderModel extends Model<net.minecraft.util.Unit> {
 *///?} else {
 public final class ParagliderModel extends Model {

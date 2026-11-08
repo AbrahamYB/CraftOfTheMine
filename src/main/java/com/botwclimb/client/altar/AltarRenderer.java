@@ -21,7 +21,7 @@ import org.joml.Matrix4f;
  * player's own upgrades (see {@link AltarFx}), so it differs from player to player. Both rings are always there, shadowed
  * until their quarters are unlocked; the runes on the four sides light up from the first upgrade.
  */
-//? if >=1.21.11 {
+//? if >=1.21.9 {
 /*public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntity, AltarRenderer.State> {
     public static class State extends net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState {
         float partial;
@@ -57,7 +57,7 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
 
     public AltarRenderer(net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider.Context ctx) {}
 
-    //? if >=1.21.11 {
+    //? if >=1.21.9 {
     /*@Override
     public State createRenderState() {
         return new State();
@@ -78,6 +78,12 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
     @Override
     public void submit(State state, PoseStack pose, net.minecraft.client.renderer.SubmitNodeCollector collector, net.minecraft.client.renderer.state.CameraRenderState camera) {
         draw((type, write) -> collector.submitCustomGeometry(pose, type, write::accept), pose, state.partial, null);
+    }
+    *///?} else if >=1.21.5 {
+    /*@Override
+    public void render(StaminaAltarBlockEntity be, float partialTick, PoseStack pose, MultiBufferSource buffers, int light, int overlay,
+                       net.minecraft.world.phys.Vec3 camera) {
+        draw((type, write) -> write.accept(pose.last(), buffers.getBuffer(type)), pose, partialTick, be);
     }
     *///?} else {
     @Override
@@ -169,7 +175,7 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
         var img = new com.mojang.blaze3d.platform.NativeImage(w, h, true); // starts fully transparent
         painter.paint(img, lit);
         var id = ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "altar_" + name);
-        //? if >=1.21.11 {
+        //? if >=1.21.5 {
         /*Minecraft.getInstance().getTextureManager().register(id, new net.minecraft.client.renderer.texture.DynamicTexture(() -> id.toString(), img));
         *///?} else {
         Minecraft.getInstance().getTextureManager().register(id, new net.minecraft.client.renderer.texture.DynamicTexture(img));
@@ -242,7 +248,12 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
                     .setLight(LightTexture.FULL_BRIGHT).setNormal(last, nx, ny, nz);
     }
 
-    //? if <1.21.11 {
+    //? if >=1.21.6 && <1.21.9 {
+    /*@Override
+    public boolean shouldRenderOffScreen() {
+        return false;
+    }
+    *///?} else if <1.21.6 {
     @Override
     public boolean shouldRenderOffScreen(StaminaAltarBlockEntity be) {
         return false;

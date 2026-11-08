@@ -70,7 +70,7 @@ public final class ClientCompat {
     //?}
 
     // the walking impulses of the movement input
-    //? if >=1.21.11 {
+    //? if >=1.21.5 {
     /*public static float forward(net.minecraft.client.player.ClientInput in) {
         return in.getMoveVector().y;
     }
@@ -114,7 +114,7 @@ public final class ClientCompat {
 
     /** Draws part of a texture (the old blit argument order: size on screen, then the texture window). */
     public static void blit(GuiGraphics g, ResourceLocation tex, int x, int y, int w, int h, float u, float v, int uw, int vh, int texW, int texH) {
-        //? if >=1.21.11 {
+        //? if >=1.21.6 {
         /*g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, tex, x, y, u, v, w, h, uw, vh, texW, texH);
         *///?} else if >=1.21.2 {
         /*g.blit(net.minecraft.client.renderer.RenderType::guiTextured, tex, x, y, u, v, w, h, uw, vh, texW, texH);
@@ -125,7 +125,7 @@ public final class ClientCompat {
 
     /** Draws a GUI sprite (a button background and the like). */
     public static void blitSprite(GuiGraphics g, ResourceLocation sprite, int x, int y, int w, int h) {
-        //? if >=1.21.11 {
+        //? if >=1.21.6 {
         /*g.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, sprite, x, y, w, h);
         *///?} else if >=1.21.2 {
         /*g.blitSprite(net.minecraft.client.renderer.RenderType::guiTextured, sprite, x, y, w, h);
@@ -136,7 +136,7 @@ public final class ClientCompat {
 
     /** Selects the plain position-and-colour shader (only the old immediate drawing needs it). */
     public static void positionColorShader() {
-        //? if >=1.21.11 {
+        //? if >=1.21.5 {
         /*// the GUI pipelines pick their own shader
         *///?} else if >=1.21.2 {
         /*com.mojang.blaze3d.systems.RenderSystem.setShader(net.minecraft.client.renderer.CoreShaders.POSITION_COLOR);
@@ -148,7 +148,7 @@ public final class ClientCompat {
     /** Saves a picture of the main render target into a folder (dev tooling). */
     public static void screenshot(java.io.File dir, String name) {
         Minecraft mc = Minecraft.getInstance();
-        //? if >=1.21.11 {
+        //? if >=1.21.6 {
         /*net.minecraft.client.Screenshot.grab(dir, name, mc.getMainRenderTarget(), 1, msg -> { });
         *///?} else {
         net.minecraft.client.Screenshot.grab(dir, name, mc.getMainRenderTarget(), msg -> { });
@@ -185,7 +185,9 @@ public final class ClientCompat {
 
     /** Sends a message to the server. */
     public static void sendToServer(net.minecraft.network.protocol.common.custom.CustomPacketPayload payload) {
-        //? if >=1.21.11 {
+        var conn = net.minecraft.client.Minecraft.getInstance().getConnection();
+        if (conn == null || !conn.hasChannel(payload.type())) return; // server without the mod
+        //? if >=1.21.6 {
         /*net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(payload);
         *///?} else {
         net.neoforged.neoforge.network.PacketDistributor.sendToServer(payload);
@@ -194,7 +196,7 @@ public final class ClientCompat {
 
     /** The native window handle (for the raw keyboard state). */
     public static long windowHandle() {
-        //? if >=1.21.11 {
+        //? if >=1.21.9 {
         /*return Minecraft.getInstance().getWindow().handle();
         *///?} else {
         return Minecraft.getInstance().getWindow().getWindow();
@@ -203,18 +205,14 @@ public final class ClientCompat {
 
     /** Whether either Shift key is held right now. */
     public static boolean shiftDown() {
-        long w = windowHandle();
-        //? if >=1.21.11 {
-        /*var win = Minecraft.getInstance().getWindow();
-        return com.mojang.blaze3d.platform.InputConstants.isKeyDown(win, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT) || com.mojang.blaze3d.platform.InputConstants.isKeyDown(win, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT);
-        *///?} else {
-        return com.mojang.blaze3d.platform.InputConstants.isKeyDown(w, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT) || com.mojang.blaze3d.platform.InputConstants.isKeyDown(w, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT);
-        //?}
+        return keyDown(KEY_LSHIFT) || keyDown(KEY_RSHIFT);
     }
 
     /** The raw state of a key. */
     public static boolean keyDown(int keyCode) {
-        //? if >=1.21.11 {
+        //? if >=26.3 {
+        /*return com.mojang.blaze3d.platform.InputConstants.isKeyDown(keyCode);
+        *///?} else if >=1.21.9 {
         /*return com.mojang.blaze3d.platform.InputConstants.isKeyDown(Minecraft.getInstance().getWindow(), keyCode);
         *///?} else {
         return com.mojang.blaze3d.platform.InputConstants.isKeyDown(windowHandle(), keyCode);
@@ -224,7 +222,7 @@ public final class ClientCompat {
     // ---- the GUI's transform (a 3D matrix stack before 1.21.6, a 2D one after; the z of a translate is dropped, drawing order decides what is on top)
 
     public static void pushPose(GuiGraphics g) {
-        //? if >=1.21.11 {
+        //? if >=1.21.6 {
         /*g.pose().pushMatrix();
         *///?} else {
         g.pose().pushPose();
@@ -232,7 +230,7 @@ public final class ClientCompat {
     }
 
     public static void popPose(GuiGraphics g) {
-        //? if >=1.21.11 {
+        //? if >=1.21.6 {
         /*g.pose().popMatrix();
         *///?} else {
         g.pose().popPose();
@@ -240,7 +238,7 @@ public final class ClientCompat {
     }
 
     public static void translate(GuiGraphics g, float x, float y, float z) {
-        //? if >=1.21.11 {
+        //? if >=1.21.6 {
         /*g.pose().translate(x, y);
         *///?} else {
         g.pose().translate(x, y, z);
@@ -248,7 +246,7 @@ public final class ClientCompat {
     }
 
     public static void scale(GuiGraphics g, float x, float y) {
-        //? if >=1.21.11 {
+        //? if >=1.21.6 {
         /*g.pose().scale(x, y);
         *///?} else {
         g.pose().scale(x, y, 1f);
@@ -257,7 +255,7 @@ public final class ClientCompat {
 
     /** Makes the skin's outer layers (hat, sleeves, pants, jacket) follow the posed body; from 1.21.11 they are children of the parts and follow on their own. */
     public static void syncOuterLayers(net.minecraft.client.model.PlayerModel m) {
-        //? if >=1.21.11 {
+        //? if >=1.21.9 {
         /*// nothing to do
         *///?} else {
         m.hat.copyFrom(m.head);
@@ -280,7 +278,7 @@ public final class ClientCompat {
 
     /** Where the camera is. */
     public static net.minecraft.world.phys.Vec3 cameraPos() {
-        //? if >=1.21.11 {
+        //? if >=1.21.9 {
         /*return Minecraft.getInstance().gameRenderer.getMainCamera().position();
         *///?} else {
         return Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
@@ -289,7 +287,7 @@ public final class ClientCompat {
 
     /** The pose stack to draw level geometry with (camera-relative positions go in; it carries the view rotation). */
     public static com.mojang.blaze3d.vertex.PoseStack levelPose(net.neoforged.neoforge.client.event.RenderLevelStageEvent event) {
-        //? if >=1.21.11 {
+        //? if >=1.21.9 {
         /*var ps = new com.mojang.blaze3d.vertex.PoseStack();
         ps.mulPose(event.getModelViewMatrix());
         return ps;
@@ -300,7 +298,7 @@ public final class ClientCompat {
 
     /** The puff of pieces of a broken block. */
     public static void destroyEffect(Minecraft mc, net.minecraft.core.BlockPos pos, net.minecraft.world.level.block.state.BlockState state) {
-        //? if >=1.21.11 {
+        //? if >=1.21.9 {
         /*mc.level.addDestroyBlockEffect(pos, state);
         *///?} else {
         mc.particleEngine.destroy(pos, state);
@@ -310,7 +308,7 @@ public final class ClientCompat {
     /** A pose stack whose top is a copy of the given pose (for drawing code that wants a stack, from a geometry callback that hands out a pose). */
     public static com.mojang.blaze3d.vertex.PoseStack poseStackOf(com.mojang.blaze3d.vertex.PoseStack.Pose pose) {
         var ps = new com.mojang.blaze3d.vertex.PoseStack();
-        //? if >=1.21.11 {
+        //? if >=1.21.9 {
         /*ps.last().set(pose);
         *///?} else {
         ps.last().pose().set(pose.pose());
@@ -318,4 +316,48 @@ public final class ClientCompat {
         //?}
         return ps;
     }
+
+    /** The GUI drawing object of a render event. The unicode escape keeps the NeoForge method name safe from the class rename of 26.1. */
+    public static GuiGraphics gui(net.neoforged.neoforge.client.event.RenderGuiEvent e) {
+        return e.get\u0047uiGraphics();
+    }
+
+    public static GuiGraphics gui(net.neoforged.neoforge.client.event.ScreenEvent.Render e) {
+        return e.get\u0047uiGraphics();
+    }
+
+    /** The game's immediate-mode buffers (gone in 26.2, where custom geometry goes through the submit event instead). */
+    public static Buffers immediateBuffers(Minecraft mc) {
+        //? if >=26.2 {
+        /*return type -> null;
+        *///?} else {
+        var source = mc.renderBuffers().bufferSource();
+        return new Buffers() {
+            @Override
+            public com.mojang.blaze3d.vertex.VertexConsumer getBuffer(net.minecraft.client.renderer.RenderType type) {
+                return source.getBuffer(type);
+            }
+
+            @Override
+            public void endBatch(net.minecraft.client.renderer.RenderType type) {
+                source.endBatch(type);
+            }
+        };
+        //?}
+    }
+
+    // ---- raw keys and key events (GLFW up to 26.2, SDL scancodes from 26.3)
+    //? if >=26.3 {
+    /*public static final int KEY_SPACE = com.mojang.blaze3d.platform.InputConstants.KEY_SPACE, KEY_LSHIFT = com.mojang.blaze3d.platform.InputConstants.KEY_LSHIFT,
+            KEY_RSHIFT = com.mojang.blaze3d.platform.InputConstants.KEY_RSHIFT, ACTION_PRESS = com.mojang.blaze3d.platform.InputConstants.PRESS,
+            ACTION_RELEASE = com.mojang.blaze3d.platform.InputConstants.RELEASE, MOD_SHIFT = com.mojang.blaze3d.platform.InputConstants.MOD_SHIFT,
+            MOD_CONTROL = com.mojang.blaze3d.platform.InputConstants.MOD_CONTROL, MOD_ALT = com.mojang.blaze3d.platform.InputConstants.MOD_ALT;
+    public static final com.mojang.blaze3d.platform.InputConstants.Type KEY_TYPE = com.mojang.blaze3d.platform.InputConstants.Type.KEYBOARD;
+    *///?} else {
+    public static final int KEY_SPACE = org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE, KEY_LSHIFT = org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT,
+            KEY_RSHIFT = org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT, ACTION_PRESS = org.lwjgl.glfw.GLFW.GLFW_PRESS,
+            ACTION_RELEASE = org.lwjgl.glfw.GLFW.GLFW_RELEASE, MOD_SHIFT = org.lwjgl.glfw.GLFW.GLFW_MOD_SHIFT,
+            MOD_CONTROL = org.lwjgl.glfw.GLFW.GLFW_MOD_CONTROL, MOD_ALT = org.lwjgl.glfw.GLFW.GLFW_MOD_ALT;
+    public static final com.mojang.blaze3d.platform.InputConstants.Type KEY_TYPE = com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM;
+    //?}
 }

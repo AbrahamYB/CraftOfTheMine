@@ -22,10 +22,11 @@ public final class PlayerStateSync {
         var d = p.getData(BotwClimb.CLIMB); // server side only, so it also remembers what was last sent
         int unlocks = p.getData(BotwClimb.FABRIC_UNLOCKS), upgrades = p.getData(BotwClimb.STAMINA_UPGRADES);
         float credit = p.getData(BotwClimb.ALTAR_CREDIT);
-        if (d.sentUnlocks == unlocks && d.sentUpgrades == upgrades && d.sentCredit == credit) return;
+        if (d.sentUnlocks == unlocks && d.sentUpgrades == upgrades && Float.compare(d.sentCredit, credit) == 0) return;
         d.sentUnlocks = unlocks;
         d.sentUpgrades = upgrades;
         d.sentCredit = credit;
-        PacketDistributor.sendToPlayer(p, new PlayerStatePayload(unlocks, upgrades, credit));
+        if (p.connection.hasChannel(PlayerStatePayload.TYPE)) // an older client has no such channel; it gets the values through attachment sync instead
+            com.botwclimb.common.Net.toPlayer(p, new PlayerStatePayload(unlocks, upgrades, credit));
     }
 }

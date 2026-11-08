@@ -66,7 +66,7 @@ public final class PlotTravel {
 
     /** A button pressed on the terminal screen. */
     public static void handle(ServerPlayer p, TerminalActionPayload a) {
-        if (!p.isAlive() || p.isSpectator() || TerminalRide.isRiding(p) || p.distanceToSqr(Vec3.atCenterOf(a.pos())) > 64
+        if (!p.isAlive() || p.isSpectator() || p.isPassenger() || p.isVehicle() || TerminalRide.isRiding(p) || p.distanceToSqr(Vec3.atCenterOf(a.pos())) > 64
                 || !p.level().getBlockState(a.pos()).is(BotwClimb.TERMINAL_BLOCK.get())) return;
         boolean inPlot = p.level().dimension() == PlotWorld.DIM;
         PlotData pd = PlotData.get(p.level().getServer());
@@ -74,7 +74,7 @@ public final class PlotTravel {
             int plot = pd.plot(p.getUUID(), a.target() - TOGGLE_OPEN);
             if (plot < 0) return;
             pd.toggleOpen(plot);
-            net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(p, openPayload(p, a.pos()));
+            com.botwclimb.common.Net.toPlayer(p, openPayload(p, a.pos()));
             return;
         }
         int target = a.target();
@@ -103,9 +103,15 @@ public final class PlotTravel {
         }
         PlotData data = PlotData.get(server);
         if (target >= 0 && target < PlotData.SLOTS) {
-            boolean fresh = data.plot(p.getUUID(), target) < 0;
             int plot = data.claim(p.getUUID(), target);
-            if (fresh || !PlotWorld.isBuilt(plotLevel, plot)) PlotWorld.buildIsland(plotLevel, plot);
+            if (plot < 0) { // the world has no plots left
+                com.botwclimb.common.Compat.overlay(p, net.minecraft.network.chat.Component.translatable("message.botwclimb.plots_full"));
+                return false;
+            }
+            if (!data.isBuilt(plot)) {
+                PlotWorld.buildIsland(plotLevel, plot);
+                data.markBuilt(plot);
+            }
         }
         if (p.level().dimension() != PlotWorld.DIM) { // a trip from one plot to the other keeps the way home from before
             data.setReturn(p.getUUID(), new PlotData.Return(p.level().dimension(), terminal, p.getX(), p.getY(), p.getZ(), p.getYRot()));

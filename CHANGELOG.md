@@ -6,6 +6,8 @@ keep working across the rename.
 ## 1.0.0
 
 ### Added
+* Builds for Minecraft 1.21.1, 1.21.3, 1.21.4, 1.21.5, 1.21.8, 1.21.10, 1.21.11, 26.1, 26.2 and 26.3.
+* Bullet time slows mobs for real on the server (1 tick in 7 within 8 chunks) and slows other players while you aim.
 * Wall climbing with a stamina cost, climb jumps, ledge jumps and long ledge jumps, and sliding round corners.
 * A paraglider with fabrics that are learned by crafting them in a menu beside the inventory.
 * The stamina wheel and the stamina altar (offer items to grow the wheel).

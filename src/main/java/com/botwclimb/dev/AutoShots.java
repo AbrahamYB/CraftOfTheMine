@@ -43,6 +43,7 @@ public final class AutoShots {
     public static void tick(ClientTickEvent.Post event) {
         if (!ON) return;
         Minecraft mc = Minecraft.getInstance();
+        AutoConfirm.pump(mc);
         if (mc.level == null || mc.player == null || mc.getSingleplayerServer() == null) return;
         if (mc.player.isDeadOrDying()) { // a world saved on the death screen: come back to life first
             mc.player.respawn();

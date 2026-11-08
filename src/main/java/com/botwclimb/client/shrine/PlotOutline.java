@@ -35,26 +35,47 @@ public final class PlotOutline {
         com.botwclimb.client.ClientConfig.set(com.botwclimb.client.ClientConfig.plotOutlineValue(), !on());
     }
 
-    //? if >=1.21.11 {
+    //? if >=26.2 {
+    /*@SubscribeEvent
+    public static void onSubmit(net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent event) {
+        if (!on()) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || mc.player == null || mc.level.dimension() != PlotWorld.DIM) return;
+        event.getSubmitNodeCollector().submitCustomGeometry(event.getPoseStack(), RenderType.debugQuads(),
+                (pose, vc) -> draw(mc, com.botwclimb.client.ClientCompat.poseStackOf(pose), vc));
+    }
+    *///?} else if >=1.21.8 {
     /*@SubscribeEvent
     public static void draw(RenderLevelStageEvent.AfterWeather event) {
-        if (!on()) return;
+        if (on()) render(event);
+    }
     *///?} else {
     @SubscribeEvent
     public static void draw(RenderLevelStageEvent event) {
-        if (!on() || event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
+        if (on() && event.getStage() == RenderLevelStageEvent.Stage.AFTER_WEATHER) render(event);
+    }
     //?}
+
+    //? if >=26.2 {
+    /*// 26.2 has no immediate buffers: the geometry is submitted from onSubmit
+    *///?} else {
+    private static void render(RenderLevelStageEvent event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null || mc.level.dimension() != PlotWorld.DIM) return;
+        com.botwclimb.client.Buffers buffers = com.botwclimb.client.ClientCompat.immediateBuffers(mc);
+        VertexConsumer vc = buffers.getBuffer(RenderType.debugQuads());
+        draw(mc, com.botwclimb.client.ClientCompat.levelPose(event), vc);
+        buffers.endBatch(RenderType.debugQuads());
+    }
+    //?}
+
+    private static void draw(Minecraft mc, PoseStack ps, VertexConsumer vc) {
         int plot = PlotWorld.plotAt(mc.player.blockPosition());
         Vec3 cam = com.botwclimb.client.ClientCompat.cameraPos();
         float x0 = PlotWorld.ORIGIN_X + plot * PlotWorld.SPACING + LOW, x1 = PlotWorld.ORIGIN_X + plot * PlotWorld.SPACING + HIGH, z0 = PlotWorld.ORIGIN_Z + LOW, z1 = PlotWorld.ORIGIN_Z + HIGH, y = PlotWorld.Y + 1f;
-        PoseStack ps = com.botwclimb.client.ClientCompat.levelPose(event);
         ps.pushPose();
         ps.translate(-cam.x, -cam.y, -cam.z);
         Matrix4f m = ps.last().pose();
-        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
-        VertexConsumer vc = buffers.getBuffer(RenderType.debugQuads());
         // the line on the ground: a bright thin one over a wider soft one, round all four sides
         for (int side = 0; side < 4; side++) {
             boolean alongX = side < 2;
@@ -65,7 +86,6 @@ public final class PlotOutline {
             for (float t = from + TICK_EVERY; t < to - 0.01f; t += TICK_EVERY) post(vc, m, alongX ? t : fixed, alongX ? fixed : t, y, TICK, 0.05f, 200);
         }
         for (float cx : new float[] {x0, x1}) for (float cz : new float[] {z0, z1}) post(vc, m, cx, cz, y, POST, 0.07f, 235);
-        buffers.endBatch(RenderType.debugQuads());
         ps.popPose();
     }
 

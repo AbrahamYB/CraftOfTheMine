@@ -62,7 +62,7 @@ public final class RenderData {
     *///?}
 
     // whether a render state is the rider drawn on the HUD: from 1.21.11 the entity is described and drawn at different times, so it carries the mark
-    //? if >=1.21.11 {
+    //? if >=1.21.9 {
     /*public static boolean hud(net.neoforged.neoforge.client.renderstate.BaseRenderState state) {
         return state.getRenderData(HUD) != null;
     }

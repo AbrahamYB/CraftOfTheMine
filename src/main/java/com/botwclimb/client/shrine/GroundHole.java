@@ -141,12 +141,12 @@ public final class GroundHole {
                 }
             }
         }
-        if (broke) level.playLocalSound(cx, top, cz, SoundEvents.GRAVEL_BREAK, SoundSource.BLOCKS, 0.9f, 0.6f + 0.3f * level.random.nextFloat(), false);
+        if (broke) level.playLocalSound(cx, top, cz, SoundEvents.GRAVEL_BREAK, SoundSource.BLOCKS, 0.9f, 0.6f + 0.3f * level.getRandom().nextFloat(), false);
         // loose pieces keep falling into the opening, from the first break until the cocoon has gone down
         if (!carved.blocks.isEmpty() && (opening || hole > 0.2f)) {
             for (int i = 0; i < 3; i++) {
-                double a = level.random.nextDouble() * Math.PI * 2, d = Math.sqrt(level.random.nextDouble()) * r * 0.9;
-                BlockState piece = carved.blocks.values().stream().skip(level.random.nextInt(carved.blocks.size())).findFirst().get();
+                double a = level.getRandom().nextDouble() * Math.PI * 2, d = Math.sqrt(level.getRandom().nextDouble()) * r * 0.9;
+                BlockState piece = carved.blocks.values().stream().skip(level.getRandom().nextInt(carved.blocks.size())).findFirst().get();
                 level.addParticle(new BlockParticleOption(ParticleTypes.BLOCK, piece), cx + Math.cos(a) * d, top - 0.2, cz + Math.sin(a) * d, 0, -0.15, 0);
             }
         }

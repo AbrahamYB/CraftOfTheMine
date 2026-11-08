@@ -200,7 +200,7 @@ public final class FabricPicker {
     public static void onRender(ScreenEvent.Render.Post event) {
         if (!shown(event)) return;
         var screen = (AbstractContainerScreen<?>) event.getScreen();
-        GuiGraphics g = event.getGuiGraphics();
+        GuiGraphics g = com.botwclimb.client.ClientCompat.gui(event);
         var mc = Minecraft.getInstance();
         int mx = event.getMouseX(), my = event.getMouseY();
         int selected = mc.player.getData(BotwClimb.PARAGLIDER).fabric;

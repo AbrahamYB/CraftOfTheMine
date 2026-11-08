@@ -173,7 +173,7 @@ public final class MudHandClient {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null) { // a ride the server never closed must not hold the player forever
             long now = mc.level.getGameTime();
-            RIDES.values().removeIf(r -> now - r.since() > MAX_RIDE_TICKS);
+            RIDES.values().removeIf(r -> now < r.since() || now - r.since() > MAX_RIDE_TICKS);
         }
         if (saved == null) return;
         if (mc.player == null || !RIDES.containsKey(mc.player.getId())) { // left the world mid-ride

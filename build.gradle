@@ -270,32 +270,150 @@ if (stonecutter.eval(stonecutter.current.version, ">=1.21.2")) {
 // Minecraft 1.21.11 renamed ResourceLocation to Identifier: Stonecutter swaps the name in every source file for that version
 stonecutter {
     replacements {
+        // the old annotation-based test framework is gone from 1.21.5; the mod's own annotations take over
+        string {
+            direction = eval(current.version, '>=1.21.5')
+            replace 'import net.minecraft.gametest.framework.GameTest;', 'import com.botwclimb.dev.GameTest;'
+            replace 'import net.neoforged.neoforge.gametest.GameTestHolder;', 'import com.botwclimb.dev.GameTestHolder;'
+            replace 'import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;', 'import com.botwclimb.dev.PrefixGameTestTemplate;'
+        }
+        // the cutout-no-cull render type of 1.21.11 (26.1 calls it entityCutout)
+        string {
+            direction = eval(current.version, '>=1.21.11') && !eval(current.version, '>=26.1')
+            replace 'RenderType.entityCutoutNoCull(', 'net.minecraft.client.renderer.rendertype.RenderTypes.entityCutoutNoCull('
+            replace 'RenderType::entityCutoutNoCull', 'net.minecraft.client.renderer.rendertype.RenderTypes::entityCutoutNoCull'
+        }
+        // 26.1 renamed the GUI drawing class and its methods, and moved some render state classes
+        string {
+            direction = eval(current.version, '>=26.1')
+            replace 'RenderType.entityCutoutNoCull(', 'net.minecraft.client.renderer.rendertype.RenderTypes.entityCutout('
+            replace 'RenderType::entityCutoutNoCull', 'net.minecraft.client.renderer.rendertype.RenderTypes::entityCutout'
+            replace 'public void renderBackground(GuiGraphics g, int mx, int my, float pt)', 'public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float pt)'
+            replace 'public void render(GuiGraphics g, int mx, int my, float pt)', 'public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float pt)'
+            replace 'renderBackground(g, mx, my, pt);', 'extractBackground(g, mx, my, pt);'
+            replace 'g.renderOutline(', 'g.outline('
+            replace 'g.submitEntityRenderState(', 'g.entity('
+            replace 'protected int getLightColor(float partialTick)', 'protected int getLightCoords(float partialTick)'
+            replace 'target.guiRenderState.submitGuiElement(', 'target.submitGuiElementRenderState('
+            replace 'net.minecraft.client.gui.render.state.GuiElementRenderState', 'net.minecraft.client.renderer.state.gui.GuiElementRenderState'
+            replace 'SavedDataType<>(NAME,', 'SavedDataType<>(net.minecraft.resources.Identifier.fromNamespaceAndPath("botwclimb", "plots"),'
+            replace 'GuiGraphics', 'GuiGraphicsExtractor'
+            replace 'g.drawString(', 'g.text('
+            replace 'g.drawCenteredString(', 'g.centeredText('
+            replace 'g.renderItem(', 'g.item('
+            replace 'g.renderItemDecorations(', 'g.itemDecorations('
+            replace 'import net.minecraft.client.renderer.LightTexture;', 'import net.minecraft.util.LightCoordsUtil;'
+            replace 'LightTexture', 'LightCoordsUtil'
+            replace 'PlayerFaceRenderer.draw(', 'PlayerFaceExtractor.extractRenderState('
+            replace 'level.setDayTime(6000);', 'level.getServer().getCommands().performPrefixedCommand(level.getServer().createCommandSourceStack(), "time set noon");'
+            replace 'net.minecraft.client.renderer.state.CameraRenderState', 'net.minecraft.client.renderer.state.level.CameraRenderState'
+            replace 'net.minecraft.client.renderer.state.QuadParticleRenderState', 'net.minecraft.client.renderer.state.level.QuadParticleRenderState'
+            replace 'BlockEvent.BreakEvent', 'net.neoforged.neoforge.event.level.block.BreakBlockEvent'
+            replace 'RenderLevelStageEvent.AfterParticles', 'RenderLevelStageEvent.AfterTranslucentParticles'
+        }
+        // 26.2 reorganised items, entity types and the client's screens and render buffers
+        string {
+            direction = eval(current.version, '>=26.2')
+            replace 'EntityType.COW', 'EntityTypes.COW'
+            replace 'EntityType.ARROW', 'EntityTypes.ARROW'
+            replace 'EntityType.MINECART', 'EntityTypes.MINECART'
+            replace 'import net.minecraft.client.renderer.MultiBufferSource;', 'import net.minecraft.client.renderer.SubmitNodeCollector;'
+            replace 'Minecraft.getInstance().screen', 'Minecraft.getInstance().gui.screen()'
+            replace 'mc.screen', 'mc.gui.screen()'
+            replace 'Minecraft.getInstance().setScreen(', 'Minecraft.getInstance().gui.setScreen('
+            replace 'minecraft.setScreen(', 'minecraft.gui.setScreen('
+            replace 'mc.setScreen(', 'mc.gui.setScreen('
+            replace 'mc.options.hideGui', 'mc.gui.hud.isHidden()'
+            replace 'mc.levelRenderer.needsUpdate();', '// the level renderer needs no nudge after a camera change (26.2 and later)'
+            replace 'mc.levelRenderer.destroyBlockProgress(', 'mc.level.destroyBlockProgress('
+            replace 'gameRenderer.getMainCamera()', 'gameRenderer.mainCamera()'
+            replace 'mc.getMainRenderTarget()', 'mc.gameRenderer.mainRenderTarget()'
+            replace 'Items.WHITE_WOOL', 'Items.WOOL.white()'
+            replace 'Items.WHITE_DYE', 'Items.DYE.white()'
+            replace 'Items.ORANGE_WOOL', 'Items.WOOL.orange()'
+            replace 'Items.ORANGE_DYE', 'Items.DYE.orange()'
+            replace 'Items.MAGENTA_WOOL', 'Items.WOOL.magenta()'
+            replace 'Items.MAGENTA_DYE', 'Items.DYE.magenta()'
+            replace 'Items.LIGHT_BLUE_WOOL', 'Items.WOOL.lightBlue()'
+            replace 'Items.LIGHT_BLUE_DYE', 'Items.DYE.lightBlue()'
+            replace 'Items.YELLOW_WOOL', 'Items.WOOL.yellow()'
+            replace 'Items.YELLOW_DYE', 'Items.DYE.yellow()'
+            replace 'Items.LIME_WOOL', 'Items.WOOL.lime()'
+            replace 'Items.LIME_DYE', 'Items.DYE.lime()'
+            replace 'Items.PINK_WOOL', 'Items.WOOL.pink()'
+            replace 'Items.PINK_DYE', 'Items.DYE.pink()'
+            replace 'Items.GRAY_WOOL', 'Items.WOOL.gray()'
+            replace 'Items.GRAY_DYE', 'Items.DYE.gray()'
+            replace 'Items.LIGHT_GRAY_WOOL', 'Items.WOOL.lightGray()'
+            replace 'Items.LIGHT_GRAY_DYE', 'Items.DYE.lightGray()'
+            replace 'Items.CYAN_WOOL', 'Items.WOOL.cyan()'
+            replace 'Items.CYAN_DYE', 'Items.DYE.cyan()'
+            replace 'Items.PURPLE_WOOL', 'Items.WOOL.purple()'
+            replace 'Items.PURPLE_DYE', 'Items.DYE.purple()'
+            replace 'Items.BLUE_WOOL', 'Items.WOOL.blue()'
+            replace 'Items.BLUE_DYE', 'Items.DYE.blue()'
+            replace 'Items.BROWN_WOOL', 'Items.WOOL.brown()'
+            replace 'Items.BROWN_DYE', 'Items.DYE.brown()'
+            replace 'Items.GREEN_WOOL', 'Items.WOOL.green()'
+            replace 'Items.GREEN_DYE', 'Items.DYE.green()'
+            replace 'Items.RED_WOOL', 'Items.WOOL.red()'
+            replace 'Items.RED_DYE', 'Items.DYE.red()'
+            replace 'Items.BLACK_WOOL', 'Items.WOOL.black()'
+            replace 'Items.BLACK_DYE', 'Items.DYE.black()'
+        }
+        // 26.3 swapped GLFW for SDL, took the block codecs and several packet helpers away, and moved the pipeline API
+        string {
+            direction = eval(current.version, '>=26.3')
+            replace 'com.mojang.blaze3d.pipeline.RenderPipeline', 'com.mojang.renderpearl.api.pipeline.RenderPipeline'
+            replace 'ps.mulPose(Axis.', 'ps.rotate(Axis.'
+            replace 'event.getPoseStack().mulPose(Axis.', 'event.getPoseStack().rotate(Axis.'
+            replace 'p.hurtMarked = true', 'p.needsSync = true'
+            replace 'p.getInventory().placeItemBackInInventory(new ItemStack(item, n));', '{ var back = new ItemStack(item, n); if (!p.getInventory().add(back)) p.spawnAtLocation(com.botwclimb.common.Compat.level(p), back); }'
+            replace 'getGuiLeft()', 'leftPos'
+            replace 'getGuiTop()', 'topPos'
+            replace 'getXSize()', 'imageWidth'
+            replace 'getYSize()', 'imageHeight'
+        }
+        // the GUI draws tooltips at the end of the frame from 1.21.6
+        string {
+            direction = eval(current.version, '>=1.21.6')
+            replace 'g.renderTooltip(', 'g.setTooltipForNextFrame('
+        }
+        // GameTestHelper.fail takes a Component from 1.21.5 to 1.21.8
+        string {
+            direction = eval(current.version, '>=1.21.5') && !eval(current.version, '>=1.21.9')
+            replace 'h.fail(', 'com.botwclimb.dev.TestCompat.fail(h, '
+        }
+        // renamed or moved in 1.21.9
+        string {
+            direction = eval(current.version, '>=1.21.9')
+            replace 'ReceivingLevelScreen', 'LevelLoadingScreen'
+            replace 'import net.minecraft.client.particle.TextureSheetParticle;', 'import net.minecraft.client.particle.SingleQuadParticle;'
+            replace 'extends TextureSheetParticle', 'extends SingleQuadParticle'
+            replace 'client.particle.TextureSheetParticle sq', 'client.particle.SingleQuadParticle sq'
+            replace 'PlayerRenderState', 'AvatarRenderState'
+            replace 'net.minecraft.client.resources.PlayerSkin', 'net.minecraft.world.entity.player.PlayerSkin'
+        }
+        // GuiGraphics.renderOutline was called submitOutline in 1.21.9 and 1.21.10
+        string {
+            direction = eval(current.version, '>=1.21.9') && !eval(current.version, '>=1.21.11')
+            replace 'g.renderOutline(', 'g.submitOutline('
+        }
         string {
             direction = eval(current.version, '>=1.21.11')
             replace 'ResourceLocation', 'Identifier'
+            replace 'camera.getLeftVector()', 'camera.leftVector()'
             // classes that moved or were renamed in 1.21.11
             replace 'net.minecraft.client.model.PlayerModel', 'net.minecraft.client.model.player.PlayerModel'
             replace 'net.minecraft.world.entity.projectile.AbstractArrow', 'net.minecraft.world.entity.projectile.arrow.AbstractArrow'
             replace 'net.minecraft.client.renderer.RenderType', 'net.minecraft.client.renderer.rendertype.RenderType'
             replace 'net.minecraft.Util', 'net.minecraft.util.Util'
-            replace 'ReceivingLevelScreen', 'LevelLoadingScreen'
-            replace 'import net.minecraft.client.particle.TextureSheetParticle;', 'import net.minecraft.client.particle.SingleQuadParticle;'
-            replace 'extends TextureSheetParticle', 'extends SingleQuadParticle'
-            replace 'client.particle.TextureSheetParticle sq', 'client.particle.SingleQuadParticle sq'
             replace '.location()', '.identifier()'
             // the render type factories moved to their own class
             replace 'RenderType.debugQuads(', 'net.minecraft.client.renderer.rendertype.RenderTypes.debugQuads('
-            replace 'RenderType.entityCutoutNoCull(', 'net.minecraft.client.renderer.rendertype.RenderTypes.entityCutoutNoCull('
             replace 'RenderType.entityTranslucentEmissive(', 'net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucentEmissive('
             replace 'RenderType.eyes(', 'net.minecraft.client.renderer.rendertype.RenderTypes.eyes('
-            replace 'RenderType::entityCutoutNoCull', 'net.minecraft.client.renderer.rendertype.RenderTypes::entityCutoutNoCull'
-            replace 'g.renderTooltip(', 'g.setTooltipForNextFrame('
-            // the test annotations of the old framework are replaced by the mod's own
-            replace 'import net.minecraft.gametest.framework.GameTest;', 'import com.botwclimb.dev.GameTest;'
-            replace 'import net.neoforged.neoforge.gametest.GameTestHolder;', 'import com.botwclimb.dev.GameTestHolder;'
-            replace 'import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;', 'import com.botwclimb.dev.PrefixGameTestTemplate;'
-            replace 'PlayerRenderState', 'AvatarRenderState'
-            replace 'net.minecraft.client.resources.PlayerSkin', 'net.minecraft.world.entity.player.PlayerSkin'
+            replace 'RenderType.lightning(', 'net.minecraft.client.renderer.rendertype.RenderTypes.lightning('
         }
     }
 }

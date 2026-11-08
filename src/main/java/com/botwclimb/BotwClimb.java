@@ -37,29 +37,44 @@ public class BotwClimb {
 
     /** Which paraglider fabrics the player has learned (one bit per fabric, see FabricUnlocks). Saved, kept on death, sent to the owner by PlayerStateSync. */
     public static final Supplier<AttachmentType<Integer>> FABRIC_UNLOCKS =
-            ATTACHMENTS.register("fabric_unlocks", () -> AttachmentType.builder(() -> 0)
-                    .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.INT)).copyOnDeath().build());
+            ATTACHMENTS.register("fabric_unlocks", () -> com.botwclimb.common.Compat.sync(AttachmentType.builder(() -> 0)
+                    .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.INT)).copyOnDeath(),
+                    net.minecraft.network.codec.ByteBufCodecs.VAR_INT).build());
 
     /** Stamina capacity upgrades 0..8 (a quarter wheel, 187.5 units each, 4 per extra wheel). Saved, kept on death, sent to the owner by PlayerStateSync. */
     public static final Supplier<AttachmentType<Integer>> STAMINA_UPGRADES =
-            ATTACHMENTS.register("stamina_upgrades", () -> AttachmentType.builder(() -> 0)
-                    .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.INT)).copyOnDeath().build());
+            ATTACHMENTS.register("stamina_upgrades", () -> com.botwclimb.common.Compat.sync(AttachmentType.builder(() -> 0)
+                    .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.INT)).copyOnDeath(),
+                    net.minecraft.network.codec.ByteBufCodecs.VAR_INT).build());
 
     /** Points left over after an upgrade at the stamina altar, kept for the next one. Saved, kept on death, sent to the owner by PlayerStateSync. */
     public static final Supplier<AttachmentType<Float>> ALTAR_CREDIT =
-            ATTACHMENTS.register("altar_credit", () -> AttachmentType.builder(() -> 0f)
-                    .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.FLOAT)).copyOnDeath().build());
+            ATTACHMENTS.register("altar_credit", () -> com.botwclimb.common.Compat.sync(AttachmentType.builder(() -> 0f)
+                    .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.FLOAT)).copyOnDeath(),
+                    net.minecraft.network.codec.ByteBufCodecs.FLOAT).build());
 
     // ---- the stamina altar
     private static final net.neoforged.neoforge.registries.DeferredRegister.Blocks BLOCKS =
             net.neoforged.neoforge.registries.DeferredRegister.createBlocks(MOD_ID);
+
+    /** Registers a block; 26.1 asks for the properties as a supplier. */
+    private static <B extends net.minecraft.world.level.block.Block> net.neoforged.neoforge.registries.DeferredBlock<B> block(String name,
+            java.util.function.Function<net.minecraft.world.level.block.state.BlockBehaviour.Properties, ? extends B> factory,
+            net.minecraft.world.level.block.state.BlockBehaviour.Properties props) {
+        //? if >=26.1 {
+        /*return BLOCKS.registerBlock(name, factory, () -> props);
+        *///?} else {
+        return BLOCKS.registerBlock(name, factory, props);
+        //?}
+    }
+
     private static final net.neoforged.neoforge.registries.DeferredRegister.Items ITEMS =
             net.neoforged.neoforge.registries.DeferredRegister.createItems(MOD_ID);
     private static final DeferredRegister<net.minecraft.world.level.block.entity.BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(net.minecraft.core.registries.Registries.BLOCK_ENTITY_TYPE, MOD_ID);
 
     public static final net.neoforged.neoforge.registries.DeferredBlock<com.botwclimb.common.altar.StaminaAltarBlock> ALTAR_BLOCK =
-            BLOCKS.registerBlock("stamina_altar", com.botwclimb.common.altar.StaminaAltarBlock::new,
+            block("stamina_altar", com.botwclimb.common.altar.StaminaAltarBlock::new,
                     net.minecraft.world.level.block.state.BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.ENDER_CHEST).noOcclusion().lightLevel(s -> 0));
     public static final net.neoforged.neoforge.registries.DeferredItem<net.minecraft.world.item.BlockItem> ALTAR_ITEM = ITEMS.registerSimpleBlockItem(ALTAR_BLOCK);
     public static final Supplier<net.minecraft.world.level.block.entity.BlockEntityType<com.botwclimb.common.altar.StaminaAltarBlockEntity>> ALTAR_BE =
@@ -72,9 +87,9 @@ public class BotwClimb {
                     //?}
 
     public static final net.neoforged.neoforge.registries.DeferredBlock<com.botwclimb.common.shrine.ShrineTerminalBlock> TERMINAL_BLOCK =
-            BLOCKS.registerBlock("shrine_terminal", com.botwclimb.common.shrine.ShrineTerminalBlock::new,
+            block("shrine_terminal", com.botwclimb.common.shrine.ShrineTerminalBlock::new,
                     net.minecraft.world.level.block.state.BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.STONE).noOcclusion()
-                            .strength(3.5f, 6f).requiresCorrectToolForDrops()
+                            .strength(3.5f, 6f).requiresCorrectToolForDrops().pushReaction(com.botwclimb.common.Compat.IMMOVABLE)
                             .lightLevel(s -> s.getValue(com.botwclimb.common.shrine.ShrineTerminalBlock.ACTIVE) ? 9 : 0));
     public static final net.neoforged.neoforge.registries.DeferredItem<net.minecraft.world.item.BlockItem> TERMINAL_ITEM = ITEMS.registerSimpleBlockItem(TERMINAL_BLOCK);
 
