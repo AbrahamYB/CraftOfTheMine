@@ -61,6 +61,9 @@ public final class ClimbController {
         d.climbSpeed = hasClimbSpeed(p);
         float maxStamina = maxStamina(p);
         if (d.stamina < 0 || d.stamina > maxStamina) d.stamina = maxStamina;
+        // joining: the saved upgrades reach the client a moment after its first tick, so a full wheel would look half empty and refill on screen
+        else if (p.tickCount < 200 && d.lastMax > 0 && maxStamina > d.lastMax && d.stamina >= d.lastMax - 0.5f) d.stamina = maxStamina;
+        d.lastMax = maxStamina;
         if (d.staminaFlash > 0) d.staminaFlash--;
         // recovers on the ground, while flying in creative and during an ordinary jump, but not in a real fall (4+ blocks) or
         // on a wall: emptying the wheel in mid-air means waiting until you land before it refills

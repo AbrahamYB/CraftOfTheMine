@@ -3,6 +3,14 @@
 All notable changes to Craft of the Mine (CotM). The mod id stays `botwclimb`, so saved worlds, the config file and data pack paths
 keep working across the rename.
 
+## 1.0.1
+
+### Fixed
+* The stamina wheel no longer pops up and refills when you join a world or server while standing still.
+* The wheel's level is kept when you disconnect and comes back as it was (including being empty and refilling). Dying still refills it.
+  The server saves it; both sides need this version.
+* The wheel no longer freezes on screen when the game pauses (alt-tab) or stays up for minutes after a respawn, world change or rejoin.
+
 ## 1.0.0
 
 ### Added

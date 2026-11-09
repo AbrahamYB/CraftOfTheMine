@@ -101,6 +101,12 @@ public final class ClientClimbController {
             d.sentDir = d.dir;
             com.botwclimb.client.ClientCompat.sendToServer(new ClimbInputPayload(d.state, d.dir));
         }
+        if (d.restored && ++d.reportAge >= 10 && (d.stamina != d.sentStamina || d.exhausted != d.sentTired)) { // so the server can save the level for the next join
+            d.reportAge = 0;
+            d.sentStamina = d.stamina;
+            d.sentTired = d.exhausted;
+            com.botwclimb.client.ClientCompat.sendToServer(new com.botwclimb.network.StaminaPayload(d.stamina, d.exhausted));
+        }
     }
 
     // ------------------------------------------------------------------ animation bookkeeping (all players)

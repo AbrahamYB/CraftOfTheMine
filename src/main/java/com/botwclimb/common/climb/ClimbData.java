@@ -15,7 +15,12 @@ public final class ClimbData {
     public int attachCooldown;
     public int jumpCooldown;
     public float stamina = -1;              // units; -1 = not set yet (filled to the maximum on first use)
-    public float bowHold;                   // set by the bow code while a shot is held: the units it will take (0 = not holding). The HUD shows that arc held bright; the drain plays when it goes back to 0 with less stamina
+    public float lastMax = -1;              // the wheel's capacity one tick ago, to tell a capacity that only just arrived from a spent wheel
+    public boolean restored;                // client: the server has told us what was left on the wheel, so reporting it back is safe now
+    public float sentStamina = -1;          // client: the level last reported to the server
+    public boolean sentTired;
+    public int reportAge;
+    public float bowHold;                  // set by the bow code while a shot is held: the units it will take (0 = not holding). The HUD shows that arc held bright; the drain plays when it goes back to 0 with less stamina
     public float jumpSpent;                 // what the last climbing jump actually took (less than the full cost when little was left)
     public float shotSpent;                 // what the last bow shot actually took
     public int shotSpentSeq;                // counts paid shots, so the HUD drains exactly that arc once, even when it emptied the wheel

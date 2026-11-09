@@ -16,7 +16,7 @@ instance on NeoForge 21.1.235, Minecraft 1.21.1.
 ## 2. Repository
 
 `main` is the only branch. One source tree builds ten Minecraft versions with Stonecutter 0.9.8: **1.21.1, 1.21.3, 1.21.4, 1.21.5,
-1.21.8, 1.21.10, 1.21.11, 26.1, 26.2, 26.3** (versions with only beta NeoForge builds are skipped). The GitHub release is `v1.0.0` with
+1.21.8, 1.21.10, 1.21.11, 26.1, 26.2, 26.3** (versions with only beta NeoForge builds are skipped). The newest GitHub release (see the Releases page) has
 one jar per version. Not started: 1.20.x (old Forge-style NeoForge, a rewrite rather than a port).
 
 Local only, never commit: `local.properties`, `versions/*/run*`, `run*/`, `build/`, `release/` (built jars), `tools/memwatch-out/`, and
@@ -134,6 +134,6 @@ The server never takes a client claim at face value; every client-to-server payl
   cannot be undone (publishing, force-pushing, deleting): that needs an explicit yes.
 * Deploy the jar to Prism after changes; use hot swap instead of restarting the dev client where possible.
 * They test by playing; back visual claims with harness screenshots. The harness cannot press the real Shift + Space.
-* Release naming: tag `v<mod version>` (the first release used `mc1.21.1-1.0.0`), jar `CraftOfTheMine-<ver>+mc<mc>.jar`, SHA-256 of every
+* Release naming: tag `v<mod version>` (the first release used `mc1.21.1-1.0.0`); **bump `mod_version` in `gradle.properties` for every release, never re-release a number**, jar `CraftOfTheMine-<ver>+mc<mc>.jar`, SHA-256 of every
   jar in the notes.
 * Memory notes: `C:\Users\suchy\.claude\projects\C--Users-suchy-Documents-Claude-BOTW-MC-MOD\memory\`.
