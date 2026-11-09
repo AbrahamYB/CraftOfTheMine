@@ -23,10 +23,20 @@ public final class PlayerStateSync {
         int unlocks = p.getData(BotwClimb.FABRIC_UNLOCKS), upgrades = p.getData(BotwClimb.STAMINA_UPGRADES);
         float credit = p.getData(BotwClimb.ALTAR_CREDIT);
         if (d.sentUnlocks == unlocks && d.sentUpgrades == upgrades && Float.compare(d.sentCredit, credit) == 0) return;
+        boolean joining = d.sentUnlocks == -1;
         d.sentUnlocks = unlocks;
         d.sentUpgrades = upgrades;
         d.sentCredit = credit;
         if (p.connection.hasChannel(PlayerStatePayload.TYPE)) // an older client has no such channel; it gets the values through attachment sync instead
             com.botwclimb.common.Net.toPlayer(p, new PlayerStatePayload(unlocks, upgrades, credit));
+        if (joining) { // what was left on the wheel when they last left comes back as it was, for the server's account too
+            float left = p.getData(BotwClimb.STAMINA_LEFT);
+            boolean tired = p.getData(BotwClimb.STAMINA_TIRED);
+            if (left >= 0f) {
+                d.sStamina = left;
+                d.sExhausted = tired;
+            }
+            com.botwclimb.common.Net.toPlayer(p, new com.botwclimb.network.StaminaPayload(left, tired));
+        }
     }
 }

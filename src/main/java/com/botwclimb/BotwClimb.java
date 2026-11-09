@@ -53,6 +53,14 @@ public class BotwClimb {
                     .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.FLOAT)).copyOnDeath(),
                     net.minecraft.network.codec.ByteBufCodecs.FLOAT).build());
 
+    /** What was left on the wheel when the player last left (-1 = nothing saved), and whether it was empty and refilling. Saved, not kept on death. */
+    public static final Supplier<AttachmentType<Float>> STAMINA_LEFT =
+            ATTACHMENTS.register("stamina_left", () -> AttachmentType.builder(() -> -1f)
+                    .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.FLOAT)).build());
+    public static final Supplier<AttachmentType<Boolean>> STAMINA_TIRED =
+            ATTACHMENTS.register("stamina_tired", () -> AttachmentType.builder(() -> false)
+                    .serialize(com.botwclimb.common.Compat.attach(com.mojang.serialization.Codec.BOOL)).build());
+
     // ---- the stamina altar
     private static final net.neoforged.neoforge.registries.DeferredRegister.Blocks BLOCKS =
             net.neoforged.neoforge.registries.DeferredRegister.createBlocks(MOD_ID);

@@ -24,8 +24,8 @@ history is in the [changelog](CHANGELOG.md)) and a SHA-256 checksum of every jar
 
 | Minecraft | Jar | Java |
 |-----------|-----|------|
-| 1.21.1, 1.21.3, 1.21.4, 1.21.5, 1.21.8, 1.21.10, 1.21.11 | `CraftOfTheMine-1.0.0+mc<version>.jar` | 21 |
-| 26.1.x, 26.2, 26.3 | `CraftOfTheMine-1.0.0+mc<version>.jar` | 25 |
+| 1.21.1, 1.21.3, 1.21.4, 1.21.5, 1.21.8, 1.21.10, 1.21.11 | `CraftOfTheMine-<mod version>+mc<version>.jar` | 21 |
+| 26.1.x, 26.2, 26.3 | `CraftOfTheMine-<mod version>+mc<version>.jar` | 25 |
 
 Only these stable versions are built. Pick the jar that matches your game exactly.
 

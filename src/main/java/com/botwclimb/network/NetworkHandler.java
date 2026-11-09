@@ -6,6 +6,7 @@ import com.botwclimb.common.climb.ClimbState;
 import com.botwclimb.common.bullettime.BulletFall;
 import com.botwclimb.common.paraglider.ParagliderController;
 import com.botwclimb.common.climb.ClimbConstants;
+import com.botwclimb.common.climb.ClimbController;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -23,6 +24,26 @@ public final class NetworkHandler {
             me.setData(BotwClimb.FABRIC_UNLOCKS, p.fabricUnlocks());
             me.setData(BotwClimb.STAMINA_UPGRADES, p.staminaUpgrades());
             me.setData(BotwClimb.ALTAR_CREDIT, p.altarCredit());
+        }));
+        r.playBidirectional(StaminaPayload.TYPE, StaminaPayload.CODEC, (p, ctx) -> ctx.enqueueWork(() -> {
+            var me = ctx.player();
+            float max = ClimbController.maxStamina(me);
+            if (me instanceof ServerPlayer) { // the client reports its level: saved for the next join, clamped to what the wheel can hold
+                if (Float.isFinite(p.stamina()) && p.stamina() >= 0f) {
+                    me.setData(BotwClimb.STAMINA_LEFT, Math.min(p.stamina(), max));
+                    me.setData(BotwClimb.STAMINA_TIRED, p.exhausted());
+                }
+                return;
+            }
+            ClimbData d = me.getData(BotwClimb.CLIMB); // the server tells us what was left when we last left
+            if (p.stamina() >= 0f && Float.isFinite(p.stamina())) {
+                d.stamina = Math.min(p.stamina(), max);
+                d.exhausted = p.exhausted();
+                d.lastMax = max;
+            }
+            d.sentStamina = d.stamina;
+            d.sentTired = d.exhausted;
+            d.restored = true;
         }));
         r.playToServer(ClimbInputPayload.TYPE, ClimbInputPayload.CODEC, NetworkHandler::onInput);
         r.playToClient(ClimbStatePayload.TYPE, ClimbStatePayload.CODEC, NetworkHandler::onState);

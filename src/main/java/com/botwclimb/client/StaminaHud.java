@@ -38,7 +38,8 @@ public final class StaminaHud {
     private static boolean wasFull = true;
     private static float fullGlow = 99f; // ticks since the wheel finished refilling: drives the glow
     private static final float MIN_FLASH_UNITS = 24f; // about 3% of a wheel
-    private static int lastBusy = -1000;
+    private static float clock, lastBusy = -1000f; // real time in ticks (it keeps running while the game is paused, and does not restart with a new player)
+    private static LocalPlayer lastPlayer;
     private static int passes = 1;
     private static float feather = 0.3f; // half the width of the soft edge, in GUI pixels
     private static float appear;                   // 0..1 pop-in
@@ -72,12 +73,21 @@ public final class StaminaHud {
         LocalPlayer p = mc.player;
         if (p == null || mc.options.hideGui || !p.hasData(BotwClimb.CLIMB)) return;
         ClimbData d = p.getData(BotwClimb.CLIMB);
+        float dt = Math.min(delta.getRealtimeDeltaTicks(), 4f);
+        clock += dt;
+        if (p != lastPlayer) { // a new player (joined, respawned, changed world): nothing of the old wheel's timing applies
+            lastPlayer = p;
+            lastBusy = clock - 1000f;
+            shown = trail = -1f;
+            appear = 0f;
+            wasFull = true;
+            fullGlow = 99f;
+        }
         if (d.stamina < 0) return;
         float cap = ClimbController.maxStamina(p);
         boolean busy = d.stamina < cap - 0.5f || d.state != ClimbState.NONE || d.staminaFlash > 0 || d.exhausted;
-        if (busy) lastBusy = p.tickCount;
-        float dt = Math.min(delta.getRealtimeDeltaTicks(), 4f);
-        float vis = busy ? 1f : Mth.clamp(1f - (p.tickCount - lastBusy - 30) / 10f, 0f, 1f); // stays a moment once full, then fades
+        if (busy) lastBusy = clock;
+        float vis = busy ? 1f : Mth.clamp(1f - (clock - lastBusy - 30) / 10f, 0f, 1f); // stays a moment once full, then fades
         appear = Mth.clamp(appear + (vis > 0f ? 0.18f : -0.18f) * dt, 0f, 1f);
         if (vis <= 0f && appear <= 0f) { shown = trail = -1f; return; }
         if (shown < 0f) { shown = trail = d.stamina; prevStamina = d.stamina; lastJumpSeq = d.jumpSpentSeq; lastShotSeq = d.shotSpentSeq; }
@@ -142,7 +152,7 @@ public final class StaminaHud {
         if (d.stamina >= shown) shown = Math.min(d.stamina, shown + ClimbConstants.STAMINA_REGEN * 1.25f * dt);
         else shown += (d.stamina - shown) * Math.min(1f, 0.4f * dt);
         boolean fullNow = shown >= cap - 1.0f; // judged on what is DRAWN: the ring must have visibly closed first
-        if (fullNow && !wasFull && d.state == ClimbState.NONE && !d.exhausted) { fullGlow = 0f; lastBusy = p.tickCount; } // it just finished refilling
+        if (fullNow && !wasFull && d.state == ClimbState.NONE && !d.exhausted) { fullGlow = 0f; lastBusy = clock; } // it just finished refilling
         wasFull = fullNow;
         fullGlow = Math.min(99f, fullGlow + dt);
         // full strength immediately, then a quick fade (about 0.4 s): 0 = no glow, 1 = full
