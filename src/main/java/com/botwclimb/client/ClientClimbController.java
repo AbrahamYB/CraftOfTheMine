@@ -105,7 +105,7 @@ public final class ClientClimbController {
             d.reportAge = 0;
             d.sentStamina = d.stamina;
             d.sentTired = d.exhausted;
-            com.botwclimb.client.ClientCompat.sendToServer(new com.botwclimb.network.StaminaPayload(d.stamina, d.exhausted));
+            com.botwclimb.client.ClientCompat.sendToServer(new com.botwclimb.network.StaminaReportPayload(d.stamina, d.exhausted));
         }
     }
 
