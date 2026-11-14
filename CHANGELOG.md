@@ -4,6 +4,22 @@ All notable changes to Craft of the Mine (CotM). The mod id stays `botwclimb`, s
 keep working across the rename. Versions are numbered like old Minecraft: 1.0, 1.1, 1.2, and so on. Use the same version on a server
 and on every client that joins it.
 
+## 1.3
+
+### Fixed
+* **The game would not start on Minecraft 1.21.11 with 1.1 or 1.2** ("Some clientbound payloads are missing client-side handlers:
+  botwclimb:stamina"). The stamina message added in 1.1 was registered as a two-way message with a single handler, which NeoForge 21.11
+  and newer treat as server-only, so the client refused to load. It is now two plain one-way messages (the server's saved level on join,
+  and the client's report of changes), which every version accepts. This was only found by starting the real game on every version;
+  before that the versions were only compiled and run through the headless tests. All ten versions now start and run the scripted ride
+  and climb scene. If you are on 1.21.11 or a 26.x version, use 1.3 rather than 1.1 or 1.2.
+
+### Changed
+* **The shrine terminal now casts shadows.** Darker textures alone left it looking flat and unlike the world around it. It now has a soft
+  contact shadow on the ground around its base, a shadow on the base's top where the floating top overhangs, a gradient down the pillar
+  just under the top, and darker sides toward the ground. These are translucent layers in the block model, so they work on every version
+  and do not change any texture. The ground shadow also shows in the inventory icon.
+
 ## 1.2
 
 ### Added

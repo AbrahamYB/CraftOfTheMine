@@ -5,7 +5,10 @@
     "gold": "botwclimb:block/shrine_terminal_gold",
     "base": "botwclimb:block/shrine_terminal_base_off",
     "disc": "botwclimb:block/shrine_terminal_disc_off",
-    "side": "botwclimb:block/shrine_terminal_side_off"
+    "side": "botwclimb:block/shrine_terminal_side_off",
+    "sg": "botwclimb:block/shrine_shadow_ground",
+    "sf": "botwclimb:block/shrine_shadow_floor",
+    "sw": "botwclimb:block/shrine_shadow_wall"
   },
   "elements": [
     {
@@ -294,6 +297,157 @@
           "texture": "#stone"
         }
       }
+    },
+    {
+      "from": [
+        -3,
+        0.04,
+        -3
+      ],
+      "to": [
+        19,
+        0.04,
+        19
+      ],
+      "shade": false,
+      "faces": {
+        "up": {
+          "texture": "#sg",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        0.5,
+        3.03,
+        0.5
+      ],
+      "to": [
+        15.5,
+        3.03,
+        15.5
+      ],
+      "shade": false,
+      "faces": {
+        "up": {
+          "texture": "#sf",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        3.97,
+        3.6,
+        3.97
+      ],
+      "to": [
+        12.03,
+        6.4,
+        12.03
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#sw",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "east": {
+          "texture": "#sw",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "south": {
+          "texture": "#sw",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        },
+        "west": {
+          "texture": "#sw",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
+        }
+      }
+    },
+    {
+      "from": [
+        -0.03,
+        0,
+        -0.03
+      ],
+      "to": [
+        16.03,
+        2.5,
+        16.03
+      ],
+      "shade": false,
+      "faces": {
+        "north": {
+          "texture": "#sw",
+          "uv": [
+            0,
+            16,
+            16,
+            0
+          ]
+        },
+        "east": {
+          "texture": "#sw",
+          "uv": [
+            0,
+            16,
+            16,
+            0
+          ]
+        },
+        "south": {
+          "texture": "#sw",
+          "uv": [
+            0,
+            16,
+            16,
+            0
+          ]
+        },
+        "west": {
+          "texture": "#sw",
+          "uv": [
+            0,
+            16,
+            16,
+            0
+          ]
+        }
+      }
     }
-  ]
+  ],
+  "render_type": "minecraft:translucent"
 }

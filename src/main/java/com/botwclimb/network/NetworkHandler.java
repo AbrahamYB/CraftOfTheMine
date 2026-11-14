@@ -25,17 +25,10 @@ public final class NetworkHandler {
             me.setData(BotwClimb.STAMINA_UPGRADES, p.staminaUpgrades());
             me.setData(BotwClimb.ALTAR_CREDIT, p.altarCredit());
         }));
-        r.playBidirectional(StaminaPayload.TYPE, StaminaPayload.CODEC, (p, ctx) -> ctx.enqueueWork(() -> {
+        r.playToClient(StaminaPayload.TYPE, StaminaPayload.CODEC, (p, ctx) -> ctx.enqueueWork(() -> { // the server tells us what was left when we last left
             var me = ctx.player();
             float max = ClimbController.maxStamina(me);
-            if (me instanceof ServerPlayer) { // the client reports its level: saved for the next join, clamped to what the wheel can hold
-                if (Float.isFinite(p.stamina()) && p.stamina() >= 0f) {
-                    me.setData(BotwClimb.STAMINA_LEFT, Math.min(p.stamina(), max));
-                    me.setData(BotwClimb.STAMINA_TIRED, p.exhausted());
-                }
-                return;
-            }
-            ClimbData d = me.getData(BotwClimb.CLIMB); // the server tells us what was left when we last left
+            ClimbData d = me.getData(BotwClimb.CLIMB);
             if (p.stamina() >= 0f && Float.isFinite(p.stamina())) {
                 d.stamina = Math.min(p.stamina(), max);
                 d.exhausted = p.exhausted();
@@ -44,6 +37,13 @@ public final class NetworkHandler {
             d.sentStamina = d.stamina;
             d.sentTired = d.exhausted;
             d.restored = true;
+        }));
+        r.playToServer(StaminaReportPayload.TYPE, StaminaReportPayload.CODEC, (p, ctx) -> ctx.enqueueWork(() -> {
+            if (!(ctx.player() instanceof ServerPlayer me)) return; // the client reports its level: saved for the next join, clamped to what the wheel can hold
+            if (Float.isFinite(p.stamina()) && p.stamina() >= 0f) {
+                me.setData(BotwClimb.STAMINA_LEFT, Math.min(p.stamina(), ClimbController.maxStamina(me)));
+                me.setData(BotwClimb.STAMINA_TIRED, p.exhausted());
+            }
         }));
         r.playToServer(ClimbInputPayload.TYPE, ClimbInputPayload.CODEC, NetworkHandler::onInput);
         r.playToClient(ClimbStatePayload.TYPE, ClimbStatePayload.CODEC, NetworkHandler::onState);
