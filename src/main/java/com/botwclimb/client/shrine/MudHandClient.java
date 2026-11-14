@@ -37,71 +37,6 @@ public final class MudHandClient {
     private static final double PULL_DEPTH = 1.0;
     private static CameraType saved;
 
-    /** The wrap: the ground unravels and the strips wind round the rider. Ticks since the ride began. */
-    public static float bloom(State s) {
-        return s.kind() == 1 ? 42f : 44f; // going home, the ground opens first; going up there is no opening, so less to wait for
-    }
-
-    /** The set-down: the strips come undone, then the ground winds back up. Ticks since the last phase began. */
-    public static final float RELEASE = 18f;
-    /** The rise speed the stretch and streaks are measured against, in blocks per tick (TerminalRide.MAX_SPEED). */
-    private static final float TOP_SPEED = (float) com.botwclimb.common.shrine.TerminalRide.MAX_SPEED;
-
-    /**
-     * What the mud looks like right now.
-     *
-     * @param wrap    0..1, how much of the cocoon's strips are wound round the rider
-     * @param hole    0..1, how far the ground has opened
-     * @param stretch >0 long and thin, <0 squashed
-     * @param speed   0..1 of the top speed, upward (rise) or downward (descent)
-     * @param spill   0..1, how much of the cocoon's liquid lies spilled on the ground round the rider
-     */
-    public record Anim(float wrap, float hole, float stretch, float speed, float spill) {}
-
-    public static Anim anim(State s, net.minecraft.world.entity.Entity e, float partial, long gameTime) {
-        float now = gameTime + partial;
-        float t = now - s.since(), tp = now - s.phaseSince();
-        float height = (float) (net.minecraft.util.Mth.lerp(partial, e.yo, e.getY()) - s.startY());
-        float vy = (float) (e.getY() - e.yo);
-        float wrap = 1, hole = 0, stretch = 0, speed = 0, spill = 0;
-        float depth = -height; // how far below the ground the rider is (a sinking ride)
-        switch (s.phase()) {
-            case 1 -> {
-                float bloom = bloom(s), start = s.kind() == 1 ? 14f : 14f;
-                if (s.kind() == 1) hole = smooth(t / 14f); // only a Return opens the ground first, wide, before anything else happens
-                wrap = smooth((t - start) / (bloom - start - 4f)); // then the strips wind on, bottom to top, slowly enough to follow
-                if (s.kind() == 0) spill = Math.min(smooth(t / 9f), 1f - wrap); // going up it first spills out on the ground, then drains into the strips
-                if (t >= bloom) stretch = -0.2f * Math.max(0f, 1 - (t - bloom) / 6f); // the squash as it pulls tight
-            }
-            case 2 -> {
-                speed = net.minecraft.util.Mth.clamp(Math.abs(vy) / TOP_SPEED, 0f, 1f);
-                stretch = speed;
-                // going up it dries over where it left; sinking, it closes over the cocoon once the cocoon is below it
-                hole = s.kind() == 1 ? 1f - smooth((depth - 4f) / 3f) : 0f;
-            }
-            case 4 -> {
-                speed = net.minecraft.util.Mth.clamp(-vy / TOP_SPEED, 0f, 1f);
-                stretch = speed * 0.7f;
-            }
-            case 5 -> {
-                wrap = 1f - smooth(tp / 10f); // the strips come undone
-                spill = Math.min(1f - wrap, 1f - smooth((tp - 9f) / 8f)); // and run out onto the ground, which takes them back
-            }
-            default -> { }
-        }
-        return new Anim(wrap, hole, stretch, speed, spill);
-    }
-
-    private static float easeOut(float u) {
-        u = net.minecraft.util.Mth.clamp(u, 0f, 1f);
-        return 1 - (1 - u) * (1 - u) * (1 - u);
-    }
-
-    private static float smooth(float u) {
-        u = net.minecraft.util.Mth.clamp(u, 0f, 1f);
-        return u * u * (3 - 2 * u);
-    }
-
     private MudHandClient() {}
 
     public static java.util.Map<Integer, State> all() {
@@ -142,8 +77,8 @@ public final class MudHandClient {
         Minecraft mc = Minecraft.getInstance();
         if (!event.getEntity().level().isClientSide() || event.getEntity() != mc.player || mc.level == null) return;
         State s = RIDES.get(mc.player.getId());
-        if (s != null && s.phase() == 1 && s.kind() == 1 && com.botwclimb.client.ClientConfig.style() == com.botwclimb.client.ClientConfig.RideStyle.TOTK) {
-            // the Tears of the Kingdom Return: before anything else the ground takes hold and draws the rider part-way in (about a
+        if (s != null && s.phase() == 1 && s.kind() == 1) {
+            // the Return: before anything else the ground takes hold and draws the rider part-way in (about a
             // block, down to the waist), slowly at first and then firmly, over the last 20 ticks of the gathering
             double pull = Math.max(0, Math.min(1, (mc.level.getGameTime() - s.since() - 20) / 20.0));
             mc.player.setPos(mc.player.getX(), s.startY() - PULL_DEPTH * pull * pull * (3 - 2 * pull), mc.player.getZ());

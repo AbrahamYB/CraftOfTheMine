@@ -8,22 +8,14 @@ import net.neoforged.neoforge.common.ModConfigSpec;
  * The settings screen (BotwConfigScreen) is the way to change them.
  */
 public final class ClientConfig {
-    /** How the terminal ride looks. */
-    public enum RideStyle { MUD, TOTK }
-
     public static final ModConfigSpec SPEC;
-    private static final ModConfigSpec.EnumValue<RideStyle> RIDE_STYLE;
     private static final ModConfigSpec.IntValue MOTION_BLUR;
-    private static final ModConfigSpec.BooleanValue SPEED_LINES, GROUND_OPENING, PLOT_OUTLINE, GLIDER_CAMERA;
+    private static final ModConfigSpec.BooleanValue PLOT_OUTLINE, GLIDER_CAMERA;
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
         b.push("ride");
-        RIDE_STYLE = b.comment("How the terminal ride looks: MUD (the wound cocoon) or TOTK (the Tears of the Kingdom travel)")
-                .defineEnum("style", RideStyle.TOTK);
         MOTION_BLUR = b.comment("Motion blur while riding, in percent (0 turns it off)").defineInRange("motionBlur", 75, 0, 100);
-        SPEED_LINES = b.comment("The pale speed lines that rush past the screen edges during the ride (mud style)").define("speedLines", true);
-        GROUND_OPENING = b.comment("Open the ground under you when you return from a plot (only changes what you see)").define("groundOpening", true);
         b.pop();
         b.push("glider");
         GLIDER_CAMERA = b.comment("Switch to third person by itself while gliding (off: the view you picked, with F5 or first person, is left alone)").define("autoThirdPerson", true);
@@ -36,22 +28,11 @@ public final class ClientConfig {
 
     private ClientConfig() {}
 
-    public static RideStyle style() {
-        return get(RIDE_STYLE, RideStyle.TOTK);
-    }
-
     /** 0..1 */
     public static float motionBlur() {
         return get(MOTION_BLUR, 75) / 100f;
     }
 
-    public static boolean speedLines() {
-        return get(SPEED_LINES, true);
-    }
-
-    public static boolean groundOpening() {
-        return get(GROUND_OPENING, true);
-    }
 
     public static boolean gliderCamera() {
         return get(GLIDER_CAMERA, true);
@@ -75,20 +56,8 @@ public final class ClientConfig {
 
     // ---- the settings screen's handles on the values: read, write (and save) and reset
 
-    public static ModConfigSpec.EnumValue<RideStyle> rideStyleValue() {
-        return RIDE_STYLE;
-    }
-
     public static ModConfigSpec.IntValue motionBlurValue() {
         return MOTION_BLUR;
-    }
-
-    public static ModConfigSpec.BooleanValue speedLinesValue() {
-        return SPEED_LINES;
-    }
-
-    public static ModConfigSpec.BooleanValue groundOpeningValue() {
-        return GROUND_OPENING;
     }
 
     public static ModConfigSpec.BooleanValue plotOutlineValue() {
@@ -101,7 +70,7 @@ public final class ClientConfig {
     }
 
     public static void resetAll() {
-        for (ModConfigSpec.ConfigValue<?> v : new ModConfigSpec.ConfigValue<?>[] {RIDE_STYLE, MOTION_BLUR, SPEED_LINES, GROUND_OPENING, PLOT_OUTLINE, GLIDER_CAMERA}) reset(v);
+        for (ModConfigSpec.ConfigValue<?> v : new ModConfigSpec.ConfigValue<?>[] {MOTION_BLUR, PLOT_OUTLINE, GLIDER_CAMERA}) reset(v);
         SPEC.save();
     }
 

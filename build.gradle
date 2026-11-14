@@ -8,7 +8,8 @@ plugins {
 def localProps = new Properties()
 if (rootProject.file('local.properties').exists()) rootProject.file('local.properties').withInputStream { localProps.load(it) }
 
-version = "${mod_version}+mc${minecraft_version}"
+// jar_label names the jar when it serves several Minecraft versions (see versions/1.21.4/gradle.properties); otherwise the Minecraft version
+version = "${mod_version}+mc${project.hasProperty('jar_label') ? jar_label : minecraft_version}"
 group = mod_group_id
 
 sourceSets.main.resources {

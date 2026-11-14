@@ -1,6 +1,5 @@
 package com.botwclimb.client;
 
-import com.botwclimb.client.ClientConfig.RideStyle;
 import com.botwclimb.client.altar.AltarScreen;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -25,13 +24,11 @@ public class BotwConfigScreen extends Screen {
     private static final int BUTTON = 0xFF087F3C, BUTTON_HOVER = 0xFF0E9A47, BUTTON_QUIET = 0xFF1B2028;
 
     /** One line of the panel: a section heading, or a setting. */
-    private sealed interface Row permits Heading, Toggle, Cycle, Slider {}
+    private sealed interface Row permits Heading, Toggle, Slider {}
 
     private record Heading(String key) implements Row {}
 
     private record Toggle(String key, ModConfigSpec.BooleanValue value) implements Row {}
-
-    private record Cycle(String key, ModConfigSpec.EnumValue<RideStyle> value) implements Row {}
 
     private record Slider(String key, ModConfigSpec.IntValue value, int min, int max) implements Row {}
 
@@ -48,10 +45,7 @@ public class BotwConfigScreen extends Screen {
     /** The whole menu, top to bottom. */
     private void buildRows() {
         rows.add(new Heading("ride"));
-        rows.add(new Cycle("ride_style", ClientConfig.rideStyleValue()));
         rows.add(new Slider("motion_blur", ClientConfig.motionBlurValue(), 0, 100));
-        rows.add(new Toggle("speed_lines", ClientConfig.speedLinesValue()));
-        rows.add(new Toggle("ground_opening", ClientConfig.groundOpeningValue()));
         rows.add(new Heading("glider"));
         rows.add(new Toggle("glider_camera", ClientConfig.gliderCameraValue()));
         rows.add(new Heading("plots"));
@@ -135,13 +129,6 @@ public class BotwConfigScreen extends Screen {
                     g.fill(sx, sy, sx + 24, sy + 10, on ? GREEN : GREY);
                     g.fill(on ? sx + 14 : sx + 2, sy + 2, on ? sx + 22 : sx + 10, sy + 8, on ? BRIGHT : MUTED);
                 }
-                case Cycle c -> {
-                    rowBase(g, i, ry, hovered, c.key());
-                    int bx = controlX(), by = ry + 5, bh = ROW_H - 10;
-                    boolean hover = over(mx, my, bx, by, CONTROL_W, bh);
-                    g.fill(bx, by, bx + CONTROL_W, by + bh, hover ? BUTTON_HOVER : BUTTON);
-                    g.drawCenteredString(font, Component.translatable("gui.botwclimb.config.value." + c.value().get().name().toLowerCase()), bx + CONTROL_W / 2, by + (bh - 8) / 2, 0xFFFFFFFF);
-                }
                 case Slider s -> {
                     rowBase(g, i, ry, hovered, s.key());
                     int tx = controlX(), tw = CONTROL_W - TRACK_GAP, ty = ry + ROW_H / 2 - 1;
@@ -158,7 +145,6 @@ public class BotwConfigScreen extends Screen {
         if (hovered >= 0) {
             String key = switch (rows.get(hovered)) {
                 case Toggle t -> t.key();
-                case Cycle c -> c.key();
                 case Slider s -> s.key();
                 default -> null;
             };
@@ -212,11 +198,6 @@ public class BotwConfigScreen extends Screen {
         //?}
         switch (rows.get(i)) {
             case Toggle t -> ClientConfig.set(t.value(), !t.value().get());
-            case Cycle c -> {
-                RideStyle[] all = RideStyle.values();
-                int next = (c.value().get().ordinal() + (button == 0 ? 1 : all.length - 1)) % all.length;
-                ClientConfig.set(c.value(), all[next]);
-            }
             case Slider s -> {
                 dragging = s;
                 drag(s, mx);

@@ -23,7 +23,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 /**
- * The Tears of the Kingdom look of the terminal ride (ClientConfig.RideStyle.TOTK), after two screen recordings of its Ascend
+ * The Tears of the Kingdom look of the terminal ride, after two screen recordings of its Ascend
  * travel (beat list and measurements: notes/totk-ride.md). The mod calls these hooks, and only these, while that style is chosen.
  * <p>
  * The beats: soft green sparks and a glow gather at the rider's feet (phase 1) while two big ribbons, each a bundle of thin
@@ -140,7 +140,6 @@ public final class TotkRide {
      * stretched up and the legs sway; in the void (the rider drawn on the HUD) the whole dive plays. Anyone else is left alone.
      */
     public static void pose(net.minecraft.client.model.PlayerModel m, AbstractClientPlayer p, float pt, boolean hud) {
-        if (com.botwclimb.client.ClientConfig.style() != com.botwclimb.client.ClientConfig.RideStyle.TOTK) return;
         MudHandClient.State s = MudHandClient.get(p.getId());
         if (s == null) return;
         if (s.kind() == 1) { // the Return: dragged down, arms trailing up behind, legs together, everything lagging the pull

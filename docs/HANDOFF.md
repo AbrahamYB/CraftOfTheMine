@@ -16,7 +16,10 @@ instance on NeoForge 21.1.235, Minecraft 1.21.1.
 ## 2. Repository
 
 `main` is the only branch. One source tree builds ten Minecraft versions with Stonecutter 0.9.8: **1.21.1, 1.21.3, 1.21.4, 1.21.5,
-1.21.8, 1.21.10, 1.21.11, 26.1, 26.2, 26.3** (versions with only beta NeoForge builds are skipped). The newest GitHub release (see the Releases page) has
+1.21.8, 1.21.10, 1.21.11, 26.1, 26.2, 26.3** (versions with only beta NeoForge builds are skipped). **One jar per version, except 1.21.3 and
+1.21.4, whose classes compile to identical bytecode: the 1.21.4 project ships `mc1.21.3-1.21.4` (`jar_label`, widened ranges) and the 1.21.3
+project is only built and tested.** To merge more versions, compare the jars (same classes and same resources apart from `mods.toml`); the
+other neighbours differ in 12 to 143 classes because of renamed Minecraft classes, so they need those classes made version-neutral first. The newest GitHub release (see the Releases page) has
 one jar per version. Not started: 1.20.x (old Forge-style NeoForge, a rewrite rather than a port).
 
 Local only, never commit: `local.properties`, `versions/*/run*`, `run*/`, `build/`, `release/` (built jars), `tools/memwatch-out/`, and
@@ -28,7 +31,7 @@ check assets before adding any.
 
 Run from the project root with `gradlew.bat`. Every task is per version (`:1.21.1:...`, `:26.3:...`; the list is in `settings.gradle`).
 
-* `:V:build` builds `versions/V/build/libs/CraftOfTheMine-1.0.0+mcV.jar` and copies it into the Prism mods folder, but only when `V`
+* `:V:build` builds `versions/V/build/libs/CraftOfTheMine-<mod version>+mcV.jar` and copies it into the Prism mods folder, but only when `V`
   equals `prismVersion` in `local.properties` (default 1.21.1). Deploy to Prism after every change.
 * `:V:runGameTestServer` runs the headless tests (66 or 67 per version). Close any client first. Run it on every version you touched.
 * `:V:runClient` is the dev client (debug port 5005; JetBrains Runtime for hot swap when `jbr=` is set). `gradlew hotswap` pushes code into
@@ -79,8 +82,7 @@ Run from the project root with `gradlew.bat`. Every task is per version (`:1.21.
   skipped, so `BulletSlow.applyToPlayer` puts transient attribute modifiers on them; creative, spectator, riders and the shooter are
   exempt, and so are Create contraptions and similar namespaces (`BulletSlow.eligible`). From 26.3 `Entity.tickCount` is advanced inside
   the skipped tick, so `BulletSlow` advances it itself. The idea was studied from the Awakened mod (All Rights Reserved): nothing copied,
-  no dependency, never bundle its jars. The old client-side "lag picture" is backed up in `backup/bullettime-lagpicture-2026-11-06/`;
-  `BulletShots` still holds its server half only for tests and is otherwise unused.
+  no dependency, never bundle its jars. The old client-side "lag picture" (drawing other players late and rewinding hits) was removed in 1.2; git history has it.
 * **Shift + Space is both the climb key and the glider shortcut.** NeoForge gives a key press only to bindings matching the held
   modifiers, so `ClientClimbController` hands the jump back to vanilla when a combo binding is down. A wall grab needs the wall within
   0.30 blocks and 60 degrees of the facing direction; the glider shortcut needs a fall of 2 blocks, a plain jump 4.5.
@@ -114,8 +116,10 @@ The server never takes a client claim at face value; every client-to-server payl
 
 ## 7. Open items
 
-1. **Climb entry validation.** Climb jump and ledge entry are not checked against the world, and the jump envelope only logs. Needs entry
-   checks and a hard envelope, tested against recorded legitimate traces (`ServerClimb`). Wall-climb speed is not capped either.
+1. **Climb checks (done in 1.2, only unit-tested).** `ServerClimb` caps wall speed (0.7 blocks/tick for 4 ticks in a row), ends a jump that
+   stays outside its reach for 8 ticks, and starts a jump or ledge only from a wall held within the last 10 ticks, so a slow connection
+   does not rubber-band. Not yet checked: a real laggy connection (try it with a network limiter), and whether the thresholds ever trip
+   on a legitimate climb (watch `latest.log` for "let go").
 2. **Bullet time cost.** The scan cost grows per shooter (no cap on shooters), there is no setting to leave other players alone, and pets
    have no ownership check.
 3. **Plots.** Item pickup and farmland trampling are not guarded.
@@ -125,7 +129,7 @@ The server never takes a client claim at face value; every client-to-server payl
    a generic command name.
 5. **Never tested live:** a second real player, an old-format save, a real Prism install on versions other than 1.21.1.
 6. **Duplicate dive animations.** The user once reported duplicated dive poses in the ride; the harness shows one rider each way and the
-   cause was not found. Ask for a screenshot and the Prism build. Code: `client/shrine/totk/TotkRide.java`, `MudHandLayer`, `TotkSpin`.
+   cause was not found. Ask for a screenshot and the Prism build. Code: `client/shrine/totk/TotkRide.java`, `MudHandLayer` (the ride's render layer, the name is a leftover), `TotkSpin`.
 7. Widen the version ranges in `versions/V/gradle.properties` only after testing that exact version. Decide on a license.
 
 ## 8. Working with this user
@@ -134,6 +138,6 @@ The server never takes a client claim at face value; every client-to-server payl
   cannot be undone (publishing, force-pushing, deleting): that needs an explicit yes.
 * Deploy the jar to Prism after changes; use hot swap instead of restarting the dev client where possible.
 * They test by playing; back visual claims with harness screenshots. The harness cannot press the real Shift + Space.
-* Release naming: tag `v<mod version>` (the first release used `mc1.21.1-1.0.0`); **bump `mod_version` in `gradle.properties` for every release, never re-release a number**, jar `CraftOfTheMine-<ver>+mc<mc>.jar`, SHA-256 of every
+* Release naming: tag `v<mod version>` (old-Minecraft style numbers: 1.1, 1.2, ...; the first release used `mc1.21.1-1.0.0`); **bump `mod_version` in `gradle.properties` for every release, never re-release a number**, jar `CraftOfTheMine-<ver>+mc<mc>.jar`, SHA-256 of every
   jar in the notes.
 * Memory notes: `C:\Users\suchy\.claude\projects\C--Users-suchy-Documents-Claude-BOTW-MC-MOD\memory\`.

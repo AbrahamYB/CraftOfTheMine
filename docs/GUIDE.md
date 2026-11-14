@@ -30,10 +30,10 @@ off in the settings, in which case the glider leaves your camera alone.
 
 **Shrine terminals and plots.** A shrine terminal (creative inventory or `/give`) lists the plots, lets you claim one and travel to it. The plot
 dimension is a void with a grass island per plot, and only a plot's owner (or a friend they have opened it to) can build in it. Riding
-there and back plays either the wound mud cocoon or the Tears of the Kingdom travel (settings). `/plot return` is the way out if the
+there and back plays the Tears of the Kingdom travel. `/plot return` is the way out if the
 terminal is somehow gone. The terminal of a plot cannot be broken or blown up.
 
-**Settings.** Mods list > Craft of the Mine > Config: ride style, motion blur, speed lines, the ground opening on return, the plot outline and
+**Settings.** Mods list > Craft of the Mine > Config: the ride's motion blur (1.21.1 only), the plot outline and
 the glider's automatic third person. They are saved in `config/botwclimb-client.toml`.
 
 **Keys.** Options > Controls > Craft of the Mine: the climb key and the glider shortcut, both Shift + Space by default. Next to a wall you

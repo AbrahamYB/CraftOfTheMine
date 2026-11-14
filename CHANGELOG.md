@@ -3,7 +3,25 @@
 All notable changes to Craft of the Mine (CotM). The mod id stays `botwclimb`, so saved worlds, the config file and data pack paths
 keep working across the rename.
 
-## 1.0.1
+## 1.2
+
+### Added
+* One jar now serves Minecraft 1.21.3 and 1.21.4 (`mc1.21.3-1.21.4`), so there are nine jars instead of ten.
+
+### Changed
+* The terminal ride is the Tears of the Kingdom travel only. The mud cocoon ride, its settings (ride style, speed lines, ground
+  opening) and its textures are gone; an old config file simply ignores them.
+* The shrine terminal's stone and gold are darker, so it has more shade and no longer looks lit from everywhere.
+* Bullet time tolerates a slow connection better: a heartbeat may be half a second old before it stops.
+
+### Fixed
+* The server now checks wall climbing itself: a top speed on a held wall, a jump may not leave its reach for more than a few ticks, and a
+  jump or ledge must start from a held wall. Each check allows a few ticks of lag, so a slow connection does not rubber-band.
+* Removed the unused lag-picture code of bullet time (and its two network messages).
+
+## 1.1
+
+Fixes for the stamina wheel (this was first published as 1.0.1).
 
 ### Fixed
 * The stamina wheel no longer pops up and refills when you join a world or server while standing still.
@@ -21,7 +39,7 @@ keep working across the rename.
 * The stamina wheel and the stamina altar (offer items to grow the wheel).
 * The Climb Speed enchantment for boots.
 * Bullet time for bows and crossbows.
-* Shrine terminals and plot islands, with a mud-cocoon ride and a Tears of the Kingdom ride between them.
+* Shrine terminals and plot islands, with a mud-cocoon ride and a Tears of the Kingdom ride between them (the mud ride was removed in 1.2).
 * A settings screen (Mods list > Craft of the Mine > Config), including whether the glider switches the camera to third person.
 * The `/cotm` commands for admins (`stamina`, `cloth`, `paraglider`) and `/plot return`.
 

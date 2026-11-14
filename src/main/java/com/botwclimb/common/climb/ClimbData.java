@@ -58,10 +58,10 @@ public final class ClimbData {
     public ClimbState claim = ClimbState.NONE;
     public Direction claimDir = Direction.NORTH;
     public int badTicks;
+    public int fastTicks, offTicks; // server: consecutive ticks too fast on a wall / outside a jump's reach
     public int grace;
     public Vec3 lastValidPos = Vec3.ZERO;
     public boolean claimJumpPending;
-    public boolean warned;
 
     // ---- animation (client, all players) ----
     public double planeCoord = Double.NaN;  // world coordinate of the wall plane along the wall axis
