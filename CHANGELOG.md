@@ -14,8 +14,14 @@ keep working across the rename. Versions are numbered like old Minecraft: 1.0, 1
 * The terminal ride is the Tears of the Kingdom travel only. The mud cocoon ride, its settings (ride style, speed lines, ground
   opening) and its textures are gone; an old config file simply ignores them.
 * The shrine terminal's stone and gold are darker, so it has more shade and no longer looks lit from everywhere.
-* Bullet time tolerates a slow connection better: a heartbeat may be half a second old before it stops, and it lingers a moment longer
-  after you let go.
+* Bullet time now works the way the Awakened mod's slow motion does: the **server** really slows the world, instead of your screen
+  faking it. Mobs within 8 chunks of a shooter in bullet time get 1 tick in 7 (about 14% speed), so their movement, hurt timers, pathing
+  and hitboxes are slowed together and hits match what you see. Other players cannot have ticks skipped, so they are slowed with
+  temporary speed modifiers. The method was studied from that mod and written from scratch; none of its code or files are used.
+  This replaces the first build, which drew mobs and players in the past on your screen and rewound hitboxes on the server (mobs looked
+  half stuck and hits did not line up). The rewrite is finished in this release: the old code is removed, the server checks that a
+  shooter is really in the air, and a heartbeat may be half a second old before it stops, so a slow connection no longer flickers it.
+* Bullet time lingers a moment longer after you let go.
 
 ### Fixed
 * A modified client can no longer climb at any speed: on a held wall the server caps the speed (0.7 blocks per tick for more than 3
@@ -60,7 +66,7 @@ ten-version `v1.0.0`; both were numbered 1.0.0 but were different builds, so the
 ### Bullet time rewrite
 * The first build faked bullet time on the client: your screen drew mobs and players in the past and the server rewound their hitboxes
   to match. Mobs looked half stuck and hits did not line up with the picture.
-* Now the server really slows mobs: within 8 chunks of a shooter in bullet time a mob gets 1 tick in 7 (about 14% speed), keeps its hurt
+* Now the server really slows mobs (the approach of the Awakened mod, studied and written from scratch, no code used): within 8 chunks of a shooter in bullet time a mob gets 1 tick in 7 (about 14% speed), keeps its hurt
   timers on the real clock, and its pathfinding timeout is stretched. The client only smooths the picture. Players cannot have ticks
   skipped, so other players are slowed with temporary attribute modifiers; creative, spectating and riding players, the shooter and
   Create contraptions are left alone.
