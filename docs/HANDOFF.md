@@ -138,6 +138,6 @@ The server never takes a client claim at face value; every client-to-server payl
   cannot be undone (publishing, force-pushing, deleting): that needs an explicit yes.
 * Deploy the jar to Prism after changes; use hot swap instead of restarting the dev client where possible.
 * They test by playing; back visual claims with harness screenshots. The harness cannot press the real Shift + Space.
-* Release naming: tag `v<mod version>` (old-Minecraft style numbers: 1.1, 1.2, ...; the first release used `mc1.21.1-1.0.0`); **bump `mod_version` in `gradle.properties` for every release, never re-release a number**, jar `CraftOfTheMine-<ver>+mc<mc>.jar`, SHA-256 of every
+* Release naming: tag `v<mod version>` (old-Minecraft style numbers: 1.1, 1.2, ...; the two early releases both called 1.0.0 were merged into 1.0); **bump `mod_version` in `gradle.properties` for every release, never re-release a number**, jar `CraftOfTheMine-<ver>+mc<mc>.jar`, SHA-256 of every
   jar in the notes.
 * Memory notes: `C:\Users\suchy\.claude\projects\C--Users-suchy-Documents-Claude-BOTW-MC-MOD\memory\`.
