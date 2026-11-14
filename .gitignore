@@ -58,3 +58,4 @@ build/
 
 # screenshot harness output (tools/screenshots_all.ps1)
 tools/shots-out/
+concept/

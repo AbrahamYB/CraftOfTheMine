@@ -24,7 +24,7 @@ one jar per version. Not started: 1.20.x (old Forge-style NeoForge, a rewrite ra
 
 Local only, never commit: `local.properties`, `versions/*/run*`, `run*/`, `build/`, `release/` (built jars), `tools/memwatch-out/`, and
 `.github/workflows/build.yml` (GitHub refuses it: the login lacks the `workflow` scope; `gh auth refresh -h github.com -s workflow` fixes
-that). `concept/sheet_*.png` (possible game footage) went into the public repo by mistake on Nov 8; do not add more. The repo is public:
+that). The `concept/` folder (screenshots and concept art) was removed from the repo; do not add such files. The repo is public:
 check assets before adding any.
 
 ## 3. Build, test, run
