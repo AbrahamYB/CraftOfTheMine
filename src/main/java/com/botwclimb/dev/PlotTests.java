@@ -143,27 +143,4 @@ public class PlotTests {
         if (back.claim(b, 1) != 3) h.fail("the plot counter was lost in saving");
         h.succeed();
     }
-
-    /** The cocoon: closed it is the ellipsoid, a quarter turn open a petal lies flat and points outward, and every normal is a unit vector. */
-    @GameTest(template = "empty")
-    public static void cocoonShape(GameTestHelper h) {
-        double[] p = new double[3], n = new double[3];
-        double r = 1.2, cy = 0.9;
-        for (int j = 0; j < com.botwclimb.common.shrine.CocoonMath.PETALS; j++) {
-            double mid = j * 2 * Math.PI / com.botwclimb.common.shrine.CocoonMath.PETALS;
-            com.botwclimb.common.shrine.CocoonMath.point(Math.PI / 2, mid, mid, 0, r, r, r, cy, 0, p);
-            if (Math.abs(p[0] - r * Math.cos(mid)) > 1e-9 || Math.abs(p[1] - cy) > 1e-9 || Math.abs(p[2] - r * Math.sin(mid)) > 1e-9) h.fail("closed petal " + j + " is off the sphere: " + java.util.Arrays.toString(p));
-            com.botwclimb.common.shrine.CocoonMath.point(Math.PI, mid, mid, 0, r, r, r, cy, 0, p);
-            if (Math.abs(p[1] - (cy + r)) > 1e-9 || Math.hypot(p[0], p[2]) > 1e-9) h.fail("closed top is not on the axis");
-            // a quarter turn open: the top of the petal lies flat at the height of the hinge, pointing out along the petal
-            com.botwclimb.common.shrine.CocoonMath.point(Math.PI, mid, mid, Math.PI / 2, r, r, r, cy, 0, p);
-            if (Math.abs(p[1] - (cy - r)) > 1e-9 || Math.abs(p[0] - 2 * r * Math.cos(mid)) > 1e-9 || Math.abs(p[2] - 2 * r * Math.sin(mid)) > 1e-9)
-                h.fail("open petal " + j + " does not lie flat and outward: " + java.util.Arrays.toString(p));
-            for (double open : new double[] {0, 0.6, 1.85}) {
-                com.botwclimb.common.shrine.CocoonMath.normal(1.1, mid + 0.2, mid, open, r, r, r, 0.05, n);
-                if (Math.abs(Math.sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]) - 1) > 1e-9) h.fail("normal is not a unit vector");
-            }
-        }
-        h.succeed();
-    }
 }

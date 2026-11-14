@@ -27,7 +27,29 @@ import static com.botwclimb.common.climb.ClimbConstants.*;
 public final class ServerClimb {
     private static final int MAX_BAD_TICKS = 70; // shortcut: going round a block leaves the wall for ~2 s; upgrade when the server tracks it
 
+    /** Blocks per tick: five times the fastest legitimate wall movement (enchanted boots, 0.14), a few ticks of it in a row is not lag. */
+    private static final double MAX_CLIMB_STEP = 0.7;
+    private static final int MAX_FAST_TICKS = 3, MAX_OFF_TICKS = 8;
+    /** A jump or ledge may start while the wall has been out of reach for this many ticks (a late packet puts the server's view a moment behind): half a second of grace for a slow connection. */
+    private static final int ENTRY_BAD_TICKS = 10;
+
     private ServerClimb() {}
+
+    /** Moving along a held wall far faster than any climb: true once it has gone on for more than a few ticks. */
+    public static boolean tooFast(ClimbData d, double stepSqr) {
+        if (d.state == ClimbState.CLIMBING && d.grace == 0 && stepSqr > MAX_CLIMB_STEP * MAX_CLIMB_STEP) return ++d.fastTicks > MAX_FAST_TICKS;
+        d.fastTicks = 0;
+        return false;
+    }
+
+    /** Outside the box a jump can reach for more than a few ticks in a row (lag gives a tick or two, never this). */
+    public static boolean offEnvelope(ClimbData d, Vec3 pos) {
+        if (!offPlan(d, pos)) {
+            d.offTicks = 0;
+            return false;
+        }
+        return ++d.offTicks > MAX_OFF_TICKS;
+    }
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
@@ -60,11 +82,17 @@ public final class ServerClimb {
         if (d.jumpCooldown > 0) d.jumpCooldown--;
         if (d.grace > 0) d.grace--;
         // the server's own stamina account: moving on a wall and gliding drain it, a modified client cannot cheat it away
-        boolean moved = p.position().distanceToSqr(d.sPos) > 0.0004;
+        double stepSqr = p.position().distanceToSqr(d.sPos);
+        boolean moved = stepSqr > 0.0004;
         d.sPos = p.position();
         Stamina.serverStep(d, ClimbController.maxStamina(p), d.state == ClimbState.CLIMBING && moved, p.getData(BotwClimb.PARAGLIDER).gliding,
                 p.onGround() || p.getAbilities().flying);
         if (d.active() && d.sExhausted) { // out of stamina on the server: let go, whatever the client claims
+            d.claim = ClimbState.NONE;
+            reject(p, d);
+            return;
+        }
+        if (d.active() && tooFast(d, stepSqr)) { // a wall climb has a top speed: a modified client could otherwise crawl up or along a wall as fast as vanilla's own checks allow
             d.claim = ClimbState.NONE;
             reject(p, d);
             return;
@@ -121,7 +149,7 @@ public final class ServerClimb {
             }
             case CLIMB_JUMP -> {
                 if (d.state == ClimbState.CLIMBING) {
-                    if (d.jumpCooldown > 0) {
+                    if (d.jumpCooldown > 0 || d.badTicks > ENTRY_BAD_TICKS) { // a jump starts from a wall that is really being held
                         reject(p, d);
                         return;
                     }
@@ -129,24 +157,23 @@ public final class ServerClimb {
                     d.jumpStart = pos; // the player holds still during the wind-up, so this is where the client started
                     Stamina.serverSpend(d, STAMINA_JUMP_COST);
                     d.jumpTick = 0;
-                    d.warned = false;
+                    d.offTicks = 0;
                     d.jumpCooldown = JUMP_COOLDOWN;
                     enter(p, d, ClimbState.CLIMB_JUMP);
                 } else if (d.state == ClimbState.CLIMB_JUMP) {
                     if (++d.jumpTick > 40) { // a jump is at most ~18 ticks; this only catches a stuck claim
                         reject(p, d);
-                    } else if (offPlan(d, pos) && !d.warned) {
-                        // Logged only: rejecting here threw legitimate jumps back because the server's view of the
-                        // position lags. Vanilla movement checks still catch real speed/collision cheating.
-                        d.warned = true;
-                        BotwClimb.LOGGER.info("jump outside reach envelope at {} (start {})", pos, d.jumpStart);
+                    } else if (offEnvelope(d, pos)) {
+                        // a tick or two outside is the server's position lagging the client's; staying out for longer is not a jump
+                        BotwClimb.LOGGER.info("jump outside reach envelope at {} (start {}): let go", pos, d.jumpStart);
+                        reject(p, d);
                     }
                 } else {
                     reject(p, d);
                 }
             }
             case LEDGE_TRANSITION -> {
-                if (d.state == ClimbState.CLIMBING) { // the client starts a ledge only from a wall hold; chaining jump -> ledge -> grab -> ledge in open air was free flight
+                if (d.state == ClimbState.CLIMBING && d.badTicks <= ENTRY_BAD_TICKS) { // the client starts a ledge only from a wall hold; chaining jump -> ledge -> grab -> ledge in open air was free flight
                     d.jumpStart = pos;
                     d.ledgeTicks = 0;
                     enter(p, d, ClimbState.LEDGE_TRANSITION);

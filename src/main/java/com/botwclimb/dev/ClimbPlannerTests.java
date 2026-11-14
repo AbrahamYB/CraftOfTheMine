@@ -10,6 +10,7 @@ import com.botwclimb.common.climb.ClimbData;
 import com.botwclimb.common.climb.ClimbState;
 import com.botwclimb.common.climb.JumpPlan;
 import com.botwclimb.common.climb.JumpPlanner;
+import com.botwclimb.common.climb.ServerClimb;
 import com.botwclimb.common.climb.SurfaceSampler;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTest;
@@ -799,6 +800,33 @@ public class ClimbPlannerTests {
         h.succeed();
     }
 
+    /** A wall climb has a top speed and a jump a reach, but a tick or two of lag over them is allowed. */
+    @GameTest(template = "empty")
+    public static void serverClimbLimits(GameTestHelper h) {
+        ClimbData d = new ClimbData();
+        d.state = ClimbState.CLIMBING;
+        double legit = 0.14 * 0.14, fast = 1.0;
+        for (int i = 0; i < 20; i++) if (ServerClimb.tooFast(d, legit)) h.fail("a normal climb must never be too fast");
+        for (int i = 0; i < 3; i++) if (ServerClimb.tooFast(d, fast)) h.fail("three fast ticks in a row are lag, not a cheat");
+        ServerClimb.tooFast(d, legit); // back to normal resets the count
+        for (int i = 0; i < 3; i++) if (ServerClimb.tooFast(d, fast)) h.fail("the count must have reset");
+        if (!ServerClimb.tooFast(d, fast)) h.fail("a fourth fast tick in a row must be refused");
+        d.grace = 5;
+        d.fastTicks = 0;
+        for (int i = 0; i < 10; i++) if (ServerClimb.tooFast(d, fast)) h.fail("a fresh attach is exempt (the latch hop)");
+        d.state = ClimbState.CLIMB_JUMP; // not a wall hold: the jump envelope applies instead
+        d.grace = 0;
+        d.dir = Direction.SOUTH;
+        d.jumpStart = Vec3.ZERO;
+        Vec3 inside = new Vec3(0, 2.5, -1.0), outside = new Vec3(0, 12, 0); // facing south, away from the wall is "out"
+        for (int i = 0; i < 30; i++) if (ServerClimb.offEnvelope(d, inside)) h.fail("a position inside the reach is fine");
+        for (int i = 0; i < 8; i++) if (ServerClimb.offEnvelope(d, outside)) h.fail("up to eight ticks outside are tolerated");
+        if (!ServerClimb.offEnvelope(d, outside)) h.fail("staying outside the reach must end the jump");
+        ServerClimb.offEnvelope(d, inside);
+        if (ServerClimb.offEnvelope(d, outside)) h.fail("coming back inside resets the count");
+        h.succeed();
+    }
+
     /** The dev commands must be op-only whichever class registered /cotm first. */
     @GameTest(template = "empty")
     public static void devCommandsAreOpOnly(GameTestHelper h) {
@@ -883,37 +911,6 @@ public class ClimbPlannerTests {
         if (d.sExhausted || d.sStamina != max) h.fail("it must unblock only once full: " + d.sStamina + " exhausted " + d.sExhausted);
         for (int i = 0; i < 1000; i++) com.botwclimb.common.climb.Stamina.serverStep(d, max, false, true);
         if (!d.sExhausted) h.fail("gliding forever must run the account dry too");
-        h.succeed();
-    }
-
-    /** The shooter's picture lag keeps growing while reports keep coming and closes quickly once they stop. */
-    @GameTest(template = "empty")
-    public static void bulletLagExtrapolation(GameTestHelper h) {
-        if (com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10, 0) != 10) h.fail("no age: unchanged");
-        if (com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10, 2) != 12) h.fail("2 ticks of slow-motion add about 2 ticks of lag");
-        int later = com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10, 5);
-        if (later >= 10) h.fail("once reports stop the picture catches up, lag " + later);
-        if (com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10, 40) != 0) h.fail("it must reach 0 eventually");
-        if (com.botwclimb.common.bullettime.BulletConstants.extrapolateLag(10_000, 0) != com.botwclimb.common.bullettime.BulletConstants.MAX_LAG) h.fail("lag is capped");
-        h.succeed();
-    }
-
-    /** Bullet positions of the other players survive the trip, and an absurd list is refused. */
-    @GameTest(template = "empty")
-    public static void bulletPositionsRoundTrip(GameTestHelper h) {
-        var buf = new net.minecraft.network.FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
-        var snaps = java.util.List.of(new com.botwclimb.network.BulletPositionsPayload.Snap(7, 1.5, 2.5, -3.5, 90f));
-        com.botwclimb.network.BulletPositionsPayload.CODEC.encode(buf, new com.botwclimb.network.BulletPositionsPayload(snaps));
-        var got = com.botwclimb.network.BulletPositionsPayload.CODEC.decode(buf).snaps();
-        if (got.size() != 1 || got.get(0).id() != 7 || got.get(0).z() != -3.5) h.fail("bullet positions changed in transit: " + got);
-        buf.clear();
-        buf.writeVarInt(1_000_000);
-        try {
-            com.botwclimb.network.BulletPositionsPayload.CODEC.decode(buf);
-            h.fail("a huge bullet positions list must be refused");
-        } catch (io.netty.handler.codec.DecoderException expected) {
-            // good
-        }
         h.succeed();
     }
 
@@ -1155,7 +1152,6 @@ public class ClimbPlannerTests {
             shooter.fallDistance = 1f; // the server checks for itself that a shooter is falling
             com.botwclimb.common.bullettime.BulletSlow.markActive(shooter.getUUID(), now);
             com.botwclimb.common.bullettime.BulletSlow.scan(level, java.util.List.of(shooter), now, 8.0);
-            com.botwclimb.common.bullettime.BulletShots.report(shooter.getUUID(), 0, now); // a bullet arrow, as a real shot would be
             if (t[0] == 15) {
                 var arrow = com.botwclimb.common.Compat.create(net.minecraft.world.entity.EntityType.ARROW, level);
                 arrow.setOwner(shooter);
@@ -1164,7 +1160,6 @@ public class ClimbPlannerTests {
                 arrow.setDeltaMovement(1.5, 0, 0);
                 arrow.setBaseDamage(2.0);
                 level.addFreshEntity(arrow);
-                com.botwclimb.common.bullettime.BulletShots.tagShot(arrow, shooter, level.dimension(), now);
             }
             if (t[0] == 40) {
                 if (!com.botwclimb.common.bullettime.BulletSlow.isSlowed(cow, now)) h.fail("the cow should be slowed");
@@ -1172,53 +1167,6 @@ public class ClimbPlannerTests {
                 h.succeed();
             }
         });
-    }
-
-    /**
-     * Other players cannot be slowed on the server, so their hits keep the rewind: another player stands still, then is moved far
-     * away; an arrow fired where they stood must hit them only if the shooter's picture was lagging behind.
-     */
-    private static void otherPlayerShotScenario(GameTestHelper h, int reportedLag, boolean expectHit) {
-        var level = h.getLevel();
-        var shooter = airborneShooter(h, new Vec3(2.5, 3.0, 5.5));
-        var victim = h.makeMockPlayer(GameType.SURVIVAL);
-        victim.setNoGravity(true);
-        Vec3 spot = h.absoluteVec(new Vec3(5.5, 2.0, 5.5)), far = h.absoluteVec(new Vec3(5.5, 2.0, 25.5));
-        victim.setPos(spot);
-        int[] t = {0};
-        h.onEachTick(() -> {
-            t[0]++;
-            long now = level.getGameTime();
-            if (t[0] == 1) com.botwclimb.common.bullettime.BulletShots.track(victim, now);
-            int lagNow = t[0] < 12 ? 0 : reportedLag; // the picture only falls behind once the victim has left
-            com.botwclimb.common.bullettime.BulletShots.report(shooter.getUUID(), lagNow, now);
-            if (t[0] == 10) victim.setPos(far);
-            if (t[0] == 12) {
-                var arrow = com.botwclimb.common.Compat.create(net.minecraft.world.entity.EntityType.ARROW, level);
-                arrow.setOwner(shooter);
-                arrow.setNoGravity(true);
-                arrow.setPos(spot.add(2.0, 0.6, 0.0));
-                arrow.setDeltaMovement(-2.5, 0, 0);
-                arrow.setBaseDamage(2.0);
-                level.addFreshEntity(arrow);
-                if (!com.botwclimb.common.bullettime.BulletShots.tagShot(arrow, shooter, level.dimension(), now)) h.fail("the arrow was not tagged as a bullet arrow");
-            }
-            if (t[0] == 22) {
-                boolean hurt = victim.getHealth() < victim.getMaxHealth();
-                if (hurt != expectHit) h.fail(expectHit ? "the arrow did not hit the other player where they were drawn" : "the arrow hit although the picture was not lagging");
-                h.succeed();
-            }
-        });
-    }
-
-    @GameTest(template = "empty", timeoutTicks = 100)
-    public static void bulletArrowHitsAnotherPlayerWhereTheyWereDrawn(GameTestHelper h) {
-        otherPlayerShotScenario(h, 10, true);
-    }
-
-    @GameTest(template = "empty", timeoutTicks = 100)
-    public static void bulletArrowMissesAnotherPlayerWithoutLag(GameTestHelper h) {
-        otherPlayerShotScenario(h, 0, false);
     }
 
     /** Nothing that rides or carries something is slowed (a mob on a Create contraption seat, a boat), and machinery never is. */

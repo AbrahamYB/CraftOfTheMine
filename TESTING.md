@@ -159,7 +159,7 @@ champion, majora, demon_king.
 `gradlew runGameTestServer` checks the plot data, the island, the return landing and that the dimension files decode; the ride between
 worlds itself needs the game (relaunch the client: new blocks, packets and a dimension).
 28. Right-click a terminal: a screen with two plot cards opens (no ride yet). Plot 1 says Claim, no Return button.
-29. Click Claim on Plot 1: mud forms round you, you rise, the view whites out, and you come down in front of the terminal on a
+29. Click Claim on Plot 1: the ride starts, you rise into the void, and you come down in front of the terminal on a
     grass island in empty sky. Third person the whole time; no controls until you land.
 30. On the island: right-click the terminal. Plot 1 says "You are here" (cannot be clicked), Plot 2 says Claim, Return is shown.
     Return takes you back to exactly where you stood at the overworld terminal.
@@ -173,5 +173,5 @@ Ride visuals without a person at the keyboard: `gradlew runAutoClient` starts a 
 rides to plot 1 and back by itself and saves frames to `run-auto/screenshots` (`python tools/sheet.py up 1 36 out.png` makes a contact sheet).
 Needs `run-auto/saves/AutoTest` (copy a world there once). Quits when done.
 
-## TotK ride style
-Set the ride style to TOTK in the config, ride to a plot and back (or `./gradlew runAutoClient -Pstyle=totk`, only with no other game window open). Look for: green sparks and a ring/glyph while gathering; two cyan ribbons crossing in the room (the screen dimmed), turning green; a hard cut into a dark teal void with bright green spikes, drifting stars and a double helix, with the rider tumbling in it; the loading screen never showing terrain; a hard cut back with a pale haze (trip) or a cyan glow and swirling green sparks (Return); on a trip, a cyan bubble round the rider that pops. Details and known timing limits: notes/totk-ride.md.
+## The ride
+Ride to a plot and back (or `./gradlew runAutoClient`, only with no other game window open). Look for: green sparks and a ring/glyph while gathering; two cyan ribbons crossing in the room (the screen dimmed), turning green; a hard cut into a dark teal void with bright green spikes, drifting stars and a double helix, with the rider tumbling in it; the loading screen never showing terrain; a hard cut back with a pale haze (trip) or a cyan glow and swirling green sparks (Return); on a trip, a cyan bubble round the rider that pops. Details and known timing limits: notes/totk-ride.md.

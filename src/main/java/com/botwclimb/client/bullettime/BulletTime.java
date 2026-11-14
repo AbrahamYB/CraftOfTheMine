@@ -8,8 +8,6 @@ import com.botwclimb.common.climb.ClimbData;
 import com.botwclimb.common.climb.Stamina;
 import com.botwclimb.common.paraglider.ParagliderData;
 import com.botwclimb.network.BulletFallPayload;
-import com.botwclimb.network.BulletPositionsPayload;
-import com.botwclimb.network.BulletPositionsPayload.Snap;
 import com.botwclimb.network.BulletShotPayload;
 import com.botwclimb.network.BulletSlowPayload;
 import com.botwclimb.network.ParagliderTogglePayload;
@@ -38,7 +36,7 @@ import java.util.Set;
  * Bullet time on the client. Holding a bow or crossbow in the air slows everyone else on your screen. Mobs really run slowed on the
  * server (see BulletSlow), so what you see is what the server has; a slowed mob only moves a small step every few ticks and this
  * class glides the picture between those steps. Other players cannot be slowed on the server, so they are drawn where a slowed
- * playback clock says they were (10% speed), and the server rewinds arrow hits against them to match (see BulletShots). Each shot
+ * playback clock says they were (10% speed),. Each shot
  * costs 161.25 stamina, and the fall is slowed to 7.5% of normal gravity.
  * shortcut: the limbs of slowed mobs swing by the distance they really cover, and those of other players at normal speed.
  */
@@ -66,7 +64,6 @@ public final class BulletTime {
     }
 
     private static final Map<Integer, Track> TRACKS = new HashMap<>();
-    private static final Map<Integer, Snap> SERVER = new HashMap<>(); // the server's real position of each player
     private static boolean on;       // active, or still catching up
     private static int rt;           // real ticks since it began
     private static float pb, pbO;    // visual playback clock of other players, behind rt while slowed
@@ -117,7 +114,6 @@ public final class BulletTime {
         slowed = Set.of();
         GLIDES.clear();
         TRACKS.clear();
-        SERVER.clear();
     }
 
     @SubscribeEvent
@@ -168,8 +164,7 @@ public final class BulletTime {
         if (!active && pb >= rt) { // caught up: back to the normal picture
             on = false;
             TRACKS.clear();
-            SERVER.clear();
-        }
+            }
     }
 
     /**
@@ -189,17 +184,6 @@ public final class BulletTime {
         crossbowShot = false;
         pay(p);
         paidTicks = PAID_TICKS;
-    }
-
-    /** The server confirmed a bullet arrow left the bow: pay for it unless the release already did. */
-    public static void onShotConfirmed() {
-        Player p = Minecraft.getInstance().player;
-        if (p == null) return;
-        if (paidTicks > 0) { // already paid at the release
-            if (!crossbowShot) paidTicks = 0; // a multishot crossbow confirms several bolts for the one shot
-            return;
-        }
-        pay(p);
     }
 
     /** What a shot takes: one shot's cost, but everything if what would be left could not pay for another shot (the last shot empties the wheel, like a jump). */
@@ -236,14 +220,7 @@ public final class BulletTime {
         rt = 0;
         pb = pbO = 0;
         TRACKS.clear();
-        SERVER.clear();
         record(p);
-    }
-
-    /** The server's real positions of the other players. A player keeps their last one until the server sends a new one. */
-    public static void onPositions(BulletPositionsPayload payload) {
-        if (!on) return; // only while bullet time runs, and never more than a few hundred entries: nothing a server sends can grow this without end
-        for (Snap s : payload.snaps()) if (SERVER.size() < 512 || SERVER.containsKey(s.id())) SERVER.put(s.id(), s);
     }
 
     /** Stores this tick's position and yaw of every nearby other player. One who cannot be found holds their last spot. */
@@ -254,11 +231,10 @@ public final class BulletTime {
             Track t = entry.getValue();
             Entity found = p.level().getEntity(entry.getKey());
             if (found instanceof Player e && e.isAlive()) {
-                Snap s = SERVER.get(e.getId());
-                t.pos[slot * 3] = s != null ? s.x() : e.getX();
-                t.pos[slot * 3 + 1] = s != null ? s.y() : e.getY();
-                t.pos[slot * 3 + 2] = s != null ? s.z() : e.getZ();
-                t.yaw[slot] = s != null ? s.yaw() : e.yBodyRot;
+                t.pos[slot * 3] = e.getX();
+                t.pos[slot * 3 + 1] = e.getY();
+                t.pos[slot * 3 + 2] = e.getZ();
+                t.yaw[slot] = e.yBodyRot;
             } else {
                 System.arraycopy(t.pos, prev * 3, t.pos, slot * 3, 3);
                 t.yaw[slot] = t.yaw[prev];

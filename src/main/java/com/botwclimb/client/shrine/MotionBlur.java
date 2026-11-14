@@ -31,8 +31,7 @@ public final class MotionBlur {
     public static void apply(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL || failed) return;
         float partial = event.getPartialTick().getGameTimeDeltaPartialTick(false);
-        float strength = com.botwclimb.client.ClientConfig.style() == com.botwclimb.client.ClientConfig.RideStyle.TOTK ? com.botwclimb.client.shrine.totk.TotkRide.blur(partial)
-                : LaunchEffects.ownSpeed(Minecraft.getInstance(), partial) * com.botwclimb.client.ClientConfig.motionBlur();
+        float strength = com.botwclimb.client.shrine.totk.TotkRide.blur(partial);
         if (strength < 0.05f) return;
         Minecraft mc = Minecraft.getInstance();
         try {

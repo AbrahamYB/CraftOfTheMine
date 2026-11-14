@@ -56,15 +56,11 @@ public final class NetworkHandler {
         r.playToServer(ClothCraftPayload.TYPE, ClothCraftPayload.CODEC, (p, ctx) -> {
             if (ctx.player() instanceof ServerPlayer sp) ctx.enqueueWork(() -> com.botwclimb.common.paraglider.ClothCrafting.craft(sp, p.index()));
         });
-        r.playToClient(BulletShotConfirmPayload.TYPE, BulletShotConfirmPayload.CODEC,
-                (p, ctx) -> ctx.enqueueWork(com.botwclimb.client.bullettime.BulletTime::onShotConfirmed));
         r.playToServer(BulletShotPayload.TYPE, BulletShotPayload.CODEC, (p, ctx) -> {
             if (ctx.player() instanceof ServerPlayer sp) ctx.enqueueWork(() -> {
                 com.botwclimb.common.bullettime.BulletSlow.heartbeat(sp); // the lag in the packet is ignored: believing it let a client rewind other players' hitboxes by up to 30 s
             });
         });
-        r.playToClient(BulletPositionsPayload.TYPE, BulletPositionsPayload.CODEC,
-                (p, ctx) -> ctx.enqueueWork(() -> com.botwclimb.client.bullettime.BulletTime.onPositions(p)));
         r.playToClient(BulletSlowPayload.TYPE, BulletSlowPayload.CODEC,
                 (p, ctx) -> ctx.enqueueWork(() -> com.botwclimb.client.bullettime.BulletTime.onSlowed(p)));
         r.playToServer(BulletFallPayload.TYPE, BulletFallPayload.CODEC, (p, ctx) -> {

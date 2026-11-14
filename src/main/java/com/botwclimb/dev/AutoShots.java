@@ -28,7 +28,6 @@ import java.util.Set;
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
 public final class AutoShots {
     private static final boolean ON = Boolean.getBoolean("botwclimb.autotest");
-    private static final boolean STYLE_TOTK = "totk".equals(System.getProperty("botwclimb.style"));
     private static final Set<Integer> SHOTS = java.util.stream.IntStream.rangeClosed(1, 140).filter(i -> i % 3 == 1).boxed().collect(java.util.stream.Collectors.toSet());
 
     private static int stage, wait, startTick;
@@ -49,7 +48,6 @@ public final class AutoShots {
             mc.player.respawn();
             return;
         }
-        if (STYLE_TOTK && wait == 0) com.botwclimb.client.ClientConfig.set(com.botwclimb.client.ClientConfig.rideStyleValue(), com.botwclimb.client.ClientConfig.RideStyle.TOTK);
         wait++;
         var server = mc.getSingleplayerServer();
         switch (stage) {

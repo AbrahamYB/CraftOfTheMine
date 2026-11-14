@@ -1,7 +1,6 @@
 package com.botwclimb.client.shrine.totk;
 
 import com.botwclimb.BotwClimb;
-import com.botwclimb.client.ClientConfig;
 import com.mojang.math.Axis;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -21,7 +20,7 @@ public final class TotkSpin {
 
     @SubscribeEvent
     public static void pre(RenderPlayerEvent.Pre event) {
-        if (ClientConfig.style() != ClientConfig.RideStyle.TOTK || TotkRide.drawingHud()) return; // the void's own rider is turned by the void, smoothly
+        if (TotkRide.drawingHud()) return; // the void's own rider is turned by the void, smoothly
         var rider = com.botwclimb.client.RenderData.player(event);
         if (rider == null) return;
         float angle = TotkRide.spin(rider.getId(), event.getPartialTick());
