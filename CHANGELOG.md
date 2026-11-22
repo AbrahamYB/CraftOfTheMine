@@ -6,34 +6,81 @@ and on every client that joins it.
 
 ## 1.2
 
+The guide update. It adds a guide inside the game, gives the altar a new look and new values, and rebuilds the terminal ride.
+**This version is only for Minecraft 1.21.1 so far;** the other versions follow in a later release.
+
 ### Added
-* **A guide inside the game.** Short animated lessons show how the altar, the shrine terminal and plots work. You can pause,
-  replay and skip between them. Open it from the mod menu button, or hold W over the altar or terminal item in your inventory.
-* **A mod menu button** next to the buttons on the pause menu and title screen. The idea is borrowed from Create, with credit.
-* **A friends list on the terminal.** Hop to a friend's plot, or open yours so friends can visit.
-* **Sound effects for the terminal ride**, made from scratch.
-* **A setting to stop the plot border's writing from moving.**
+* **A guide inside the game, modelled on Create's Ponder.** The idea and the layout come from Ponder, the guide in the Create mod
+  (by the Create Team): a small scene built on a plate, blocks dropping in, notes with a line to what they point at, a timeline with
+  marks, and an "Up next" box at the end. The look and all of the code are our own; nothing from Create is copied or included. There
+  are three lessons:
+  * **The altar.** What it is and what an upgrade adds to your Stamina Bar. Then the altar is right-clicked and a table, "What
+    offerings are worth", pops up. Its items are thrown onto the altar one by one, most valuable first, and the Stamina Bar fills by
+    each item's real value until it is full; whatever is left stays in the list. Under the list are the points each of the 8 upgrades
+    costs. Two notes at the end explain what tools and armor are worth.
+  * **The shrine terminal.** Picking your plot or a friend's, and the ride up.
+  * **Your plot.** The island only you and your friends can build on, and how to get back down.
+
+  The buttons are back, replay, pause, close and next; click the timeline to jump, and drag the scene to turn it. Open the guide from
+  the mod menu, or hover the altar or terminal item in your inventory and hold W for a moment (its tooltip says so).
+* **A mod menu button, after the one in Create.** Create puts a goggles button beside the pause menu's buttons; this mod now has one
+  too, a small Stamina Bar icon to the right of "Report Bugs" on the pause menu and "Multiplayer" on the title screen. It opens the
+  mod's own menu: Configure, Guide, Report Issues (opens this project's GitHub issues page, after asking) and Return to Menu. The menu
+  credits Create.
+* **A friends list on the terminal.** The terminal shows everyone online whose plot is open to friends, with their skin's face, and
+  takes you to theirs with one click. On your own plot a switch opens it to friends or closes it again.
+* **Sound effects for the terminal ride,** made from scratch: the terminal opening, the light spiralling up, the rush through the
+  void, the jump and the landing, all with subtitles. The ride's sound keeps playing when the ride moves you to another world, where
+  the game would normally cut every sound off.
+* **A "Moving outline" setting.** The writing on the plot outline drifts slowly around the plot; turn this off to keep it still.
 
 ### Changed
-* **The altar has a new look:** a low, worn silver stand instead of a full dark block.
-* **The altar's rings fill from the inside out** and stay green when you are done. The cyan ending is gone.
+* **The altar is a low stand.** The full-height dark block looked heavy and out of place next to the terminal. It is now half a block
+  tall: a base with a raised plate on top, in worn grey silver, with a carved ring on each side that lights up with your first
+  upgrade. Clicking and walking into it match the new shape.
+* **The altar's rings fill from the inside out:** the inner ring for upgrades 1 to 4, then the outer ring for 5 to 8, the same order
+  as the Stamina Bar. The altar in your hand or inventory shows your progress too.
+* **The altar stays green when you finish.** Buying the last upgrade used to turn its lights off for 5 seconds and back on in cyan.
+  That is gone; it simply stays green. The server and every client need this version, because the message that announced the last
+  upgrade was removed.
 * **Some offerings are worth a different amount:** Elytra 40 → 20, Dragon Egg 60 → 45, Trident 6 → 8, Amethyst Shard 0.04 → 0.5.
-  A trident with a level IV or V enchantment is now worth 2 more, as gear already was.
-* **The terminal always looks switched on.**
-* **The terminal and altar menus look like frosted glass** instead of solid black.
-* **One plot per player.** Worlds where players had two keep the first.
-* **The plot border has a new look.**
-* **The terminal ride is rebuilt** to feel much closer to Tears of the Kingdom: floating up, the dark void, and the landing. Your
-  character now bends at the elbows and knees during the ride.
-* **The "stamina wheel" is now called the Stamina Bar.**
-* **The altar casts soft shadows** on the ground around it, like the terminal.
+  A data pack can still change any value.
+* **Enchanted tridents are worth more.** A level IV or V enchantment already added 2 points to tools and armor; now it does for a
+  trident too (Impaling IV or V). An enchanted book is still worth nothing, so a single book cannot be offered for points.
+* **The terminal always looks switched on.** It used to sit dark and light up only for a ride; the dark look and the code for it are
+  gone.
+* **The terminal and altar menus are frosted glass.** The solid black panels hid the world behind them. They are now see-through
+  smoked glass with a thin silver edge and translucent green buttons, over the game's blurred background. The text in the altar's
+  item list has a shadow, so it stays readable over the glass.
+* **One plot per player.** Each player used to get two. In a world from before, every player keeps their first plot; the second
+  belongs to no one now, and its number is never handed out again.
+* **The plot outline looks like the terminal:** a silver border with a dark teal inlay and green marks that drift along it like
+  writing, with a silver tile at each corner. It is drawn after the clouds, so they never cut through it.
+* **The terminal ride is rebuilt after Tears of the Kingdom,** worked out frame by frame from footage of the real travel.
+  * Going up, you float up through spiralling ribbons, stop as if you hit something, and the view cuts to the void as you climb.
+    At the plot you crouch in a ripple of light, spring up and land.
+  * Coming home, a marker of wavering cyan rings appears around you, you sink to the waist, turn once and are pulled under, fall
+    through the void turning, and land with a glow and green slashes rising around you.
+  * For these poses the player model now has elbows and knees, and leggings and boots bend with them. Outside the ride the arms and
+    legs stay straight and look exactly as before.
+* **The "stamina wheel" is now called the Stamina Bar,** in the game and in the docs.
+* **The altar casts soft shadows** on the ground around it, like the terminal (below). A side over a drop or a hole gets no shadow,
+  so none hangs in the air.
 * **The shrine terminal casts shadows.** Darker textures alone left it looking flat and unlike the world around it. It now has a soft
   shadow on the ground around its base, a shadow on the base's top where the floating top overhangs, a gradient down its pillar just
   under the top, and darker sides toward the ground. These are drawn as part of the block's model, so they work on every version.
 
 ### Fixed
-* **The terminal ride** no longer plays a fall sound when you land, no longer jumps the camera, and waits for the world to load
-  before dropping you home.
+* **No fall sound when a ride lets go.** The ride carries you down without gravity, but the game still counted it as a fall and
+  played the thud at the end.
+* **No camera jumps during a ride.** The view now eases out to third person and back the way it does for climbing, starts just behind
+  your head rather than inside it, and holds still when the ride moves you to another world.
+* **The ride waits for the world to load** before dropping you home. On a slow computer you could land before the world was there.
+* **The rider faces where they look.** The game's own body turn lagged up to 50 degrees behind the view and showed the rider
+  sideways; the body now comes round after the view and settles facing it.
+* **The rider no longer flickers into a crouch.** Inside the ground the game picked a crouch or a crawl each tick, which made the
+  rider jump for a frame.
+* **The void shows through the hotbar.** Its see-through slots showed the world behind the void instead of the void.
 
 ## 1.1
 

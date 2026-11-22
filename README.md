@@ -51,6 +51,9 @@ Made by AbrahamYB, with Claude (Anthropic's AI assistant) writing much of the co
 
 Every behaviour in the mod was chosen and checked by playing it, not just generated.
 
+The in-game guide is modelled on **Ponder** from the [Create](https://github.com/Creators-of-Create/Create) mod (by the Create Team),
+and the mod menu button on Create's goggles button. The code and look are our own; nothing from Create is copied or included.
+
 ### How it was tuned
 
 The numbers were found by playing, one change at a time (the commit history shows the steps):
