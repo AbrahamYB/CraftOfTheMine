@@ -40,8 +40,11 @@ public final class ModMenu {
         String label = Component.translatable(row).getString();
         for (var l : event.getListenersList()) {
             if (l instanceof AbstractWidget w && w.getMessage().getString().equals(label)) {
+                int right = w.getX() + w.getWidth(); // after the last button on that row: from 26.1 Report Bugs is one of a row of icons
+                for (var o : event.getListenersList())
+                    if (o instanceof AbstractWidget ow && ow.getY() == w.getY() && ow.getX() >= w.getX()) right = Math.max(right, ow.getX() + ow.getWidth());
                 button = Button.builder(Component.empty(), b -> Minecraft.getInstance().setScreen(new Menu(screen)))
-                        .bounds(w.getX() + w.getWidth() + 4, w.getY(), 20, 20)
+                        .bounds(right + 4, w.getY(), 20, 20)
                         .tooltip(Tooltip.create(Component.translatable("gui.botwclimb.menu.title")))
                         .build();
                 event.addListener(button);
