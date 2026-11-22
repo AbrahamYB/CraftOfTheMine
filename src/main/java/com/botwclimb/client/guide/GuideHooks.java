@@ -13,7 +13,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
-import org.lwjgl.glfw.GLFW;
 
 /** Hovering the altar or the terminal in an inventory and holding W opens its guide, as the tooltip says. */
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
@@ -42,8 +41,12 @@ public final class GuideHooks {
     public static void tick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         int scene = -1;
+        //? if >=26.3 {
+        /*if (mc.screen instanceof AbstractContainerScreen<?> s && s.getHoveredSlot() != null) scene = sceneFor(s.getHoveredSlot().getItem());
+        *///?} else {
         if (mc.screen instanceof AbstractContainerScreen<?> s && s.getSlotUnderMouse() != null) scene = sceneFor(s.getSlotUnderMouse().getItem());
-        if (scene < 0 || !ClientCompat.keyDown(GLFW.GLFW_KEY_W)) {
+        //?}
+        if (scene < 0 || !ClientCompat.keyDown(com.mojang.blaze3d.platform.InputConstants.KEY_W)) {
             held = 0;
             return;
         }
