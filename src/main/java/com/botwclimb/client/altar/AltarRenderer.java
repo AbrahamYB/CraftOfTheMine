@@ -25,6 +25,7 @@ import org.joml.Matrix4f;
 /*public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntity, AltarRenderer.State> {
     public static class State extends net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState {
         float partial;
+        net.minecraft.world.level.block.state.BlockState block; // the block state is private in the base class from 26.1
     }
 *///?} else {
 public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntity> {
@@ -68,6 +69,7 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
                                    net.minecraft.client.renderer.feature.ModelFeatureRenderer.CrumblingOverlay crumbling) {
         net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState.extractBase(be, state, crumbling);
         state.partial = partialTick;
+        state.block = be.getBlockState();
         LocalPlayer p = Minecraft.getInstance().player;
         if (p != null && p.hasData(BotwClimb.STAMINA_UPGRADES)) {
             int upgrades = AltarFx.upgrades(p);
@@ -78,7 +80,7 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
     @Override
     public void submit(State state, PoseStack pose, net.minecraft.client.renderer.SubmitNodeCollector collector, net.minecraft.client.renderer.state.CameraRenderState camera) {
         pose.pushPose();
-        face(pose, state.blockState);
+        face(pose, state.block);
         draw((type, write) -> collector.submitCustomGeometry(pose, type, write::accept), pose, state.partial, null);
         pose.popPose();
     }
@@ -105,7 +107,12 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
     private static void face(PoseStack pose, net.minecraft.world.level.block.state.BlockState st) {
         if (st == null || !st.hasProperty(com.botwclimb.common.altar.StaminaAltarBlock.FACING)) return;
         pose.translate(0.5, 0, 0.5);
-        pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(-(st.getValue(com.botwclimb.common.altar.StaminaAltarBlock.FACING).toYRot() + 180f)));
+        float turn = -(st.getValue(com.botwclimb.common.altar.StaminaAltarBlock.FACING).toYRot() + 180f);
+        //? if >=26.3 {
+        /*pose.rotate(com.mojang.math.Axis.YP.rotationDegrees(turn));
+        *///?} else {
+        pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(turn));
+        //?}
         pose.translate(-0.5, 0, -0.5);
     }
 
