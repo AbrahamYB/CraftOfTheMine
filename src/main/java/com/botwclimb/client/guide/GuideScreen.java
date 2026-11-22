@@ -60,9 +60,17 @@ public class GuideScreen extends Screen {
     /** Drawing state for the scene being drawn (valid during draw()). */
     private GuiGraphics g;
     private PoseStack ps;
+    //? if >=26.2 {
+    /*private net.minecraft.client.renderer.SubmitNodeCollector nodes;
+    *///?} else {
     private MultiBufferSource.BufferSource buf;
-    private Matrix4f world;
+    //?}
+    private Matrix4f world, worldBase;
     private final List<Runnable> overlay = new ArrayList<>();
+    /** False while a pass only places things (where the notes go), true while the scene's shapes are drawn. */
+    private boolean shapes = true;
+    /** Screen pixels per menu pixel in the pose being drawn to: 1 in the menu itself, the GUI scale inside a picture in picture. */
+    private float pixelScale = 1f;
 
     public GuideScreen(List<Scene> scenes, int first, Screen parent) {
         super(Component.translatable("gui.botwclimb.guide.title"));
@@ -105,6 +113,7 @@ public class GuideScreen extends Screen {
     /** A block of the scene, dropping into place from above once {@code from} is reached. */
     public void block(BlockState state, int x, int y, int z, float t, float from) {
         if (t < from) return;
+        if (!shapes) return;
         float drop = 1.6f * (float) Math.pow(1f - Math.min(1f, (t - from) / 8f), 3);
         ps.pushPose();
         ps.translate(x, y + drop, z);
@@ -145,20 +154,22 @@ public class GuideScreen extends Screen {
 
     /** An upright quad of one colour from (x0, z0) to (x1, z1), between heights y0 and y1, seen from both sides. */
     public void side(float x0, float z0, float x1, float z1, float y0, float y1, int argb) {
-        VertexConsumer v = buf.getBuffer(RenderType.debugQuads());
-        Matrix4f m = ps.last().pose();
-        vertex(v, m, x0, y0, z0, argb);
-        vertex(v, m, x1, y0, z1, argb);
-        vertex(v, m, x1, y1, z1, argb);
-        vertex(v, m, x0, y1, z0, argb);
-        vertex(v, m, x0, y1, z0, argb);
-        vertex(v, m, x1, y1, z1, argb);
-        vertex(v, m, x1, y0, z1, argb);
-        vertex(v, m, x0, y0, z0, argb);
+        if (!shapes) return;
+        quads((v, m) -> {
+            vertex(v, m, x0, y0, z0, argb);
+            vertex(v, m, x1, y0, z1, argb);
+            vertex(v, m, x1, y1, z1, argb);
+            vertex(v, m, x0, y1, z0, argb);
+            vertex(v, m, x0, y1, z0, argb);
+            vertex(v, m, x1, y1, z1, argb);
+            vertex(v, m, x1, y0, z1, argb);
+            vertex(v, m, x0, y0, z0, argb);
+        });
     }
 
     /** An item in the scene, always turned to face the viewer whichever way the diorama is turned (an item side-on is a thin line). */
     public void item(ItemStack stack, float x, float y, float z, float scale) {
+        if (!shapes) return;
         if (scale <= 0.01f) return;
         ps.pushPose();
         ps.translate(x, y, z);
@@ -192,6 +203,7 @@ public class GuideScreen extends Screen {
 
     /** The player (when in a world) standing at a point of the scene, facing the viewer's side. */
     public void player(float x, float y, float z, float facing) {
+        if (!shapes) return;
         var mc = Minecraft.getInstance();
         if (mc.player == null) return;
         var p = mc.player;
@@ -228,52 +240,78 @@ public class GuideScreen extends Screen {
 
     /** A flat ring lying on a level of the scene (for glows on the ground). */
     public void ring(float cx, float y, float cz, float r0, float r1, int argb) {
-        VertexConsumer v = buf.getBuffer(RenderType.debugQuads());
-        Matrix4f m = ps.last().pose();
-        int n = 40;
-        for (int i = 0; i < n; i++) {
-            double a0 = i * Math.PI * 2 / n, a1 = (i + 1) * Math.PI * 2 / n;
-            vertex(v, m, cx + r0 * Math.cos(a0), y, cz + r0 * Math.sin(a0), argb);
-            vertex(v, m, cx + r0 * Math.cos(a1), y, cz + r0 * Math.sin(a1), argb);
-            vertex(v, m, cx + r1 * Math.cos(a1), y, cz + r1 * Math.sin(a1), argb);
-            vertex(v, m, cx + r1 * Math.cos(a0), y, cz + r1 * Math.sin(a0), argb);
-        }
+        if (!shapes) return;
+        quads((v, m) -> {
+            int n = 40;
+            for (int i = 0; i < n; i++) {
+                double a0 = i * Math.PI * 2 / n, a1 = (i + 1) * Math.PI * 2 / n;
+                vertex(v, m, cx + r0 * Math.cos(a0), y, cz + r0 * Math.sin(a0), argb);
+                vertex(v, m, cx + r0 * Math.cos(a1), y, cz + r0 * Math.sin(a1), argb);
+                vertex(v, m, cx + r1 * Math.cos(a1), y, cz + r1 * Math.sin(a1), argb);
+                vertex(v, m, cx + r1 * Math.cos(a0), y, cz + r1 * Math.sin(a0), argb);
+            }
+        });
     }
 
     /** A flat arc lying on a level of the scene, from fraction {@code from} to {@code to} of a turn. */
     public void arc(float cx, float y, float cz, float r0, float r1, float from, float to, int argb) {
-        VertexConsumer v = buf.getBuffer(RenderType.debugQuads());
-        Matrix4f m = ps.last().pose();
-        int n = Math.max(2, (int) ((to - from) * 48));
-        for (int i = 0; i < n; i++) {
-            double a0 = (from + (to - from) * i / n) * Math.PI * 2, a1 = (from + (to - from) * (i + 1) / n) * Math.PI * 2;
-            vertex(v, m, cx - r0 * Math.sin(a0), y, cz - r0 * Math.cos(a0), argb);
-            vertex(v, m, cx - r1 * Math.sin(a0), y, cz - r1 * Math.cos(a0), argb);
-            vertex(v, m, cx - r1 * Math.sin(a1), y, cz - r1 * Math.cos(a1), argb);
-            vertex(v, m, cx - r0 * Math.sin(a1), y, cz - r0 * Math.cos(a1), argb);
-        }
+        if (!shapes) return;
+        quads((v, m) -> {
+            int n = Math.max(2, (int) ((to - from) * 48));
+            for (int i = 0; i < n; i++) {
+                double a0 = (from + (to - from) * i / n) * Math.PI * 2, a1 = (from + (to - from) * (i + 1) / n) * Math.PI * 2;
+                vertex(v, m, cx - r0 * Math.sin(a0), y, cz - r0 * Math.cos(a0), argb);
+                vertex(v, m, cx - r1 * Math.sin(a0), y, cz - r1 * Math.cos(a0), argb);
+                vertex(v, m, cx - r1 * Math.sin(a1), y, cz - r1 * Math.cos(a1), argb);
+                vertex(v, m, cx - r0 * Math.sin(a1), y, cz - r0 * Math.cos(a1), argb);
+            }
+        });
     }
 
     /** A flat quad on a level of the scene, from (x0, z0) to (x1, z1). */
     public void flat(float x0, float z0, float x1, float z1, float y, int argb) {
-        VertexConsumer v = buf.getBuffer(RenderType.debugQuads());
-        Matrix4f m = ps.last().pose();
-        vertex(v, m, x0, y, z0, argb);
-        vertex(v, m, x0, y, z1, argb);
-        vertex(v, m, x1, y, z1, argb);
-        vertex(v, m, x1, y, z0, argb);
+        if (!shapes) return;
+        quads((v, m) -> {
+            vertex(v, m, x0, y, z0, argb);
+            vertex(v, m, x0, y, z1, argb);
+            vertex(v, m, x1, y, z1, argb);
+            vertex(v, m, x1, y, z0, argb);
+        });
     }
 
     /** A vertical quad from (x0, z0) to (x1, z1), between heights y0 and y1, its colour fading out upward. */
     public void wall(float x0, float z0, float x1, float z1, float y0, float y1, int argb) {
-        VertexConsumer v = buf.getBuffer(RenderType.debugQuads());
-        Matrix4f m = ps.last().pose();
-        int top = argb & 0x00FFFFFF;
-        vertex(v, m, x0, y0, z0, argb);
-        vertex(v, m, x1, y0, z1, argb);
-        vertex(v, m, x1, y1, z1, top);
-        vertex(v, m, x0, y1, z0, top);
+        if (!shapes) return;
+        quads((v, m) -> {
+            int top = argb & 0x00FFFFFF;
+            vertex(v, m, x0, y0, z0, argb);
+            vertex(v, m, x1, y0, z1, argb);
+            vertex(v, m, x1, y1, z1, top);
+            vertex(v, m, x0, y1, z0, top);
+        });
     }
+
+    /** Coloured quads in the scene's pose: straight into the buffers, or (from 26.2) handed to the collector, which draws them later. */
+    private void quads(java.util.function.BiConsumer<VertexConsumer, Matrix4f> draw) {
+        //? if >=26.2 {
+        /*nodes.submitCustomGeometry(ps, RenderType.debugQuads(), (pose, v) -> draw.accept(v, pose.pose()));
+        *///?} else {
+        draw.accept(buf.getBuffer(RenderType.debugQuads()), ps.last().pose());
+        //?}
+    }
+
+    //? if >=1.21.9 {
+    /*/^* Hands models (blocks, items, the player) to the collector: the picture's own from 26.2, before that the game's, drawn at once. ^/
+    private void submit(java.util.function.Consumer<net.minecraft.client.renderer.SubmitNodeCollector> what) {
+        //? if >=26.2 {
+        /^what.accept(nodes);
+        ^///?} else {
+        var features = Minecraft.getInstance().gameRenderer.getFeatureRenderDispatcher();
+        what.accept(features.getSubmitNodeStorage());
+        features.renderAllFeatures();
+        //?}
+    }
+    *///?}
 
     private static void vertex(VertexConsumer v, Matrix4f m, double x, double y, double z, int argb) {
         v.addVertex(m, (float) x, (float) y, (float) z).setColor(argb);
@@ -314,7 +352,7 @@ public class GuideScreen extends Screen {
 
     /** Moves the whole diorama sideways on the screen by {@code px}; call it before drawing anything. */
     public void slide(float px) {
-        ps.last().pose().translateLocal(px, 0, 0);
+        ps.last().pose().translateLocal(px * pixelScale, 0, 0);
         world.translateLocal(px, 0, 0);
     }
 
@@ -333,22 +371,43 @@ public class GuideScreen extends Screen {
 
     // ---- the screen
 
-    @Override
-    public void render(GuiGraphics graphics, int mx, int my, float pt) {
-        super.render(graphics, mx, my, pt);
-        float t = time();
-        float fade = Math.min(1f, t / 8f);
-        g = graphics;
-        ps = g.pose();
-        buf = g.bufferSource();
-        overlay.clear();
-        ps.pushPose();
-        ps.translate(width / 2f, height / 2f + 8f, 400f);
+    /** The view: the plate in the middle of the menu (a little low), scaled to fit, turned to the viewer's angle. */
+    private void setUp(float z) {
+        ps.translate(width / 2f, height / 2f + 8f, z);
         float s = Math.min(width, height) / 9.5f;
         ps.scale(s, -s, s);
         ps.mulPose(Axis.XP.rotationDegrees(pitch));
         ps.mulPose(Axis.YP.rotationDegrees(yaw));
         ps.translate(-PLATE / 2f, -0.5f, -PLATE / 2f);
+    }
+
+    @Override
+    public void render(GuiGraphics g, int mx, int my, float pt) {
+        super.render(g, mx, my, pt);
+        float t = time();
+        float fade = Math.min(1f, t / 8f);
+        this.g = g;
+        overlay.clear();
+        //? if >=1.21.6 {
+        /*// from 1.21.6 a menu cannot draw 3D itself: this pass only works out where things are (the notes, the table, the slide), and
+        // the scene is drawn into a picture in picture (Pip) that fills the menu
+        ps = new PoseStack();
+        shapes = false;
+        pixelScale = 1f;
+        setUp(0f);
+        world = new Matrix4f(ps.last().pose());
+        worldBase = new Matrix4f(world);
+        scene().draw(this, t);
+        shapes = true;
+        g.submitPictureInPictureRenderState(new Pip.State(this, t, 0, 0, width, height));
+        g.nextStratum(); // the notes, the table and the timeline over the picture
+        for (Runnable r : overlay) r.run();
+        if (fade >= 0.03f) timeline(mx, my, t, fade);
+        *///?} else {
+        ps = g.pose();
+        buf = Minecraft.getInstance().renderBuffers().bufferSource(); // the buffers GuiGraphics draws with (it has no getter from 1.21.2)
+        ps.pushPose();
+        setUp(400f);
         world = new Matrix4f(ps.last().pose());
         // light from above and in front of the diorama, in the screen's own axes (y points down): the item lights assume a flat icon and left tops dark
         com.mojang.blaze3d.systems.RenderSystem.setShaderLights(new org.joml.Vector3f(-0.3f, -0.6f, 1f).normalize(), new org.joml.Vector3f(0.3f, -0.6f, -1f).normalize());
@@ -363,7 +422,89 @@ public class GuideScreen extends Screen {
             timeline(mx, my, t, fade);
         }
         ps.popPose();
+        //?}
     }
+
+    //? if >=1.21.6 {
+    /*/^* Draws the guide's scene into a picture the size of the menu (how 1.21.6 and later draw 3D in menus). ^/
+    //? if >=26.1 {
+    /^private interface PipState extends net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState {}
+    ^///?} else {
+    private interface PipState extends net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState {}
+    //?}
+
+    public static final class Pip extends net.minecraft.client.gui.render.pip.PictureInPictureRenderer<Pip.State> {
+        public record State(GuideScreen screen, float t, int x0, int y0, int x1, int y1) implements PipState {
+            @Override
+            public float scale() {
+                return 1f;
+            }
+
+            @Override
+            public net.minecraft.client.gui.navigation.ScreenRectangle scissorArea() {
+                return null;
+            }
+
+            @Override
+            public net.minecraft.client.gui.navigation.ScreenRectangle bounds() {
+                return new net.minecraft.client.gui.navigation.ScreenRectangle(x0, y0, x1 - x0, y1 - y0); // the whole picture, nothing cut off
+            }
+        }
+
+        //? if >=26.2 {
+        /^public Pip() {}
+        ^///?} else {
+        public Pip(MultiBufferSource.BufferSource buffers) {
+            super(buffers);
+        }
+        //?}
+
+        @Override
+        public Class<State> getRenderStateClass() {
+            return State.class;
+        }
+
+        @Override
+        protected float getTranslateY(int height, int guiScale) {
+            return height / 2f;
+        }
+
+        @Override
+        protected String getTextureLabel() {
+            return "botwclimb_guide";
+        }
+
+        @Override
+        //? if >=26.2 {
+        /^protected void renderToTexture(State st, PoseStack pose, net.minecraft.client.renderer.SubmitNodeCollector collector) {
+            GuideScreen s = st.screen();
+            s.nodes = collector;
+            Minecraft.getInstance().gameRenderer.lighting().setupFor(Lighting.Entry.ITEMS_3D);
+        ^///?} else {
+        protected void renderToTexture(State st, PoseStack pose) {
+            GuideScreen s = st.screen();
+            s.buf = bufferSource;
+            Minecraft.getInstance().gameRenderer.getLighting().setupFor(Lighting.Entry.ITEMS_3D);
+        //?}
+            pose.scale(1f, 1f, -1f); // the picture's pose starts in the middle with depth reversed: back to the menu's own axes
+            pose.translate(-s.width / 2f, -s.height / 2f, 0f);
+            s.ps = pose;
+            s.pixelScale = (float) Minecraft.getInstance().getWindow().getGuiScale();
+            s.world = new Matrix4f(s.worldBase); // the placing pass already slid it; slide again from where it began
+            s.setUp(0f);
+            s.scene().draw(s, st.t());
+            s.pixelScale = 1f;
+        }
+    }
+
+    @net.neoforged.fml.common.EventBusSubscriber(modid = com.botwclimb.BotwClimb.MOD_ID, value = net.neoforged.api.distmarker.Dist.CLIENT)
+    public static final class PipSetup {
+        @net.neoforged.bus.api.SubscribeEvent
+        public static void register(net.neoforged.neoforge.client.event.RegisterPictureInPictureRenderersEvent event) {
+            event.register(Pip.State.class, Pip::new);
+        }
+    }
+    *///?}
 
     private int barX() {
         return (width - BAR_W) / 2;
