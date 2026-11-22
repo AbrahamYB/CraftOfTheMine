@@ -17,7 +17,6 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.client.model.data.ModelData;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
 
@@ -44,6 +43,9 @@ public class GuideScreen extends Screen {
     }
 
     private static final int PLATE = 5, BAR_W = 220, BOX = 20;
+    //? if >=26.1 {
+    /*private static final net.minecraft.client.renderer.block.model.BlockDisplayContext BLOCK_CONTEXT = net.minecraft.client.renderer.block.model.BlockDisplayContext.create();
+    *///?}
     private static final int TEXT_BG = 0xF0101214, TEXT_EDGE = 0xFFE8EEF2, MUTED = 0xFF9AA3AE, GREEN = 0xFF00F25A;
     /** For recordings: when set, the scene clock reads this instead of the real time. */
     public static float clockOverride = -1f;
@@ -106,7 +108,13 @@ public class GuideScreen extends Screen {
         float drop = 1.6f * (float) Math.pow(1f - Math.min(1f, (t - from) / 8f), 3);
         ps.pushPose();
         ps.translate(x, y + drop, z);
-        Minecraft.getInstance().getBlockRenderer().renderSingleBlock(state, ps, buf, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, ModelData.EMPTY, null);
+        //? if >=26.1 {
+        /*var model = new net.minecraft.client.renderer.block.BlockModelRenderState();
+        Minecraft.getInstance().getBlockModelResolver().update(model, state, BLOCK_CONTEXT);
+        submit(c -> model.submit(ps, c, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0));
+        *///?} else {
+        Minecraft.getInstance().getBlockRenderer().renderSingleBlock(state, ps, buf, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+        //?}
         ps.popPose();
     }
 
@@ -157,7 +165,14 @@ public class GuideScreen extends Screen {
         ps.mulPose(Axis.YP.rotationDegrees(-yaw)); // undo the view's turn and tilt
         ps.mulPose(Axis.XP.rotationDegrees(-pitch));
         ps.scale(scale, scale, scale);
+        //? if >=1.21.9 {
+        /*var mc = Minecraft.getInstance();
+        var state = new net.minecraft.client.renderer.item.ItemStackRenderState();
+        mc.getItemModelResolver().updateForTopItem(state, stack, net.minecraft.world.item.ItemDisplayContext.GROUND, mc.level, null, 0);
+        submit(c -> state.submit(ps, c, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0));
+        *///?} else {
         Minecraft.getInstance().getItemRenderer().renderStatic(stack, net.minecraft.world.item.ItemDisplayContext.GROUND, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, ps, buf, Minecraft.getInstance().level, 0);
+        //?}
         ps.popPose();
     }
 
@@ -187,9 +202,20 @@ public class GuideScreen extends Screen {
         p.setXRot(0f);
         p.xRotO = 0f;
         var d = mc.getEntityRenderDispatcher();
+        //? if >=1.21.9 {
+        /*var state = d.extractEntity(p, 1f);
+        state.shadowRadius = 0f; // no shadow under the guide's player
+        state.shadowPieces.clear();
+        submit(c -> d.submit(state, new net.minecraft.client.renderer.state.CameraRenderState(), x, y, z, ps, c));
+        *///?} else if >=1.21.2 {
+        /*d.setRenderShadow(false);
+        d.render(p, x, y, z, 1f, ps, buf, LightTexture.FULL_BRIGHT);
+        d.setRenderShadow(true);
+        *///?} else {
         d.setRenderShadow(false);
         d.render(p, x, y, z, 0f, 1f, ps, buf, LightTexture.FULL_BRIGHT);
         d.setRenderShadow(true);
+        //?}
         p.yBodyRot = body;
         p.yBodyRotO = bodyO;
         p.yHeadRot = head;
