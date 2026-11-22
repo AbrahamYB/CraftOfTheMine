@@ -87,7 +87,7 @@ public final class ModMenu {
             int x = (width - BTN_W) / 2, y = firstY();
             addRenderableWidget(Button.builder(Component.translatable("gui.botwclimb.menu.configure"), b -> minecraft.setScreen(new BotwConfigScreen(this))).bounds(x, y, BTN_W, BTN_H).build());
             addRenderableWidget(Button.builder(Component.translatable("gui.botwclimb.menu.guide"), b -> minecraft.setScreen(new com.botwclimb.client.guide.GuideScreen(com.botwclimb.client.guide.GuideScenes.all(), 0, this))).bounds(x, y + 24, BTN_W, BTN_H).build());
-            addRenderableWidget(Button.builder(Component.translatable("gui.botwclimb.menu.issues"), b -> ConfirmLinkScreen.confirmLinkNow(this, ISSUES)).bounds(x, y + 48, BTN_W, BTN_H).build());
+            addRenderableWidget(Button.builder(Component.translatable("gui.botwclimb.menu.issues"), b -> ConfirmLinkScreen.confirmLinkNow(this, /*? if >=26.3 {*//*java.net.URI.create(ISSUES)*//*?} else {*/ISSUES/*?}*/)).bounds(x, y + 48, BTN_W, BTN_H).build());
             addRenderableWidget(Button.builder(Component.translatable("gui.botwclimb.menu.back"), b -> onClose()).bounds(x, y + 80, BTN_W, BTN_H).build());
         }
 
