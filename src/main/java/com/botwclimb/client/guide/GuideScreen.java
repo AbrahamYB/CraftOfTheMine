@@ -169,38 +169,6 @@ public class GuideScreen extends Screen {
         overlay.add(() -> draw.accept(g, a));
     }
 
-    /** A box of the scene from (x0, y0, z0) to (x1, y1, z1) in blocks, with block textures on its top and sides, shaded as blocks are (for drafts of new shapes). */
-    public void cuboid(float x0, float y0, float z0, float x1, float y1, float z1, String top, String side) {
-        var atlas = Minecraft.getInstance().getTextureAtlas(net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS);
-        var t = atlas.apply(net.minecraft.resources.ResourceLocation.parse(top));
-        var sd = atlas.apply(net.minecraft.resources.ResourceLocation.parse(side));
-        VertexConsumer v = buf.getBuffer(RenderType.cutout());
-        Matrix4f m = ps.last().pose();
-        // top: uv from the position, so the texture lines up with the block grid as on a real block
-        face(v, m, t, 1f, new float[][] {{x0, y1, z0}, {x0, y1, z1}, {x1, y1, z1}, {x1, y1, z0}}, new float[][] {{x0, z0}, {x0, z1}, {x1, z1}, {x1, z0}}, 0, 1, 0);
-        // sides: u along the face, v down from the top of the block space the box sits in
-        float vt = 1f - (y1 - (float) Math.floor(y0)), vb = 1f - (y0 - (float) Math.floor(y0));
-        face(v, m, sd, 0.8f, new float[][] {{x1, y1, z0}, {x1, y0, z0}, {x0, y0, z0}, {x0, y1, z0}}, new float[][] {{1 - x1 % 1, vt}, {1 - x1 % 1, vb}, {1 - (x0 % 1), vb}, {1 - (x0 % 1), vt}}, 0, 0, -1);
-        face(v, m, sd, 0.8f, new float[][] {{x0, y1, z1}, {x0, y0, z1}, {x1, y0, z1}, {x1, y1, z1}}, new float[][] {{x0 % 1, vt}, {x0 % 1, vb}, {x1 % 1 == 0 ? 1 : x1 % 1, vb}, {x1 % 1 == 0 ? 1 : x1 % 1, vt}}, 0, 0, 1);
-        face(v, m, sd, 0.6f, new float[][] {{x0, y1, z0}, {x0, y0, z0}, {x0, y0, z1}, {x0, y1, z1}}, new float[][] {{z0 % 1, vt}, {z0 % 1, vb}, {z1 % 1 == 0 ? 1 : z1 % 1, vb}, {z1 % 1 == 0 ? 1 : z1 % 1, vt}}, -1, 0, 0);
-        face(v, m, sd, 0.6f, new float[][] {{x1, y1, z1}, {x1, y0, z1}, {x1, y0, z0}, {x1, y1, z0}}, new float[][] {{1 - (z1 % 1 == 0 ? 1 : z1 % 1), vt}, {1 - (z1 % 1 == 0 ? 1 : z1 % 1), vb}, {1 - z0 % 1, vb}, {1 - z0 % 1, vt}}, 1, 0, 0);
-    }
-
-    private static void face(VertexConsumer v, Matrix4f m, net.minecraft.client.renderer.texture.TextureAtlasSprite sp, float shade, float[][] p, float[][] uv, float nx, float ny, float nz) {
-        for (int i = 0; i < 4; i++)
-            v.addVertex(m, p[i][0], p[i][1], p[i][2]).setColor(shade, shade, shade, 1f).setUv(sp.getU(frac(uv[i][0])), sp.getV(frac(uv[i][1]))).setLight(LightTexture.FULL_BRIGHT).setNormal(nx, ny, nz);
-    }
-
-    private static float frac(float f) {
-        return f == 1f ? 1f : f - (float) Math.floor(f);
-    }
-
-    /** Turns the view (for recordings of a draft from more than one side). */
-    public void view(float yaw, float pitch) {
-        this.yaw = yaw;
-        this.pitch = pitch;
-    }
-
     /** The base plate, a checker of two blocks, dropping in row by row from {@code from}. */
     public void plate(BlockState a, BlockState b, float t, float from) {
         for (int x = 0; x < PLATE; x++)

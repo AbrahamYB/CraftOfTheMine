@@ -94,42 +94,8 @@ public final class GuideScenes {
         s.note(t, 140, 205, "plot_return", 2.5f, 1.6f, 1.5f, true);
     });
 
-    /**
-     * Drafts of a new look for the altar, side by side, every upgrade lit: A a low dais, B a stepped pedestal with a gold band,
-     * C the low dais in pale stone. Not part of the guide: filmed with -Pguide -Dbotwclimb.guide.concepts to show the choice.
-     */
-    public static final GuideScreen.Scene CONCEPTS = scene("concepts", () -> new ItemStack(BotwClimb.ALTAR_ITEM.get()), 40, new int[0], (s, t) -> {
-        s.plate(WHITE, SNOW, 99, 0);
-        String side = "botwclimb:block/stamina_altar_side", top = "botwclimb:block/stamina_altar_top", gold = "botwclimb:block/shrine_terminal_gold";
-        String pale = "minecraft:block/calcite", paleTop = "minecraft:block/smooth_stone";
-        float p = 1f / 16f;
-        // A: a low dais, half as tall as now, with a top plate set in
-        s.cuboid(0, 1, 2, 1, 1 + 5 * p, 3, side, side);
-        s.cuboid(p, 1 + 5 * p, 2 + p, 1 - p, 1 + 8 * p, 3 - p, top, side);
-        rings(s, 0.5f, 1 + 8 * p, 2.5f, 0.9f);
-        // B: a stepped pedestal like the terminal's: a wide foot, a narrow column, a gold band and a top plate
-        s.cuboid(2, 1, 2, 3, 1 + 3 * p, 3, side, side);
-        s.cuboid(2 + 3 * p, 1 + 3 * p, 2 + 3 * p, 3 - 3 * p, 1 + 8 * p, 3 - 3 * p, side, side);
-        s.cuboid(2 + 2 * p, 1 + 8 * p, 2 + 2 * p, 3 - 2 * p, 1 + 9 * p, 3 - 2 * p, gold, gold);
-        s.cuboid(2 + p, 1 + 9 * p, 2 + p, 3 - p, 1 + 12 * p, 3 - p, top, side);
-        rings(s, 2.5f, 1 + 12 * p, 2.5f, 0.9f);
-        // C: the low dais in pale stone, so the green glow stands out
-        s.cuboid(4, 1, 2, 5, 1 + 5 * p, 3, pale, pale);
-        s.cuboid(4 + p, 1 + 5 * p, 2 + p, 5 - p, 1 + 8 * p, 3 - p, paleTop, pale);
-        rings(s, 4.5f, 1 + 8 * p, 2.5f, 0.9f);
-        String[] names = {"A", "B", "C"};
-        for (int i = 0; i < 3; i++) {
-            final String n = names[i];
-            s.flatAt(0.5f + 2 * i, 1f, 3.6f, (g, at) -> g.drawCenteredString(net.minecraft.client.Minecraft.getInstance().font, n, (int) at[0], (int) at[1], 0xFFFFFFFF));
-        }
-    });
 
     /** The altar's two rings on a top at height y, all lit, sized by {@code k}. */
-    private static void rings(GuideScreen s, float cx, float y, float cz, float k) {
-        float[][] r = {{0.26f, 0.355f}, {0.125f, 0.195f}};
-        for (int ring = 0; ring < 2; ring++)
-            for (int q = 0; q < 4; q++) s.arc(cx, y + 0.01f, cz, r[ring][0] * k, r[ring][1] * k, q * 0.25f + 0.01f, (q + 1) * 0.25f - 0.01f, 0xFF00F25A);
-    }
 
     private static final int TABLE_ROWS = 6;
     private static List<ItemStack> table;

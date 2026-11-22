@@ -67,11 +67,6 @@ public final class AutoShots {
                     wait = 0;
                     return;
                 }
-                if (Boolean.getBoolean("botwclimb.ponder")) { // -Pponder: film Create's Ponder screens (Create must be in run-auto/mods), to study them
-                    stage = 50;
-                    wait = 0;
-                    return;
-                }
                 if (SCREENS) {
                     stage = 40;
                     wait = 0;
@@ -173,19 +168,6 @@ public final class AutoShots {
             }
             case 55 -> { // each scene from the start, its clock a third of a tick per frame, then a pause on its last frame
                 var scenes = com.botwclimb.client.guide.GuideScenes.all();
-                if (Boolean.getBoolean("botwclimb.guide.concepts")) { // stills of the altar drafts from three sides, then quit
-                    if (wait == 1) {
-                        com.botwclimb.client.guide.GuideScreen.clockOverride = 39f;
-                        mc.setScreen(new com.botwclimb.client.guide.GuideScreen(java.util.List.of(com.botwclimb.client.guide.GuideScenes.CONCEPTS), 0, null));
-                    }
-                    float[][] views = {{-35f, 30f}, {-140f, 22f}, {20f, 12f}};
-                    for (int v = 0; v < views.length; v++) {
-                        if (wait == 6 + v * 6 && mc.screen instanceof com.botwclimb.client.guide.GuideScreen gs) gs.view(views[v][0], views[v][1]);
-                        if (wait == 10 + v * 6) snap("concept_" + v + ".png");
-                    }
-                    if (wait == 30) mc.stop();
-                    return;
-                }
                 if (wait == 1) {
                     guideScene = Integer.getInteger("botwclimb.guide.first", 0);
                     guideFrame = 0;
@@ -205,19 +187,6 @@ public final class AutoShots {
                     guideFrame = 0;
                     com.botwclimb.client.guide.GuideScreen.clockOverride = 0f;
                     mc.setScreen(new com.botwclimb.client.guide.GuideScreen(scenes, guideScene, null));
-                }
-            }
-            case 50 -> { // Create's Ponder index, then one item's scenes, a frame every second tick
-                try {
-                    if (wait == 2) mc.setScreen((net.minecraft.client.gui.screens.Screen) Class.forName("net.createmod.ponder.foundation.ui.PonderIndexScreen").getConstructor().newInstance());
-                    if (wait == 30) snap("pon_index.png");
-                    if (wait == 40) mc.setScreen((net.minecraft.client.gui.screens.Screen) Class.forName("net.createmod.ponder.foundation.ui.PonderUI").getMethod("of", net.minecraft.world.item.ItemStack.class)
-                            .invoke(null, new net.minecraft.world.item.ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.parse(System.getProperty("botwclimb.ponder.item", "create:mechanical_press"))))));
-                    if (wait > 40 && wait % 2 == 0 && wait < 1240) snap(String.format("pon_%04d.png", (wait - 40) / 2));
-                    if (wait == 1250) mc.stop();
-                } catch (ReflectiveOperationException e) {
-                    BotwClimb.LOGGER.error("Ponder not found", e);
-                    mc.stop();
                 }
             }
             case 30 -> { // the outline: hold the view while it is filmed, a still at the end, then quit

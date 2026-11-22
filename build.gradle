@@ -88,8 +88,6 @@ neoForge {
             if (project.hasProperty('armor')) systemProperty 'botwclimb.armor', 'true' // -Parmor: the rider wears leggings and boots
             if (project.hasProperty('levelcam')) systemProperty 'botwclimb.levelcam', 'true' // -Plevelcam: the ride filmed from just behind at head height, not from above
             if (project.hasProperty('guide')) systemProperty 'botwclimb.guide', 'true' // -Pguide: film the guide scenes
-            if (project.hasProperty('concepts')) systemProperty 'botwclimb.guide.concepts', 'true' // with -Pguide: stills of the altar drafts instead
-            if (project.hasProperty('ponder')) systemProperty 'botwclimb.ponder', 'true' // -Pponder: film Create's Ponder screens (put Create in run-auto/mods first)
             if (project.hasProperty('screens')) systemProperty 'botwclimb.screens', 'true' // -Pscreens: the terminal screen with pretend friends
             if (project.hasProperty('outline')) systemProperty 'botwclimb.outline', 'true' // -Poutline: straight to a plot corner to film the outline (no rides)
             if (project.hasProperty('style')) systemProperty 'botwclimb.style', project.property('style') // -Pstyle=totk

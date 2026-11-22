@@ -71,7 +71,6 @@
   "gui.botwclimb.guide.values_costs": "Points per upgrade",
   "gui.botwclimb.guide.values_gear": "Tools and armor are worth the diamonds, gold or iron they are made of. Netherite adds 3 (tools) or 4 (armor).",
   "gui.botwclimb.guide.values_gear_extra": "A level IV or V enchantment adds 2 more, on gear or a trident. Worn gear is worth less.",
-  "gui.botwclimb.guide.concepts.title": "Altar drafts",
   "gui.botwclimb.guide.altar.title": "Upgrading stamina at the altar",
   "gui.botwclimb.guide.altar_intro": "Offer valuables here for more stamina.",
   "gui.botwclimb.guide.altar_wheels": "Every upgrade adds a quarter to your Stamina Bar.",
