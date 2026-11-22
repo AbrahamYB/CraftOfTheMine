@@ -123,6 +123,9 @@ public class GuideScreen extends Screen {
         submit(c -> model.submit(ps, c, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0));
         *///?} else {
         Minecraft.getInstance().getBlockRenderer().renderSingleBlock(state, ps, buf, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+        //? if >=1.21.11 {
+        /*buf.endBatch(); // drawn now, before the rings over it: from 1.21.11 those are see-through quads that a later block would cover
+        *///?}
         //?}
         ps.popPose();
     }
