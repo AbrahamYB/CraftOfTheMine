@@ -56,6 +56,9 @@ public final class ModMenu {
     @SubscribeEvent
     public static void onRender(ScreenEvent.Render.Post event) {
         if (button == null || !event.getScreen().children().contains(button)) return;
+        //? if >=1.21.2 && <1.21.5 {
+        /*ClientCompat.gui(event).flush(); // the buttons are batched until the end of the frame here: draw them now, or ours covers its icon
+        *///?}
         wheel(ClientCompat.gui(event), button.getX() + 10f, button.getY() + 10f, 0.36f);
     }
 
