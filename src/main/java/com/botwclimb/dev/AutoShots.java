@@ -164,7 +164,17 @@ public final class AutoShots {
                 if (wait == 76) snap("ui_6_menu.png");
                 if (wait == 78) mc.setScreen(new com.botwclimb.client.altar.AltarScreen(PlotWorld.terminalPos(0)));
                 if (wait == 86) snap("ui_7_altar.png");
-                if (wait == 90) mc.stop();
+                if (wait == 90) { // the guide's altar scene: the items being thrown, then the notes after the table
+                    com.botwclimb.client.guide.GuideScreen.clockOverride = 330f;
+                    mc.setScreen(new com.botwclimb.client.guide.GuideScreen(com.botwclimb.client.guide.GuideScenes.all(), 0, null));
+                }
+                if (wait == 100) snap("ui_8_guide_throw.png");
+                if (wait == 102) com.botwclimb.client.guide.GuideScreen.clockOverride = 560f;
+                if (wait == 110) snap("ui_9_guide_notes.png");
+                if (wait == 114) mc.setScreen(new com.botwclimb.client.guide.GuideScreen(com.botwclimb.client.guide.GuideScenes.all(), 1, null)); // the terminal scene, with the player in it
+                if (wait == 115) com.botwclimb.client.guide.GuideScreen.clockOverride = 120f;
+                if (wait == 124) snap("ui_10_guide_terminal.png");
+                if (wait == 128) mc.stop();
             }
             case 55 -> { // each scene from the start, its clock a third of a tick per frame, then a pause on its last frame
                 var scenes = com.botwclimb.client.guide.GuideScenes.all();
