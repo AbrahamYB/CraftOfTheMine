@@ -118,9 +118,18 @@ public class GuideScreen extends Screen {
         ps.pushPose();
         ps.translate(x, y + drop, z);
         //? if >=26.1 {
-        /*var model = new net.minecraft.client.renderer.block.BlockModelRenderState();
+        /*//? if >=26.2 {
+        /^// in the solid pass whatever the model holds: a model with any see-through part (the altar's soft shadows) is otherwise drawn last,
+        // over the see-through rings and runes on it
+        java.util.List<net.minecraft.client.renderer.block.dispatch.BlockStateModelPart> parts = new java.util.ArrayList<>();
+        Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(state).collectParts(net.minecraft.client.renderer.block.BlockAndTintGetter.EMPTY,
+                net.minecraft.core.BlockPos.ZERO, state, net.minecraft.util.RandomSource.create(42L), parts);
+        nodes.submitMultiLayerBlockModel(ps, parts, false, new int[0], LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0);
+        ^///?} else {
+        var model = new net.minecraft.client.renderer.block.BlockModelRenderState();
         Minecraft.getInstance().getBlockModelResolver().update(model, state, BLOCK_CONTEXT);
         submit(c -> model.submit(ps, c, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, 0));
+        //?}
         *///?} else {
         Minecraft.getInstance().getBlockRenderer().renderSingleBlock(state, ps, buf, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
         //? if >=1.21.11 {
