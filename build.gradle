@@ -81,8 +81,19 @@ neoForge {
                 systemProperty 'botwclimb.autotest', 'true'
             }
 
+            if (project.hasProperty('colors')) systemProperty 'botwclimb.colors', 'true' // -Pcolors: a colour per body part on the default skins
+            if (project.hasProperty('record')) systemProperty 'botwclimb.record', 'true' // -Precord: a frame per tick for a video
+            if (project.hasProperty('shadow')) systemProperty 'botwclimb.shadow', 'true' // -Pshadow: shadow close-ups
+            if (project.hasProperty('night')) systemProperty 'botwclimb.night', 'true' // -Pnight: the rides at midnight
+            if (project.hasProperty('armor')) systemProperty 'botwclimb.armor', 'true' // -Parmor: the rider wears leggings and boots
+            if (project.hasProperty('levelcam')) systemProperty 'botwclimb.levelcam', 'true' // -Plevelcam: the ride filmed from just behind at head height, not from above
+            if (project.hasProperty('guide')) systemProperty 'botwclimb.guide', 'true' // -Pguide: film the guide scenes
+            if (project.hasProperty('concepts')) systemProperty 'botwclimb.guide.concepts', 'true' // with -Pguide: stills of the altar drafts instead
+            if (project.hasProperty('ponder')) systemProperty 'botwclimb.ponder', 'true' // -Pponder: film Create's Ponder screens (put Create in run-auto/mods first)
+            if (project.hasProperty('screens')) systemProperty 'botwclimb.screens', 'true' // -Pscreens: the terminal screen with pretend friends
+            if (project.hasProperty('outline')) systemProperty 'botwclimb.outline', 'true' // -Poutline: straight to a plot corner to film the outline (no rides)
             if (project.hasProperty('style')) systemProperty 'botwclimb.style', project.property('style') // -Pstyle=totk
-            programArguments.addAll '--quickPlaySingleplayer', 'AutoTest', '--width', '854', '--height', '480'
+            programArguments.addAll '--quickPlaySingleplayer', 'AutoTest', '--width', '1920', '--height', '1080'
         }
 
         server {
@@ -413,6 +424,7 @@ stonecutter {
             // the render type factories moved to their own class
             replace 'RenderType.debugQuads(', 'net.minecraft.client.renderer.rendertype.RenderTypes.debugQuads('
             replace 'RenderType.entityTranslucentEmissive(', 'net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucentEmissive('
+            replace 'RenderType.entityTranslucent(', 'net.minecraft.client.renderer.rendertype.RenderTypes.entityTranslucent('
             replace 'RenderType.eyes(', 'net.minecraft.client.renderer.rendertype.RenderTypes.eyes('
             replace 'RenderType.lightning(', 'net.minecraft.client.renderer.rendertype.RenderTypes.lightning('
         }

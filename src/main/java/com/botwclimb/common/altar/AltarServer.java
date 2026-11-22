@@ -39,20 +39,20 @@ public final class AltarServer {
         Set<Integer> seen = new HashSet<>();
         for (AltarOfferPayload.Entry e : offer.entries()) {
             if (e.slot() < 0 || e.slot() >= com.botwclimb.common.Compat.items(inv).size() || !seen.add(e.slot())) {
-                reply(p, false, "invalid", false);
+                reply(p, false, "invalid");
                 return;
             }
             ItemStack stack = com.botwclimb.common.Compat.items(inv).get(e.slot());
             float unit = AltarValues.unitValue(stack);
             if (stack.isEmpty() || unit <= 0f || e.count() < 1 || e.count() > stack.getCount()) {
-                reply(p, false, "invalid", false);
+                reply(p, false, "invalid");
                 return;
             }
             offered.add(new AltarRules.Offered(e.slot(), e.count(), unit));
         }
         AltarRules.Result r = AltarRules.evaluate(upgrades, credit, offered);
         if (!r.ok()) {
-            reply(p, false, r.reason(), false);
+            reply(p, false, r.reason());
             return;
         }
         for (AltarRules.Take t : r.take()) com.botwclimb.common.Compat.items(inv).get(t.slot()).shrink(t.count());
@@ -60,13 +60,13 @@ public final class AltarServer {
         p.setData(BotwClimb.ALTAR_CREDIT, r.creditAfter());
         inv.setChanged();
         p.containerMenu.broadcastChanges();
-        reply(p, true, "", r.upgradesAfter() >= ClimbConstants.STAMINA_MAX_UPGRADES);
+        reply(p, true, "");
     }
 
     /** At the last upgrade, what credit is left is paid back as an item of the player's choosing from the valuables list. */
     private static void refund(ServerPlayer p, int upgrades, float credit, AltarOfferPayload offer) {
         if (upgrades < ClimbConstants.STAMINA_MAX_UPGRADES) {
-            reply(p, false, "not_maxed", false);
+            reply(p, false, "not_maxed");
             return;
         }
         Item item = BuiltInRegistries.ITEM.getOptional(offer.refund()).orElse(null);
@@ -74,7 +74,7 @@ public final class AltarServer {
         float unit = sample.isEmpty() || AltarValues.isGear(sample) ? 0f : AltarValues.looseValue(item);
         int count = AltarRules.refundCount(credit, unit);
         if (count < 1) {
-            reply(p, false, "too_little", false);
+            reply(p, false, "too_little");
             return;
         }
         p.setData(BotwClimb.ALTAR_CREDIT, 0f);
@@ -85,10 +85,10 @@ public final class AltarServer {
             left -= n;
         }
         p.containerMenu.broadcastChanges();
-        reply(p, true, "refund", false);
+        reply(p, true, "refund");
     }
 
-    private static void reply(ServerPlayer p, boolean ok, String reason, boolean finale) {
-        com.botwclimb.common.Net.toPlayer(p, new AltarResultPayload(ok, reason, finale));
+    private static void reply(ServerPlayer p, boolean ok, String reason) {
+        com.botwclimb.common.Net.toPlayer(p, new AltarResultPayload(ok, reason));
     }
 }

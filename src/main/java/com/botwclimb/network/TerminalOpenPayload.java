@@ -11,38 +11,35 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Server to client: the player used a terminal; open its screen. {@code claimed} has one bit per plot slot, {@code here} is
- * the slot of the plot this terminal belongs to (-1 if none), {@code inPlot} says the terminal stands in the plot dimension.
+ * Server to client: the player used a terminal; open its screen. {@code claimed}: the player has a plot; {@code here}: this
+ * terminal is on it; {@code inPlot}: the terminal stands in the plot dimension; {@code open}: friends may join the player's plot.
  */
-public record TerminalOpenPayload(BlockPos pos, int claimed, int here, boolean inPlot, int open, List<Host> hosts) implements CustomPacketPayload {
-    /** A friend whose plot (slot) is open to join: who they are (for the skin face) and what to call them. */
-    public record Host(UUID id, String name, int slot) {}
+public record TerminalOpenPayload(BlockPos pos, boolean claimed, boolean here, boolean inPlot, boolean open, List<Host> hosts) implements CustomPacketPayload {
+    /** A friend whose plot is open to join: who they are (for the skin face) and what to call them. */
+    public record Host(UUID id, String name) {}
 
     public static final Type<TerminalOpenPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(BotwClimb.MOD_ID, "terminal_open"));
     public static final StreamCodec<FriendlyByteBuf, TerminalOpenPayload> CODEC = StreamCodec.of(
             (buf, p) -> {
                 buf.writeBlockPos(p.pos);
-                buf.writeVarInt(p.claimed);
-                buf.writeVarInt(p.here + 1);
+                buf.writeBoolean(p.claimed);
+                buf.writeBoolean(p.here);
                 buf.writeBoolean(p.inPlot);
-                buf.writeVarInt(p.open);
+                buf.writeBoolean(p.open);
                 buf.writeVarInt(p.hosts.size());
                 for (Host h : p.hosts) {
                     buf.writeUUID(h.id);
                     buf.writeUtf(h.name);
-                    buf.writeVarInt(h.slot);
                 }
             },
             buf -> {
                 var pos = buf.readBlockPos();
-                int claimed = buf.readVarInt(), here = buf.readVarInt() - 1;
-                boolean inPlot = buf.readBoolean();
-                int open = buf.readVarInt();
+                boolean claimed = buf.readBoolean(), here = buf.readBoolean(), inPlot = buf.readBoolean(), open = buf.readBoolean();
                 int n = buf.readVarInt();
-                if (n < 0 || n > 16) throw new io.netty.handler.codec.DecoderException("too many hosts: " + n);
+                if (n < 0 || n > com.botwclimb.common.shrine.PlotTravel.MAX_HOSTS) throw new io.netty.handler.codec.DecoderException("too many hosts: " + n);
                 var hosts = new java.util.ArrayList<Host>(n);
-                for (int i = 0; i < n; i++) hosts.add(new Host(buf.readUUID(), buf.readUtf(32), buf.readVarInt()));
+                for (int i = 0; i < n; i++) hosts.add(new Host(buf.readUUID(), buf.readUtf(32)));
                 return new TerminalOpenPayload(pos, claimed, here, inPlot, open, hosts);
             });
 

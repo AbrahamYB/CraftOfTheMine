@@ -34,8 +34,7 @@ import java.util.Locale;
 public class AltarScreen extends Screen {
     private static final int W = 190, H = 224, GRID_Y = 116, SLOT = 22, GAP = 2, REFUND_Y = 128; // H is the height while upgrades are left; a finished altar needs far less
     // a darker tone than before; the vignette at the panel's edges is drawn in vignette()
-    private static final int PANEL = 0xFF090B0E, BORDER = 0xFF171B21, SLOT_BG = 0xFF0F1216, SLOT_BORDER = 0xFF242A32, EMPTY_BORDER = 0xFF171B21;
-    private static final int TEXT = 0xFFD2D8E0, MUTED = 0xFF7D8694, BRIGHT = 0xFFEDF1F6, GREEN = 0xFF00F25A, GREY = 0xFF1A1E24, AMBER = 0xFFFFD34D, DANGER = 0xFFFF6B5B;
+    private static final int TEXT = 0xFFD2D8E0, MUTED = 0xFF7D8694, BRIGHT = 0xFFEDF1F6, GREEN = 0xFF00F25A, GREY = com.botwclimb.client.GlassUi.QUIET, AMBER = 0xFFFFD34D, DANGER = 0xFFFF6B5B;
     private static final int ROW_H = 16, ROWS = 5, PW = 170, PH = 16 + ROWS * ROW_H + 4;
 
     private final BlockPos pos;
@@ -63,11 +62,6 @@ public class AltarScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
-    }
-
-    @Override
-    public void removed() {
-        AltarFx.onMenuClosed();
     }
 
     public void onResult(AltarResultPayload r) {
@@ -166,7 +160,7 @@ public class AltarScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics g, int mx, int my, float pt) {
-        g.fill(0, 0, width, height, 0xBB000000);
+        super.renderBackground(g, mx, my, pt); // the game's own blur behind the glass
     }
 
     @Override
@@ -174,9 +168,7 @@ public class AltarScreen extends Screen {
         renderBackground(g, mx, my, pt);
         int x = left(), y = top();
         int ph = panelHeight();
-        g.fill(x, y, x + W, y + ph, BORDER);
-        g.fill(x + 1, y + 1, x + W - 1, y + ph - 1, PANEL);
-        vignette(g, x + 1, y + 1, W - 2, ph - 2);
+        com.botwclimb.client.GlassUi.panel(g, x, y, W, ph);
         int u = upgrades();
         if (maxed()) { // a finished altar says only that, centred
             g.drawCenteredString(font, Component.translatable("gui.botwclimb.altar.maxed"), x + W / 2, y + 10, GREEN);
@@ -216,8 +208,7 @@ public class AltarScreen extends Screen {
         for (int i = 0; i < 9; i++) {
             int sx = slotX(i), sy = slotY(i);
             AltarOffer o = offer[i];
-            g.fill(sx, sy, sx + SLOT, sy + SLOT, o != null ? (i == pickerFor ? GREEN : SLOT_BORDER) : (i == pickerFor ? GREEN : EMPTY_BORDER));
-            g.fill(sx + 1, sy + 1, sx + SLOT - 1, sy + SLOT - 1, SLOT_BG);
+            com.botwclimb.client.GlassUi.well(g, sx, sy, SLOT, SLOT, o != null, i == pickerFor);
             if (o != null) {
                 g.renderItem(o.icon(), sx + 3, sy + 3);
                 g.renderItemDecorations(font, new ItemStack(o.icon().getItem(), o.count()), sx + 3, sy + 3);
@@ -287,8 +278,7 @@ public class AltarScreen extends Screen {
         boolean can = canOffer();
         boolean hover = over(mx, my, bx, by, bw, 18);
         // a deep green with white text (about 5:1), brighter on hover, instead of dark text on the bright green
-        g.fill(bx, by, bx + bw, by + 18, can ? (hover ? 0xFF0E9A47 : 0xFF087F3C) : GREY);
-        if (can) g.fill(bx, by, bx + bw, by + 1, 0x3300F25A); // a thin highlight on the top edge
+        com.botwclimb.client.GlassUi.button(g, bx, by, bw, 18, hover, can);
         Component label = maxed() ? Component.translatable("gui.botwclimb.altar.maxed") : Component.translatable("gui.botwclimb.altar.button");
         g.drawCenteredString(font, label, bx + bw / 2, by + 5, can ? 0xFFFFFFFF : 0xFF7F8998);
     }
@@ -322,14 +312,13 @@ public class AltarScreen extends Screen {
         com.botwclimb.client.ClientCompat.translate(g, pickerPivotX, pickerPivotY, 0); // grows out of the slot that was clicked
         com.botwclimb.client.ClientCompat.scale(g, scale, scale);
         com.botwclimb.client.ClientCompat.translate(g, -pickerPivotX, -pickerPivotY, 0);
-        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, fade(0xFF242A32, p));
-        g.fill(x, y, x + w, y + h, fade(0xFF07090C, p));
-        vignette(g, x, y, w, h);
+        g.fill(x, y, x + w, y + h, fade(0xB0000000, p)); // darker under the glass: it lies over the slots
+        com.botwclimb.client.GlassUi.panel(g, x, y, w, h, p);
         boolean text = p > 0.5f;
         if (text) {
-            g.drawString(font, Component.translatable("gui.botwclimb.altar.pick"), x + 8, y + 4, fade(MUTED, p), false);
+            g.drawString(font, Component.translatable("gui.botwclimb.altar.pick"), x + 8, y + 4, fade(MUTED, p), true);
         }
-        if (rows.isEmpty() && text) g.drawString(font, "-", x + 8, ly + 4, MUTED, false);
+        if (rows.isEmpty() && text) g.drawString(font, "-", x + 8, ly + 4, MUTED, true);
         boolean clip = p >= 1f;
         if (clip) g.enableScissor(x, ly, x + w, ly + ROWS * ROW_H);
         int first = (int) Math.floor(pickerPos);
@@ -338,12 +327,12 @@ public class AltarScreen extends Screen {
             if (!clip && (ry < ly || ry + ROW_H > ly + ROWS * ROW_H)) continue;
             Row r = rows.get(i);
             boolean hover = over(mx, my, x + 3, Math.max(ry, ly), w - 6, ROW_H) && my >= ly && my < ly + ROWS * ROW_H;
-            if (hover) g.fill(x + 3, ry, x + w - 3, ry + ROW_H, fade(0xFF161A20, p));
+            if (hover) g.fill(x + 3, ry, x + w - 3, ry + ROW_H, fade(0x22FFFFFF, p));
             g.renderItem(r.stack(), x + 5, ry);
             if (!text) continue;
             String val = AltarValues.isGear(r.stack()) || r.available() == 1 ? fmt(r.unit()) : Component.translatable("gui.botwclimb.altar.each", fmt(r.unit())).getString();
-            g.drawString(font, trim(r.stack().getHoverName().getString() + " x" + r.available(), w - 40 - font.width(val)), x + 25, ry + 4, fade(TEXT, p), false);
-            g.drawString(font, val, x + w - 8 - font.width(val), ry + 4, fade(MUTED, p), false);
+            g.drawString(font, trim(r.stack().getHoverName().getString() + " x" + r.available(), w - 40 - font.width(val)), x + 25, ry + 4, fade(TEXT, p), true);
+            g.drawString(font, val, x + w - 8 - font.width(val), ry + 4, fade(MUTED, p), true);
         }
         if (clip) g.disableScissor();
         if (rows.size() > ROWS) { // scroll bar
@@ -382,7 +371,7 @@ public class AltarScreen extends Screen {
             Item item = items.get(refundScroll + i);
             int count = AltarRules.refundCount(credit(), AltarValues.looseValue(item));
             int ry = y + i * ROW_H;
-            if (over(mx, my, x, ry, w, ROW_H)) g.fill(x, ry, x + w, ry + ROW_H, 0xFF1D2128);
+            if (over(mx, my, x, ry, w, ROW_H)) g.fill(x, ry, x + w, ry + ROW_H, 0x22FFFFFF);
             g.renderItem(new ItemStack(item), x + 2, ry + 1);
             g.drawString(font, trim(new ItemStack(item).getHoverName().getString() + " x" + count, w - 28), x + 24, ry + 5, TEXT, false);
         }

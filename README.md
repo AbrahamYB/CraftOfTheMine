@@ -1,7 +1,7 @@
 # Craft of the Mine (CotM)
 
 Craft of the Mine brings Breath-of-the-Wild-style movement to Minecraft: you climb walls, jump from ledge to ledge, glide on a
-paraglider and manage a stamina wheel. It also adds an altar for growing that wheel, bullet time for bows and crossbows, and personal
+paraglider and manage a Stamina Bar. It also adds an altar for growing that bar, bullet time for bows and crossbows, and personal
 plots reached through shrine terminals. It is one small jar per Minecraft version for NeoForge, with no other mods needed.
 
 This is an unofficial fan project. It is not affiliated with or endorsed by Nintendo or Mojang.
@@ -10,8 +10,8 @@ This is an unofficial fan project. It is not affiliated with or endorsed by Nint
 
 * **Wall climbing.** Hold the climb key next to a wall, climb in any direction, hop between holds, jump over ledges, turn corners.
 * **Paraglider.** Open it in the air, steer with the camera, and learn new fabrics by crafting them in a menu beside your inventory.
-* **Stamina.** A wheel drawn on screen that climbing and gliding spend, kept honest by the server.
-* **Stamina altar.** Offer valuables to grow the wheel, up to three full rings.
+* **Stamina.** A Stamina Bar drawn on screen that climbing and gliding spend, kept honest by the server.
+* **Stamina altar.** Offer valuables to grow the Stamina Bar, up to three full rings.
 * **Bullet time.** A slow fall and slowed mobs while you aim a bow or crossbow in the air.
 * **Shrine terminals and plots.** Claim a plot island and travel there and back with a short ride.
 

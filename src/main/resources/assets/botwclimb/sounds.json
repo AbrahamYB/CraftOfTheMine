@@ -1,0 +1,12 @@
+{
+  "terminal_open": {"subtitle": "subtitles.botwclimb.terminal_open", "sounds": ["botwclimb:ride/terminal_open"]},
+  "ride_start": {"subtitle": "subtitles.botwclimb.ride_start", "sounds": ["botwclimb:ride/ride_start"]},
+  "ride_void": {"subtitle": "subtitles.botwclimb.ride_void", "sounds": ["botwclimb:ride/down"]},
+  "ride_void_up": {"subtitle": "subtitles.botwclimb.ride_void", "sounds": ["botwclimb:ride/void_up"]},
+  "ride_arrive": {"subtitle": "subtitles.botwclimb.ride_arrive", "sounds": ["botwclimb:ride/arrive"]},
+  "ride_arrive_rider": {"subtitle": "subtitles.botwclimb.ride_arrive", "sounds": ["botwclimb:ride/arrive_rider"]},
+  "ride_jump": {"subtitle": "subtitles.botwclimb.ride_jump", "sounds": ["botwclimb:ride/jump"]},
+  "ride_sparkle": {"subtitle": "subtitles.botwclimb.ride_sparkle", "sounds": ["botwclimb:ride/sparkle"]},
+  "ride_land": {"subtitle": "subtitles.botwclimb.ride_land", "sounds": ["botwclimb:ride/down_land"]},
+  "ride_land_rider": {"subtitle": "subtitles.botwclimb.ride_land", "sounds": ["botwclimb:ride/down_land_rider"]}
+}

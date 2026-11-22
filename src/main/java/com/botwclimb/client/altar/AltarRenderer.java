@@ -35,8 +35,8 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
         void geom(RenderType type, java.util.function.BiConsumer<PoseStack.Pose, VertexConsumer> write);
     }
 
-    private static final float TOP = 12f / 16f + 0.02f, SIDE = 0.02f; // far enough off the surface not to z-fight with it
-    /** Ring radii in blocks: the outer ring is the first extra wheel, the inner one the second. */
+    private static final float TOP = 8f / 16f + 0.02f, SIDE = 0.02f; // the dais is 8 px tall; far enough off the surface not to z-fight with it
+    /** Ring radii in blocks: the inner ring fills first (upgrades 1-4), the outer one second. */
     private static final float[][] RINGS = {{0.26f, 0.355f}, {0.125f, 0.195f}};
     private static int gridCache;
 
@@ -53,7 +53,7 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
         return gridCache;
     }
     /** The rune: cells (row from the top, column) on a 16 x 12 face. */
-    private static final int[][] RUNE = {{5, 5}, {5, 6}, {6, 6}, {7, 6}, {7, 7}, {5, 9}, {6, 9}, {7, 9}, {6, 10}, {5, 10}, {6, 8}};
+    private static final int[][] RUNE = {{5, 6}, {5, 7}, {5, 8}, {5, 9}, {6, 5}, {6, 10}, {7, 6}, {7, 7}, {7, 8}, {7, 9}};
 
     public AltarRenderer(net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider.Context ctx) {}
 
@@ -71,69 +71,76 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
         LocalPlayer p = Minecraft.getInstance().player;
         if (p != null && p.hasData(BotwClimb.STAMINA_UPGRADES)) {
             int upgrades = AltarFx.upgrades(p);
-            glyphs(be, upgrades, AltarFx.lit(upgrades, partialTick)); // the drifting letters are spawned as the altar is looked at, as before
+            glyphs(be, upgrades); // the drifting letters are spawned as the altar is looked at, as before
         }
     }
 
     @Override
     public void submit(State state, PoseStack pose, net.minecraft.client.renderer.SubmitNodeCollector collector, net.minecraft.client.renderer.state.CameraRenderState camera) {
+        pose.pushPose();
+        face(pose, state.blockState);
         draw((type, write) -> collector.submitCustomGeometry(pose, type, write::accept), pose, state.partial, null);
+        pose.popPose();
     }
     *///?} else if >=1.21.5 {
     /*@Override
     public void render(StaminaAltarBlockEntity be, float partialTick, PoseStack pose, MultiBufferSource buffers, int light, int overlay,
                        net.minecraft.world.phys.Vec3 camera) {
+        pose.pushPose();
+        face(pose, be.getBlockState());
         draw((type, write) -> write.accept(pose.last(), buffers.getBuffer(type)), pose, partialTick, be);
+        pose.popPose();
     }
     *///?} else {
     @Override
     public void render(StaminaAltarBlockEntity be, float partialTick, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
+        pose.pushPose();
+        face(pose, be.getBlockState());
         draw((type, write) -> write.accept(pose.last(), buffers.getBuffer(type)), pose, partialTick, be);
+        pose.popPose();
     }
     //?}
+
+    /** Turns the drawing with the block, as its model is turned (north is unturned). */
+    private static void face(PoseStack pose, net.minecraft.world.level.block.state.BlockState st) {
+        if (st == null || !st.hasProperty(com.botwclimb.common.altar.StaminaAltarBlock.FACING)) return;
+        pose.translate(0.5, 0, 0.5);
+        pose.mulPose(com.mojang.math.Axis.YP.rotationDegrees(-(st.getValue(com.botwclimb.common.altar.StaminaAltarBlock.FACING).toYRot() + 180f)));
+        pose.translate(-0.5, 0, -0.5);
+    }
 
     /** All the glowing rings and runes (and, when a block entity is given, the drifting letters). */
     private static void draw(Out out, PoseStack pose, float partialTick, StaminaAltarBlockEntity be) {
         LocalPlayer p = Minecraft.getInstance().player;
         if (p == null || !p.hasData(BotwClimb.STAMINA_UPGRADES)) return;
         int upgrades = AltarFx.upgrades(p);
-        AltarFx.Look lit = AltarFx.lit(upgrades, partialTick);
-        boolean dark = AltarFx.finaleActive() && lit.level() <= 0f; // all the way off: nothing is drawn
-        if (dark) return;
         boolean maxed = upgrades >= ClimbConstants.STAMINA_MAX_UPGRADES;
-        float shadowFade = AltarFx.finaleActive() ? lit.level() : 1f; // the shadows go out with the lights during the finale
         for (int ring = 0; ring < 2; ring++) {
             for (int q = 0; q < 4; q++) {
                 boolean on = maxed || AltarFx.quarterLit(upgrades, ring, q);
-                int rgb = on ? lit.rgb() : AltarFx.SHADOW;
-                float a = on ? lit.level() : 0.9f * shadowFade;
-                if (a <= 0.01f) continue;
-                arcQuad(out, ring, q, on, rgb, a);
+                arcQuad(out, ring, q, on, on ? AltarFx.GREEN : AltarFx.SHADOW, on ? 1f : 0.9f);
             }
         }
-        if (be != null) glyphs(be, upgrades, lit);
-        if (upgrades >= 1 || AltarFx.finaleActive()) {
-            if (lit.level() > 0.01f) runes(out, lit.rgb(), lit.level(), true);
-        } else {
-            runes(out, AltarFx.SHADOW, 0.9f, false);
-        }
+        if (be != null) glyphs(be, upgrades);
+        if (upgrades >= 1) runes(out, AltarFx.GREEN, 1f, true);
+        else runes(out, AltarFx.SHADOW, 0.9f, false);
     }
 
     /** One Sheikah letter at a time, a new one every few ticks, each a different random letter in the colour the altar is lit in. */
-    private static void glyphs(StaminaAltarBlockEntity be, int upgrades, AltarFx.Look lit) {
+    private static void glyphs(StaminaAltarBlockEntity be, int upgrades) {
         var level = be.getLevel();
-        if (level == null || lit.level() < 0.5f) return;
+        if (level == null) return;
         long now = level.getGameTime();
         int quarters = upgrades >= ClimbConstants.STAMINA_MAX_UPGRADES ? 8 : Mth.clamp(upgrades, 0, 8);
         if (quarters == 0 || now < be.lastParticleTick + 14 - quarters) return; // spaced out: they never come in bursts
         var rnd = level.getRandom();
         be.lastParticleTick = now + rnd.nextInt(4);
-        int pick = rnd.nextInt(quarters), ring = pick / 4, q = pick % 4; // above one of the lit quarters
+        int pick = rnd.nextInt(quarters), ring = 1 - pick / 4, q = pick % 4; // above one of the lit quarters
         float[] s = pos(Mth.lerp(rnd.nextFloat(), RINGS[ring][0], RINGS[ring][1]), q * 90f + 8f + rnd.nextFloat() * 74f);
         var pos = be.getBlockPos();
         var particle = Minecraft.getInstance().particleEngine.createParticle(BotwClimb.GLYPH.get(),
                 pos.getX() + s[0], pos.getY() + TOP + 0.15, pos.getZ() + s[1], rnd.nextInt(26), 0, 0);
-        if (particle instanceof net.minecraft.client.particle.TextureSheetParticle sq) sq.setColor((lit.rgb() >> 16 & 255) / 255f, (lit.rgb() >> 8 & 255) / 255f, (lit.rgb() & 255) / 255f);
+        if (particle instanceof net.minecraft.client.particle.TextureSheetParticle sq) sq.setColor((AltarFx.GREEN >> 16 & 255) / 255f, (AltarFx.GREEN >> 8 & 255) / 255f, (AltarFx.GREEN & 255) / 255f);
     }
 
     /**
@@ -212,7 +219,7 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
 
     /** The rune on each of the four sides, one baked texture (8 pieces per 1/16 cell, mottled like the rings) and one quad per side. */
     private static void runes(Out out, int rgb, float a, boolean lit) {
-        float top = 12f / 16f, o = SIDE;
+        float top = 9f / 16f, bot = top - 12f / 16f, o = SIDE; // the 12-row rune picture, hung so the rune lands on the 5 px base
         for (int side = 0; side < 4; side++) {
             int sd = side + 1;
             ResourceLocation tex = RUNE_TEX[side][lit ? 1 : 0];
@@ -228,10 +235,10 @@ public class AltarRenderer implements BlockEntityRenderer<StaminaAltarBlockEntit
             out.geom(RenderType.entityTranslucentEmissive(tex), (last, vc) -> {
                 // north (z = 0), south (z = 1), west (x = 0), east (x = 1): u runs left to right as seen from outside
                 switch (fs) {
-                    case 0 -> quadUV(vc, last, 1, top, -o, 0, top, -o, 0, 0, -o, 1, 0, -o, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, 0, 0, -1);
-                    case 1 -> quadUV(vc, last, 0, top, 1 + o, 1, top, 1 + o, 1, 0, 1 + o, 0, 0, 1 + o, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, 0, 0, 1);
-                    case 2 -> quadUV(vc, last, -o, top, 0, -o, top, 1, -o, 0, 1, -o, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, -1, 0, 0);
-                    default -> quadUV(vc, last, 1 + o, top, 1, 1 + o, top, 0, 1 + o, 0, 0, 1 + o, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, 1, 0, 0);
+                    case 0 -> quadUV(vc, last, 1, top, -o, 0, top, -o, 0, bot, -o, 1, bot, -o, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, 0, 0, -1);
+                    case 1 -> quadUV(vc, last, 0, top, 1 + o, 1, top, 1 + o, 1, bot, 1 + o, 0, bot, 1 + o, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, 0, 0, 1);
+                    case 2 -> quadUV(vc, last, -o, top, 0, -o, top, 1, -o, bot, 1, -o, bot, 0, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, -1, 0, 0);
+                    default -> quadUV(vc, last, 1 + o, top, 1, 1 + o, top, 0, 1 + o, bot, 0, 1 + o, bot, 1, 0, 0, 1, 0, 1, 1, 0, 1, rgb, a, 1, 0, 0);
                 }
             });
         }

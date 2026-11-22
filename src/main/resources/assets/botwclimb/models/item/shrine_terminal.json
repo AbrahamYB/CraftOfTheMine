@@ -1,5 +1,5 @@
 {
-  "parent": "botwclimb:block/shrine_terminal_off",
+  "parent": "botwclimb:block/shrine_terminal",
   "display": {
     "gui": {
       "rotation": [

@@ -2,7 +2,6 @@ package com.botwclimb.client.shrine;
 
 import com.botwclimb.BotwClimb;
 import com.botwclimb.network.TerminalRidePayload;
-import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -15,7 +14,7 @@ import java.util.Map;
 
 /**
  * What the client knows about terminal rides: who is riding, in which phase, and since when. Also locks the rider's own
- * controls and keeps their camera in third person for the whole ride.
+ * controls (ClimbCamera keeps them in third person).
  */
 @EventBusSubscriber(modid = BotwClimb.MOD_ID, value = Dist.CLIENT)
 public final class MudHandClient {
@@ -34,8 +33,7 @@ public final class MudHandClient {
     private static final Map<Integer, State> RIDES = new HashMap<>();
     private static final long MAX_RIDE_TICKS = 600;
     /** How far the Tears of the Kingdom Return pulls the rider into the ground before the transition, in blocks. */
-    private static final double PULL_DEPTH = 1.0;
-    private static CameraType saved;
+    private static boolean riding;
 
     private MudHandClient() {}
 
@@ -50,16 +48,9 @@ public final class MudHandClient {
     public static void onState(TerminalRidePayload p) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
-        if (mc.player != null && p.entityId() == mc.player.getId()) {
-            if (p.phase() != 0 && saved == null) {
-                saved = mc.options.getCameraType();
-                mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
-            } else if (p.phase() == 0 && saved != null) {
-                mc.options.setCameraType(saved);
-                saved = null;
-            }
-        }
+        if (mc.player != null && p.entityId() == mc.player.getId()) riding = p.phase() != 0; // the view itself is eased by ClimbCamera
         if (p.phase() == 0) {
+            if (mc.player != null && p.entityId() == mc.player.getId()) mc.player.resetFallDistance(); // the ride's drop is no fall: no thud when it lets go
             RIDES.remove(p.entityId());
             return;
         }
@@ -77,14 +68,8 @@ public final class MudHandClient {
         Minecraft mc = Minecraft.getInstance();
         if (!event.getEntity().level().isClientSide() || event.getEntity() != mc.player || mc.level == null) return;
         State s = RIDES.get(mc.player.getId());
-        if (s != null && s.phase() == 1 && s.kind() == 1) {
-            // the Return: before anything else the ground takes hold and draws the rider part-way in (about a
-            // block, down to the waist), slowly at first and then firmly, over the last 20 ticks of the gathering
-            double pull = Math.max(0, Math.min(1, (mc.level.getGameTime() - s.since() - 20) / 20.0));
-            mc.player.setPos(mc.player.getX(), s.startY() - PULL_DEPTH * pull * pull * (3 - 2 * pull), mc.player.getZ());
-            mc.player.setDeltaMovement(0, 0, 0);
-            return;
-        }
+        if (s != null) mc.player.setPose(net.minecraft.world.entity.Pose.STANDING); // inside the ground the game picks a crouch or crawl each tick, which made the void's rider jump for a frame
+        // the Return's pull to the waist is only drawn (TotkRide.sunk): moving the player's own position fought the server's hold and rubber-banded
         if (s == null || !s.sinking()) return;
         double t = mc.level.getGameTime() - s.phaseSince() - com.botwclimb.common.shrine.TerminalRide.SINK_DELAY;
         if (t < 0) return; // the ground is still unravelling
@@ -110,13 +95,9 @@ public final class MudHandClient {
             long now = mc.level.getGameTime();
             RIDES.values().removeIf(r -> now < r.since() || now - r.since() > MAX_RIDE_TICKS);
         }
-        if (saved == null) return;
-        if (mc.player == null || !RIDES.containsKey(mc.player.getId())) { // left the world mid-ride
-            if (mc.player != null) mc.options.setCameraType(saved);
-            saved = null;
+        if (riding && (mc.player == null || !RIDES.containsKey(mc.player.getId()))) { // left the world mid-ride
+            riding = false;
             RIDES.clear();
-        } else if (mc.options.getCameraType() != CameraType.THIRD_PERSON_BACK) {
-            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
         }
     }
 }

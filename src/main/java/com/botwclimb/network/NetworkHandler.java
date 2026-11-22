@@ -66,6 +66,9 @@ public final class NetworkHandler {
         r.playToServer(BulletFallPayload.TYPE, BulletFallPayload.CODEC, (p, ctx) -> {
             if (ctx.player() instanceof ServerPlayer sp) BulletFall.apply(sp, p.on());
         });
+        r.playToServer(RideLoadedPayload.TYPE, RideLoadedPayload.CODEC, (p, ctx) -> {
+            if (ctx.player() instanceof ServerPlayer sp) ctx.enqueueWork(() -> com.botwclimb.common.shrine.TerminalRide.loaded(sp, p.dimension()));
+        });
         r.playToServer(AltarOfferPayload.TYPE, AltarOfferPayload.CODEC, (p, ctx) -> {
             if (ctx.player() instanceof ServerPlayer sp) com.botwclimb.common.altar.AltarServer.handle(sp, p);
         });

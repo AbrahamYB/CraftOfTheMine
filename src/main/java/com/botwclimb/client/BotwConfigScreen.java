@@ -18,7 +18,7 @@ import java.util.List;
  */
 public class BotwConfigScreen extends Screen {
     /** Panel width, its side padding, row and heading heights, space for the title and for the buttons, the controls' width, and how far in from a row's edge they sit. */
-    private static final int W = 320, PAD = 16, ROW_H = 26, HEAD_H = 22, TITLE_H = 40, FOOT_H = 54, CONTROL_W = 132, INSET = 8, TRACK_GAP = 42;
+    private static final int W = 320, PAD = 16, ROW_H = 22, HEAD_H = 18, TITLE_H = 30, HELP_H = 24, FOOT_H = 40, CONTROL_W = 132, INSET = 8, TRACK_GAP = 42;
     private static final int PANEL = 0xFF090B0E, BORDER = 0xFF171B21, CARD = 0xFF0F1216, CARD_BORDER = 0xFF242A32, CARD_HOVER = 0xFF3A424D;
     private static final int TEXT = 0xFFD2D8E0, MUTED = 0xFF7D8694, BRIGHT = 0xFFEDF1F6, GREEN = 0xFF00F25A, GREY = 0xFF1A1E24;
     private static final int BUTTON = 0xFF087F3C, BUTTON_HOVER = 0xFF0E9A47, BUTTON_QUIET = 0xFF1B2028;
@@ -50,12 +50,13 @@ public class BotwConfigScreen extends Screen {
         rows.add(new Toggle("glider_camera", ClientConfig.gliderCameraValue()));
         rows.add(new Heading("plots"));
         rows.add(new Toggle("plot_outline", ClientConfig.plotOutlineValue()));
+        rows.add(new Toggle("outline_motion", ClientConfig.outlineMotionValue()));
     }
 
     // ---- layout: everything hangs off the panel's top-left, nothing is placed by eye
 
     private int panelH() {
-        int h = TITLE_H + FOOT_H;
+        int h = TITLE_H + HELP_H + FOOT_H; // the help sits inside the panel, above the buttons, so nothing runs off a small screen
         for (Row r : rows) h += r instanceof Heading ? HEAD_H : ROW_H;
         return h;
     }
@@ -65,7 +66,7 @@ public class BotwConfigScreen extends Screen {
     }
 
     private int top() {
-        return (height - panelH() - 22) / 2;
+        return Math.max(4, (height - panelH()) / 2);
     }
 
     private int rowY(int index) {
@@ -84,7 +85,7 @@ public class BotwConfigScreen extends Screen {
     }
 
     private int footY() {
-        return top() + panelH() - FOOT_H + 14;
+        return top() + panelH() - FOOT_H + 8;
     }
 
     private static boolean over(double mx, double my, int x, int y, int w, int h) {
@@ -113,13 +114,13 @@ public class BotwConfigScreen extends Screen {
         g.fill(x, y, x + W, y + ph, BORDER);
         g.fill(x + 1, y + 1, x + W - 1, y + ph - 1, PANEL);
         AltarScreen.vignette(g, x + 1, y + 1, W - 2, ph - 2);
-        g.drawCenteredString(font, title, x + W / 2, y + 16, BRIGHT);
+        g.drawCenteredString(font, title, x + W / 2, y + 11, BRIGHT);
         int hovered = rowAt(mx, my);
         for (int i = 0; i < rows.size(); i++) {
             int ry = rowY(i);
             switch (rows.get(i)) {
                 case Heading h -> {
-                    g.drawString(font, Component.translatable("gui.botwclimb.config.section." + h.key()).getString().toUpperCase(), x + PAD, ry + 8, MUTED, false);
+                    g.drawString(font, Component.translatable("gui.botwclimb.config.section." + h.key()).getString().toUpperCase(), x + PAD, ry + HEAD_H - 13, MUTED, false);
                     g.fill(x + PAD, ry + HEAD_H - 3, x + W - PAD, ry + HEAD_H - 2, CARD_BORDER);
                 }
                 case Toggle t -> {
@@ -148,7 +149,11 @@ public class BotwConfigScreen extends Screen {
                 case Slider s -> s.key();
                 default -> null;
             };
-            if (key != null) g.drawCenteredString(font, Component.translatable("gui.botwclimb.config.help." + key), x + W / 2, y + ph + 8, MUTED);
+            if (key != null) { // wrapped to the panel, centred in the space above the buttons
+                var lines = font.split(Component.translatable("gui.botwclimb.config.help." + key), W - 2 * PAD);
+                int hy = footY() - 8 - HELP_H / 2 - lines.size() * 5;
+                for (int n = 0; n < Math.min(2, lines.size()); n++) g.drawCenteredString(font, lines.get(n), x + W / 2, hy + n * 10 + 1, MUTED);
+            }
         }
         // the two buttons at the foot
         int by = footY(), bw = (W - 2 * PAD - 8) / 2;

@@ -7,8 +7,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -24,10 +22,10 @@ import java.util.UUID;
  * believes nothing the client sends beyond which button was pressed, and checks that again.
  */
 public final class PlotTravel {
-    /** The "Return" button: back to where the last trip into the plots began. */
-    public static final int RETURN = -1;
+    /** The "Return" button: back to where the last trip into the plots began; and the player's own plot. */
+    public static final int RETURN = -1, OWN = 0;
     /** The "friends can join" switch, a ride to a friend's plot (what the ride is told once the friend is picked), and the first of the join buttons (one per open host, in the order the screen was sent). */
-    public static final int TOGGLE_OPEN = 50, VISIT = 55, JOIN = 60, MAX_HOSTS = 4;
+    public static final int TOGGLE_OPEN = 50, VISIT = 55, JOIN = 60, MAX_HOSTS = 16; // the friends box scrolls through them
 
     /** Where a ride ends: the standing spot, and how far above it the rider may come down from (limited by what is overhead). */
     public record Arrival(ServerLevel level, double x, double y, double z, float yaw, double rise) {}
@@ -39,27 +37,21 @@ public final class PlotTravel {
     public static TerminalOpenPayload openPayload(ServerPlayer p, BlockPos terminal) {
         PlotData data = PlotData.get(p.level().getServer());
         UUID id = p.getUUID();
-        int claimed = 0;
-        for (int s = 0; s < PlotData.SLOTS; s++) if (data.plot(id, s) >= 0) claimed |= 1 << s;
+        int plot = data.plot(id);
         boolean inPlot = p.level().dimension() == PlotWorld.DIM;
-        int here = inPlot ? data.slotOf(id, PlotWorld.plotAt(terminal)) : -1;
-        int open = 0;
-        for (int s = 0; s < PlotData.SLOTS; s++) if (data.plot(id, s) >= 0 && data.isOpen(data.plot(id, s))) open |= 1 << s;
-        return new TerminalOpenPayload(terminal, claimed, here, inPlot, open, hosts(p).stream().map(h -> new TerminalOpenPayload.Host(h.player().getUUID(), com.botwclimb.common.Compat.name(h.player()), h.slot())).toList());
+        return new TerminalOpenPayload(terminal, plot >= 0, inPlot && data.owns(id, PlotWorld.plotAt(terminal)), inPlot, plot >= 0 && data.isOpen(plot),
+                hosts(p).stream().map(h -> new TerminalOpenPayload.Host(h.player().getUUID(), com.botwclimb.common.Compat.name(h.player()))).toList());
     }
 
-    private record Host(ServerPlayer player, int slot, int plot) {}
+    private record Host(ServerPlayer player, int plot) {}
 
-    /** Every plot of another online player that is open to friends, in a fixed order the join buttons refer to. */
+    /** The plot of every other online player that is open to friends, in a fixed order the join buttons refer to. */
     private static List<Host> hosts(ServerPlayer p) {
         PlotData data = PlotData.get(p.level().getServer());
         List<Host> out = new ArrayList<>();
         for (ServerPlayer o : p.level().getServer().getPlayerList().getPlayers()) {
-            if (o == p) continue;
-            for (int s = 0; s < PlotData.SLOTS; s++) {
-                int plot = data.plot(o.getUUID(), s);
-                if (plot >= 0 && data.isOpen(plot) && out.size() < MAX_HOSTS) out.add(new Host(o, s, plot));
-            }
+            int plot = data.plot(o.getUUID());
+            if (o != p && plot >= 0 && data.isOpen(plot) && out.size() < MAX_HOSTS) out.add(new Host(o, plot));
         }
         return out;
     }
@@ -70,8 +62,8 @@ public final class PlotTravel {
                 || !p.level().getBlockState(a.pos()).is(BotwClimb.TERMINAL_BLOCK.get())) return;
         boolean inPlot = p.level().dimension() == PlotWorld.DIM;
         PlotData pd = PlotData.get(p.level().getServer());
-        if (a.target() >= TOGGLE_OPEN && a.target() < TOGGLE_OPEN + PlotData.SLOTS) { // the switch on one of the player's own plots; the screen comes back showing the new state
-            int plot = pd.plot(p.getUUID(), a.target() - TOGGLE_OPEN);
+        if (a.target() == TOGGLE_OPEN) { // the friends switch on the player's plot; the screen comes back showing the new state
+            int plot = pd.plot(p.getUUID());
             if (plot < 0) return;
             pd.toggleOpen(plot);
             com.botwclimb.common.Net.toPlayer(p, openPayload(p, a.pos()));
@@ -87,10 +79,9 @@ public final class PlotTravel {
             target = VISIT;
             a = new TerminalActionPayload(a.pos(), VISIT);
         }
-        if (a.target() == RETURN ? !inPlot : inPlot && PlotData.get(p.level().getServer()).slotOf(p.getUUID(), PlotWorld.plotAt(a.pos())) == a.target()) return; // return only from a plot; no ride to the plot you are in
+        if (a.target() == RETURN ? !inPlot : a.target() == OWN && inPlot && pd.owns(p.getUUID(), PlotWorld.plotAt(a.pos()))) return; // return only from a plot; no ride to the plot you are in
         if (!prepare(p, a.pos(), a.target())) return;
-        p.level().playSound(null, a.pos(), SoundEvents.BEACON_ACTIVATE, SoundSource.BLOCKS, 0.6f, 1.4f);
-        TerminalRide.start(p, a.pos(), a.target());
+        TerminalRide.start(p, a.target());
     }
 
     /** Claims the plot if it is new (building its island) and remembers where the trip began. False if the plots cannot be reached. */
@@ -102,8 +93,8 @@ public final class PlotTravel {
             return false;
         }
         PlotData data = PlotData.get(server);
-        if (target >= 0 && target < PlotData.SLOTS) {
-            int plot = data.claim(p.getUUID(), target);
+        if (target == OWN) {
+            int plot = data.claim(p.getUUID());
             if (plot < 0) { // the world has no plots left
                 com.botwclimb.common.Compat.overlay(p, net.minecraft.network.chat.Component.translatable("message.botwclimb.plots_full"));
                 return false;
@@ -113,7 +104,7 @@ public final class PlotTravel {
                 data.markBuilt(plot);
             }
         }
-        if (p.level().dimension() != PlotWorld.DIM) { // a trip from one plot to the other keeps the way home from before
+        if (p.level().dimension() != PlotWorld.DIM) { // a trip between plots (yours and a friend's) keeps the way home from before
             data.setReturn(p.getUUID(), new PlotData.Return(p.level().dimension(), terminal, p.getX(), p.getY(), p.getZ(), p.getYRot()));
         }
         return true;
@@ -128,7 +119,7 @@ public final class PlotTravel {
         UUID id = p.getUUID();
         if (target >= 0) {
             ServerLevel level = server.getLevel(PlotWorld.DIM);
-            int plot = target == VISIT ? (data.mayUse(id, data.guestPlot(id)) ? data.guestPlot(id) : -1) : data.plot(id, target);
+            int plot = target == VISIT ? (data.mayUse(id, data.guestPlot(id)) ? data.guestPlot(id) : -1) : data.plot(id);
             if (level == null || plot < 0) return null;
             PlotWorld.ensureTerminal(level, plot);
             BlockPos t = PlotWorld.terminalPos(plot);

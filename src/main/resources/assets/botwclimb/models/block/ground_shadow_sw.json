@@ -1,0 +1,33 @@
+{
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "particle": "botwclimb:block/shrine_shadow_ground",
+    "sg": "botwclimb:block/shrine_shadow_ground"
+  },
+  "elements": [
+    {
+      "from": [
+        -3,
+        0.15,
+        16
+      ],
+      "to": [
+        0,
+        0.15,
+        19
+      ],
+      "shade": false,
+      "faces": {
+        "up": {
+          "texture": "#sg",
+          "uv": [
+            0,
+            13.8182,
+            2.1818,
+            16
+          ]
+        }
+      }
+    }
+  ]
+}

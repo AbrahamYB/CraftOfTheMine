@@ -1,7 +1,131 @@
 {
-  "variants": {
-    "": {
-      "model": "botwclimb:block/stamina_altar"
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "botwclimb:block/stamina_altar"
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "botwclimb:block/stamina_altar",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "botwclimb:block/stamina_altar",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "botwclimb:block/stamina_altar",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "shadow_north": "true"
+      },
+      "apply": {
+        "model": "botwclimb:block/ground_shadow_north"
+      }
+    },
+    {
+      "when": {
+        "shadow_south": "true"
+      },
+      "apply": {
+        "model": "botwclimb:block/ground_shadow_south"
+      }
+    },
+    {
+      "when": {
+        "shadow_west": "true"
+      },
+      "apply": {
+        "model": "botwclimb:block/ground_shadow_west"
+      }
+    },
+    {
+      "when": {
+        "shadow_east": "true"
+      },
+      "apply": {
+        "model": "botwclimb:block/ground_shadow_east"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "shadow_north": "true"
+          },
+          {
+            "shadow_west": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "botwclimb:block/ground_shadow_nw"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "shadow_north": "true"
+          },
+          {
+            "shadow_east": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "botwclimb:block/ground_shadow_ne"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "shadow_south": "true"
+          },
+          {
+            "shadow_west": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "botwclimb:block/ground_shadow_sw"
+      }
+    },
+    {
+      "when": {
+        "AND": [
+          {
+            "shadow_south": "true"
+          },
+          {
+            "shadow_east": "true"
+          }
+        ]
+      },
+      "apply": {
+        "model": "botwclimb:block/ground_shadow_se"
+      }
     }
-  }
+  ]
 }

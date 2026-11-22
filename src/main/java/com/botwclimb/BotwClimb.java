@@ -98,7 +98,7 @@ public class BotwClimb {
             block("shrine_terminal", com.botwclimb.common.shrine.ShrineTerminalBlock::new,
                     net.minecraft.world.level.block.state.BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.STONE).noOcclusion()
                             .strength(3.5f, 6f).requiresCorrectToolForDrops().pushReaction(com.botwclimb.common.Compat.IMMOVABLE)
-                            .lightLevel(s -> s.getValue(com.botwclimb.common.shrine.ShrineTerminalBlock.ACTIVE) ? 9 : 0));
+                            .lightLevel(s -> 9));
     public static final net.neoforged.neoforge.registries.DeferredItem<net.minecraft.world.item.BlockItem> TERMINAL_ITEM = ITEMS.registerSimpleBlockItem(TERMINAL_BLOCK);
 
     private static final DeferredRegister<net.minecraft.core.particles.ParticleType<?>> PARTICLES =
@@ -107,9 +107,22 @@ public class BotwClimb {
     public static final Supplier<net.minecraft.core.particles.SimpleParticleType> GLYPH =
             PARTICLES.register("sheikah_glyph", () -> new net.minecraft.core.particles.SimpleParticleType(false));
 
+    private static final DeferredRegister<net.minecraft.sounds.SoundEvent> SOUNDS =
+            DeferredRegister.create(net.minecraft.core.registries.Registries.SOUND_EVENT, MOD_ID);
+    /** The terminal ride's sounds (original, synthesised by tools/ride_sounds.py). */
+    public static final Supplier<net.minecraft.sounds.SoundEvent> SOUND_TERMINAL_OPEN = sound("terminal_open"), SOUND_RIDE_START = sound("ride_start"),
+            SOUND_RIDE_VOID = sound("ride_void"), SOUND_RIDE_VOID_UP = sound("ride_void_up"), SOUND_RIDE_ARRIVE = sound("ride_arrive"), SOUND_RIDE_ARRIVE_RIDER = sound("ride_arrive_rider"),
+            SOUND_RIDE_LAND_RIDER = sound("ride_land_rider"), SOUND_RIDE_JUMP = sound("ride_jump"),
+            SOUND_RIDE_SPARKLE = sound("ride_sparkle"), SOUND_RIDE_LAND = sound("ride_land");
+
+    private static Supplier<net.minecraft.sounds.SoundEvent> sound(String name) {
+        return SOUNDS.register(name, () -> net.minecraft.sounds.SoundEvent.createVariableRangeEvent(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(MOD_ID, name)));
+    }
+
     public BotwClimb(IEventBus modBus, net.neoforged.fml.ModContainer container) {
         container.registerConfig(net.neoforged.fml.config.ModConfig.Type.CLIENT, com.botwclimb.client.ClientConfig.SPEC);
         PARTICLES.register(modBus);
+        SOUNDS.register(modBus);
         ATTACHMENTS.register(modBus);
         BLOCKS.register(modBus);
         ITEMS.register(modBus);

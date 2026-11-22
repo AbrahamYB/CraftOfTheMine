@@ -1,3 +1,53 @@
 {
-  "parent": "botwclimb:block/stamina_altar"
+  "parent": "botwclimb:item/stamina_altar_phase_0",
+  "overrides": [
+    {
+      "predicate": {
+        "botwclimb:altar_phase": 0.125
+      },
+      "model": "botwclimb:item/stamina_altar_phase_1"
+    },
+    {
+      "predicate": {
+        "botwclimb:altar_phase": 0.25
+      },
+      "model": "botwclimb:item/stamina_altar_phase_2"
+    },
+    {
+      "predicate": {
+        "botwclimb:altar_phase": 0.375
+      },
+      "model": "botwclimb:item/stamina_altar_phase_3"
+    },
+    {
+      "predicate": {
+        "botwclimb:altar_phase": 0.5
+      },
+      "model": "botwclimb:item/stamina_altar_phase_4"
+    },
+    {
+      "predicate": {
+        "botwclimb:altar_phase": 0.625
+      },
+      "model": "botwclimb:item/stamina_altar_phase_5"
+    },
+    {
+      "predicate": {
+        "botwclimb:altar_phase": 0.75
+      },
+      "model": "botwclimb:item/stamina_altar_phase_6"
+    },
+    {
+      "predicate": {
+        "botwclimb:altar_phase": 0.875
+      },
+      "model": "botwclimb:item/stamina_altar_phase_7"
+    },
+    {
+      "predicate": {
+        "botwclimb:altar_phase": 1.0
+      },
+      "model": "botwclimb:item/stamina_altar_phase_8"
+    }
+  ]
 }

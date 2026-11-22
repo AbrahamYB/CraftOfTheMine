@@ -39,7 +39,7 @@ public final class PlotRules {
 
     @SubscribeEvent
     public static void onHit(PlayerInteractEvent.LeftClickBlock event) {
-        if (event.getLevel() instanceof ServerLevel level && level.dimension() == PlotWorld.DIM && !owns(event.getEntity(), event.getPos())) event.setCanceled(true);
+        if (event.getLevel().dimension() == PlotWorld.DIM && (PlotWorld.isTerminalSpot(event.getPos()) || event.getLevel() instanceof ServerLevel && !owns(event.getEntity(), event.getPos()))) event.setCanceled(true); // a plot's own terminal is like bedrock: not even a crack, and no instant break in creative (cancelled on both sides)
     }
 
     @SubscribeEvent

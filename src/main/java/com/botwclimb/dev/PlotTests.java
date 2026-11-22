@@ -110,21 +110,31 @@ public class PlotTests {
         UUID good = UUID.randomUUID(), dupe = UUID.randomUUID();
         net.minecraft.nbt.CompoundTag g = new net.minecraft.nbt.CompoundTag();
         com.botwclimb.common.Nbt.putUuid(g, "id", good);
-        g.putIntArray("plots", new int[] {5, -7});
+        g.putInt("plot", 5);
         players.add(g);
         net.minecraft.nbt.CompoundTag dd = new net.minecraft.nbt.CompoundTag();
         com.botwclimb.common.Nbt.putUuid(dd, "id", dupe);
-        dd.putIntArray("plots", new int[] {5, 2_000_000_000});
+        dd.putInt("plot", 5);
         players.add(dd);
+        net.minecraft.nbt.CompoundTag bad = new net.minecraft.nbt.CompoundTag();
+        com.botwclimb.common.Nbt.putUuid(bad, "id", UUID.randomUUID());
+        bad.putInt("plot", 2_000_000_000);
+        players.add(bad);
+        UUID old = UUID.randomUUID();
+        net.minecraft.nbt.CompoundTag two = new net.minecraft.nbt.CompoundTag(); // a world from when each player had two plots
+        com.botwclimb.common.Nbt.putUuid(two, "id", old);
+        two.putIntArray("plots", new int[] {3, 4});
+        players.add(two);
         tag.put("players", players);
         PlotData d = PlotData.read(tag);
-        if (d.plot(good, 0) != 5 || d.plot(good, 1) != -1) h.fail("the good entry must survive, the bad number must go");
-        if (d.plot(dupe, 0) != -1 || d.plot(dupe, 1) != -1) h.fail("a plot number must belong to one player only");
-        int fresh = d.claim(UUID.randomUUID(), 0);
+        if (d.plot(good) != 5) h.fail("the good entry must survive");
+        if (d.plot(dupe) != -1) h.fail("a plot number must belong to one player only");
+        if (d.plot(old) != 3) h.fail("from an old world the first of two plots must be kept");
+        int fresh = d.claim(UUID.randomUUID());
         if (fresh < 6 || fresh >= PlotWorld.MAX_PLOTS) h.fail("a new claim must not reuse a stored plot, got " + fresh);
         PlotData full = PlotData.read(new net.minecraft.nbt.CompoundTag());
-        for (int i = 0; i < PlotWorld.MAX_PLOTS; i++) full.claim(UUID.randomUUID(), 0);
-        if (full.claim(UUID.randomUUID(), 0) != -1) h.fail("the world must run out of plots, not hand out endless ones");
+        for (int i = 0; i < PlotWorld.MAX_PLOTS; i++) full.claim(UUID.randomUUID());
+        if (full.claim(UUID.randomUUID()) != -1) h.fail("the world must run out of plots, not hand out endless ones");
         h.succeed();
     }
 
@@ -132,15 +142,15 @@ public class PlotTests {
     public static void plotDataSaves(GameTestHelper h) {
         PlotData d = new PlotData();
         UUID a = UUID.randomUUID(), b = UUID.randomUUID();
-        if (d.claim(a, 0) != 0 || d.claim(b, 0) != 1 || d.claim(a, 1) != 2) h.fail("plots are numbered in the order they are claimed");
-        if (d.claim(a, 0) != 0) h.fail("claiming a claimed slot must keep its plot");
-        if (d.plot(b, 1) != -1 || d.slotOf(a, 2) != 1 || d.slotOf(a, 1) != -1) h.fail("slot lookups are wrong");
+        if (d.claim(a) != 0 || d.claim(b) != 1) h.fail("plots are numbered in the order they are claimed");
+        if (d.claim(a) != 0) h.fail("a player who has a plot must keep it");
+        if (!d.owns(a, 0) || d.owns(a, 1) || d.owns(b, -1)) h.fail("ownership lookups are wrong");
         d.setReturn(a, new PlotData.Return(Level.OVERWORLD, new BlockPos(1, 2, 3), 1.5, 2.0, 3.5, 90f));
         PlotData back = PlotData.roundTrip(d);
-        if (back.plot(a, 0) != 0 || back.plot(a, 1) != 2 || back.plot(b, 0) != 1 || back.plot(b, 1) != -1) h.fail("plots were lost in saving");
+        if (back.plot(a) != 0 || back.plot(b) != 1) h.fail("plots were lost in saving");
         PlotData.Return r = back.returnPoint(a);
         if (r == null || !r.terminal().equals(new BlockPos(1, 2, 3)) || r.x() != 1.5 || r.yaw() != 90f || r.dim() != Level.OVERWORLD) h.fail("return point was lost in saving: " + r);
-        if (back.claim(b, 1) != 3) h.fail("the plot counter was lost in saving");
+        if (back.claim(UUID.randomUUID()) != 2) h.fail("the plot counter was lost in saving");
         h.succeed();
     }
 }

@@ -4,6 +4,6 @@
   "package": "com.botwclimb.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": ["WorldDimensionsMixin", "SlowedPathMixin"],
-  "client": ["PlayerModelMixin", "SoundEngineMixin"],
+  "client": ["PlayerModelMixin", "PlayerJointsMixin", "ArmorJointsMixin", "ArmorJointsCopyMixin", "HudLightMixin", "SoundEngineMixin", "SoundManagerMixin", "SoundManagerAccess", "SoundEngineAccess", "AlSourceAccess"],
   "injectors": { "defaultRequire": 1 }
 }

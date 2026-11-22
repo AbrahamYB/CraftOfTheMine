@@ -11,7 +11,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -19,11 +18,10 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Saved with the world: which plots each player has claimed ({@link #SLOTS} of them) and where each player's last trip into the
+ * Saved with the world: the plot each player has claimed (one each) and where each player's last trip into the
  * plots started, so the way back knows where to land.
  */
 public final class PlotData extends SavedData {
-    public static final int SLOTS = 2;
     private static final String NAME = "botwclimb_plots";
 
     /** Where a ride into the plots began: the terminal that was used and the spot the player stood on. */
@@ -32,7 +30,7 @@ public final class PlotData extends SavedData {
     private int next;
     /** The plots whose island has been built; a built island is never put right again, so nothing a player dug out is refilled or cleared. */
     private final Set<Integer> built = new HashSet<>();
-    private final Map<UUID, int[]> plots = new HashMap<>();
+    private final Map<UUID, Integer> plots = new HashMap<>();
     private final Map<UUID, Return> returns = new HashMap<>();
     /** The plots (by number) friends may join, and the plot each guest last joined. */
     private final Set<Integer> open = new HashSet<>();
@@ -53,9 +51,7 @@ public final class PlotData extends SavedData {
 
     /** Closes the plots of one player to friends (they log out), so no friend stays on in a plot whose owner is away. */
     public void closeOf(UUID owner) {
-        int[] p = plots.get(owner);
-        if (p == null) return;
-        for (int plot : p) if (plot >= 0 && open.remove(plot)) setDirty();
+        if (open.remove(plot(owner))) setDirty();
     }
 
     public void closeAll() {
@@ -69,7 +65,7 @@ public final class PlotData extends SavedData {
         return open.contains(plot);
     }
 
-    /** Flips whether friends may join this one plot (a player's other plot is not affected); returns the new state. */
+    /** Flips whether friends may join this plot; returns the new state. */
     public boolean toggleOpen(int plot) {
         boolean now = open.add(plot);
         if (!now) open.remove(plot);
@@ -79,7 +75,7 @@ public final class PlotData extends SavedData {
 
     /** The plot's own player, or a guest of a plot that is open to friends. */
     public boolean mayUse(UUID player, int plot) {
-        return slotOf(player, plot) >= 0 || open.contains(plot) && guests.getOrDefault(player, -1) == plot;
+        return owns(player, plot) || open.contains(plot) && guests.getOrDefault(player, -1) == plot;
     }
 
     public int guestPlot(UUID player) {
@@ -114,31 +110,24 @@ public final class PlotData extends SavedData {
     }
     //?}
 
-    /** The plot number in this slot, or -1 when the slot is still free. */
-    public int plot(UUID player, int slot) {
-        int[] p = plots.get(player);
-        return p == null ? -1 : p[slot];
+    /** The player's plot number, or -1 when they have not claimed one yet. */
+    public int plot(UUID player) {
+        return plots.getOrDefault(player, -1);
     }
 
-    /** Claims the slot with the next free plot number and returns it; an already claimed slot keeps its plot. */
-    public int claim(UUID player, int slot) {
-        int[] p = plots.computeIfAbsent(player, k -> {
-            int[] a = new int[SLOTS];
-            Arrays.fill(a, -1);
-            return a;
-        });
-        if (p[slot] < 0) {
-            if (next >= PlotWorld.MAX_PLOTS) return -1; // the world is full of plots
-            p[slot] = next++;
-            setDirty();
-        }
-        return p[slot];
+    /** Claims the next free plot number for the player and returns it; a player who has one keeps it. -1 when the world is full of plots. */
+    public int claim(UUID player) {
+        Integer have = plots.get(player);
+        if (have != null) return have;
+        if (next >= PlotWorld.MAX_PLOTS) return -1;
+        plots.put(player, next);
+        setDirty();
+        return next++;
     }
 
-    /** Which of the player's slots holds this plot number, or -1. */
-    public int slotOf(UUID player, int plot) {
-        for (int s = 0; s < SLOTS; s++) if (plot(player, s) == plot) return s;
-        return -1;
+    /** Whether this plot number is the player's own. */
+    public boolean owns(UUID player, int plot) {
+        return plot >= 0 && plot(player) == plot;
     }
 
     public Return returnPoint(UUID player) {
@@ -161,7 +150,7 @@ public final class PlotData extends SavedData {
         for (var e : plots.entrySet()) {
             CompoundTag t = new CompoundTag();
             com.botwclimb.common.Nbt.putUuid(t, "id", e.getKey());
-            t.putIntArray("plots", e.getValue());
+            t.putInt("plot", e.getValue());
             players.add(t);
         }
         tag.put("players", players);
@@ -207,16 +196,16 @@ public final class PlotData extends SavedData {
         for (CompoundTag t : com.botwclimb.common.Nbt.list(tag, "players")) {
             try {
                 UUID owner = com.botwclimb.common.Nbt.getUuid(t, "id"); // first: an entry without an owner must not use up plot numbers
-                int[] saved = com.botwclimb.common.Nbt.getIntArray(t, "plots");
-                int[] a = new int[SLOTS];
-                Arrays.fill(a, -1);
-                for (int i = 0; i < Math.min(saved.length, SLOTS); i++) {
-                    if (saved[i] >= 0 && saved[i] < max && seen.add(saved[i])) { // a plot number belongs to one player only
-                        a[i] = saved[i];
-                        d.next = Math.max(d.next, saved[i] + 1);
-                    }
+                int saved;
+                if (t.contains("plot")) saved = com.botwclimb.common.Nbt.getInt(t, "plot");
+                else { // a world from when each player had two plots: the first is kept; a second is no one's now, and its number is never handed out again (next stays past it)
+                    int[] old = com.botwclimb.common.Nbt.getIntArray(t, "plots");
+                    saved = old.length > 0 ? old[0] : -1;
                 }
-                d.plots.put(owner, a);
+                if (saved >= 0 && saved < max && seen.add(saved)) { // a plot number belongs to one player only
+                    d.plots.put(owner, saved);
+                    d.next = Math.max(d.next, saved + 1);
+                }
             } catch (RuntimeException e) {
                 com.botwclimb.BotwClimb.LOGGER.warn("Skipped an unreadable plot owner entry: {}", e.toString());
             }

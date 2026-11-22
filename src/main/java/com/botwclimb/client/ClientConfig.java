@@ -10,7 +10,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 public final class ClientConfig {
     public static final ModConfigSpec SPEC;
     private static final ModConfigSpec.IntValue MOTION_BLUR;
-    private static final ModConfigSpec.BooleanValue PLOT_OUTLINE, GLIDER_CAMERA;
+    private static final ModConfigSpec.BooleanValue PLOT_OUTLINE, OUTLINE_MOTION, GLIDER_CAMERA;
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
@@ -22,6 +22,7 @@ public final class ClientConfig {
         b.pop();
         b.push("plots");
         PLOT_OUTLINE = b.comment("Draw the outline of the plot's 16 chunks while you are inside a plot").define("outline", true);
+        OUTLINE_MOTION = b.comment("The writing on the plot outline drifts slowly round it (off: it stays still)").define("outlineMotion", true);
         b.pop();
         SPEC = b.build();
     }
@@ -46,6 +47,10 @@ public final class ClientConfig {
         return get(PLOT_OUTLINE, true);
     }
 
+    public static boolean outlineMotion() {
+        return get(OUTLINE_MOTION, true);
+    }
+
     private static <T> T get(ModConfigSpec.ConfigValue<T> value, T fallback) {
         try {
             return value.get();
@@ -64,13 +69,17 @@ public final class ClientConfig {
         return PLOT_OUTLINE;
     }
 
+    public static ModConfigSpec.BooleanValue outlineMotionValue() {
+        return OUTLINE_MOTION;
+    }
+
     public static <T> void set(ModConfigSpec.ConfigValue<T> value, T v) {
         value.set(v);
         SPEC.save();
     }
 
     public static void resetAll() {
-        for (ModConfigSpec.ConfigValue<?> v : new ModConfigSpec.ConfigValue<?>[] {MOTION_BLUR, PLOT_OUTLINE, GLIDER_CAMERA}) reset(v);
+        for (ModConfigSpec.ConfigValue<?> v : new ModConfigSpec.ConfigValue<?>[] {MOTION_BLUR, PLOT_OUTLINE, OUTLINE_MOTION, GLIDER_CAMERA}) reset(v);
         SPEC.save();
     }
 

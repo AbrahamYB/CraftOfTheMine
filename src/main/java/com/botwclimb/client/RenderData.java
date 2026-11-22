@@ -30,6 +30,18 @@ public final class RenderData {
         //?}
     }
 
+    /** Sets the body yaw a player is drawn with (see the living-entity version). */
+    public static void setBodyYaw(net.neoforged.neoforge.client.event.RenderPlayerEvent event, net.minecraft.world.entity.player.Player e, float yaw) {
+        //? if >=1.21.2 {
+        /*var st = event.getRenderState();
+        st.yRot = net.minecraft.util.Mth.wrapDegrees(st.yRot + st.bodyRot - yaw); // the head keeps looking where it looked, turned against the new body
+        st.bodyRot = yaw;
+        *///?} else {
+        e.yBodyRot = yaw;
+        e.yBodyRotO = yaw;
+        //?}
+    }
+
     /** Sets the body yaw a living entity is drawn with, for this render only (the entity's own value is left alone from 1.21.2 on). */
     public static void setBodyYaw(net.neoforged.neoforge.client.event.RenderLivingEvent event, net.minecraft.world.entity.LivingEntity e, float yaw) {
         //? if >=1.21.2 {

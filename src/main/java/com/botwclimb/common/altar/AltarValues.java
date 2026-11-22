@@ -25,7 +25,8 @@ import java.util.regex.Pattern;
  * {@code data/botwclimb/data_maps/item/altar_value.json} (change it with a datapack, no code needed); anything not listed is
  * worth 0. Tools and armor are worked out from what they were made of: the diamonds in the recipe times the value of a
  * diamond, a flat bonus for netherite, a flat bonus for a level 4-5 enchantment, all scaled by the durability left, and
- * they need more than half of it left. Iron and gold gear are worth their ingots per part. Everything else is 0.
+ * they need more than half of it left. Iron and gold gear are worth their ingots per part. A listed valuable that can be enchanted
+ * (a trident) gets the same level 4-5 bonus. Everything else is 0.
  */
 public final class AltarValues {
     public static final DataMapType<Item, Float> ALTAR_VALUE = DataMapType.builder(
@@ -67,7 +68,11 @@ public final class AltarValues {
         if (stack.isEmpty()) return 0f;
         float left = durabilityLeft(stack);
         if (left <= 0.5f) return 0f; // worn out: not accepted
-        if (!isGear(stack)) return looseValue(stack.getItem()) * left; // elytra and tridents wear too
+        if (!isGear(stack)) { // elytra and tridents wear too
+            float v = looseValue(stack.getItem());
+            if (v > 0f && hasStrongEnchant(stack)) v += ENCHANT_BONUS; // only a valuable: an enchanted book stays worth nothing
+            return v * left;
+        }
         Matcher m = GEAR.matcher(BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath());
         if (!m.matches()) return 0f;
         String material = m.group(1), type = m.group(2);

@@ -91,8 +91,6 @@ public final class PlotWorld {
     /** The plot's terminal is the way home, so it comes back if anything removed it. */
     public static void ensureTerminal(ServerLevel level, int plot) {
         BlockPos at = terminalPos(plot);
-        if (!level.getBlockState(at).is(BotwClimb.TERMINAL_BLOCK.get())) {
-            level.setBlock(at, BotwClimb.TERMINAL_BLOCK.get().defaultBlockState(), 3);
-        }
+        if (!level.getBlockState(at).is(BotwClimb.TERMINAL_BLOCK.get())) level.setBlock(at, BotwClimb.TERMINAL_BLOCK.get().defaultBlockState(), 3);
     }
 }

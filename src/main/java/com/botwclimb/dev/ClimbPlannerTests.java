@@ -1094,7 +1094,7 @@ public class ClimbPlannerTests {
             com.botwclimb.common.paraglider.ParagliderController.broadcast(modless, true, false);
             com.botwclimb.common.Net.toPlayer(modless, new com.botwclimb.network.BulletSlowPayload(new int[0]));
             com.botwclimb.common.Net.toWatchers(modless, new com.botwclimb.network.BulletSlowPayload(new int[0]), true);
-            com.botwclimb.common.shrine.TerminalRide.start(modless, h.absolutePos(new net.minecraft.core.BlockPos(5, 1, 5)), 0);
+            com.botwclimb.common.shrine.TerminalRide.start(modless, 0);
             com.botwclimb.common.shrine.TerminalRide.onLogout(new net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent(modless));
         } catch (RuntimeException e) {
             h.fail("sending to a player without the mod threw: " + e);
@@ -1230,6 +1230,16 @@ public class ClimbPlannerTests {
         var weak = stack(net.minecraft.world.item.Items.DIAMOND_CHESTPLATE);
         weak.enchant(holder, 3);
         near(h, "level 3 adds nothing", com.botwclimb.common.altar.AltarValues.unitValue(weak), 16f);
+        var impaling = h.getLevel().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+                .getOrThrow(net.minecraft.world.item.enchantment.Enchantments.IMPALING);
+        near(h, "trident", com.botwclimb.common.altar.AltarValues.unitValue(stack(net.minecraft.world.item.Items.TRIDENT)), 8f);
+        var trident = stack(net.minecraft.world.item.Items.TRIDENT);
+        trident.enchant(impaling, 5);
+        near(h, "impaling 5 trident adds 2", com.botwclimb.common.altar.AltarValues.unitValue(trident), 10f);
+        var book = stack(net.minecraft.world.item.Items.BOOK);
+        book.enchant(impaling, 5);
+        near(h, "an enchantment alone is worth nothing", com.botwclimb.common.altar.AltarValues.unitValue(book), 0f);
+        near(h, "elytra", com.botwclimb.common.altar.AltarValues.unitValue(stack(net.minecraft.world.item.Items.ELYTRA)), 20f);
         h.succeed();
     }
 

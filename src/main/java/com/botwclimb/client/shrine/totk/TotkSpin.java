@@ -23,11 +23,38 @@ public final class TotkSpin {
         if (TotkRide.drawingHud()) return; // the void's own rider is turned by the void, smoothly
         var rider = com.botwclimb.client.RenderData.player(event);
         if (rider == null) return;
-        float angle = TotkRide.spin(rider.getId(), event.getPartialTick());
-        if (angle == 0f) return;
+        if (com.botwclimb.client.shrine.MudHandClient.get(rider.getId()) != null) // all ride long the head follows the view and the body comes round after it (see body)
+            com.botwclimb.client.RenderData.setBodyYaw(event, rider, body(rider, event.getPartialTick()));
+        float angle = TotkRide.spin(rider.getId(), event.getPartialTick()), sunk = TotkRide.sunk(rider, event.getPartialTick());
+        if (angle == 0f && sunk == 0f) return;
         event.getPoseStack().pushPose();
+        event.getPoseStack().translate(0f, -sunk, 0f); // a Return rider stands waist deep in the marker before the pull
         event.getPoseStack().mulPose(Axis.YP.rotationDegrees(angle));
         TURNED.add(rider.getId());
+    }
+
+    /** Each rider's body turn {before this tick, now}: it eases toward the way they look, never more than BODY_LAG behind, and settles facing it (vanilla's own lags 50 degrees and stays there, which showed the rider sideways). */
+    private static final java.util.Map<Integer, float[]> BODY = new java.util.HashMap<>();
+    private static final float BODY_LAG = 60f, BODY_EASE = 0.2f;
+
+    @SubscribeEvent
+    public static void tick(net.neoforged.neoforge.client.event.ClientTickEvent.Post event) {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.level == null) { BODY.clear(); return; }
+        BODY.keySet().removeIf(id -> com.botwclimb.client.shrine.MudHandClient.get(id) == null);
+        for (int id : com.botwclimb.client.shrine.MudHandClient.all().keySet()) {
+            if (!(mc.level.getEntity(id) instanceof net.minecraft.world.entity.LivingEntity le)) continue;
+            float view = le.getYHeadRot();
+            float[] b = BODY.computeIfAbsent(id, k -> new float[] {view, view});
+            b[0] = b[1];
+            float off = net.minecraft.util.Mth.wrapDegrees(view - b[1]) * (1f - BODY_EASE);
+            b[1] = view - net.minecraft.util.Mth.clamp(off, -BODY_LAG, BODY_LAG);
+        }
+    }
+
+    private static float body(net.minecraft.world.entity.player.Player rider, float partial) {
+        float[] b = BODY.get(rider.getId());
+        return b == null ? rider.getYHeadRot() : net.minecraft.util.Mth.rotLerp(partial, b[0], b[1]);
     }
 
     @SubscribeEvent

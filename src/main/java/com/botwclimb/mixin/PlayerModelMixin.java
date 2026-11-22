@@ -34,6 +34,7 @@ public abstract class PlayerModelMixin {
         //?}
         float pt = ageInTicks - p.tickCount;
         if (pt < 0f || pt > 1.001f) return;
+        com.botwclimb.client.shrine.totk.TotkRide.unpose((PlayerModel) (Object) this);
         if (p.hasData(BotwClimb.CLIMB)) {
             ClimbAnimator.apply((PlayerModel) (Object) this, p.getData(BotwClimb.CLIMB), pt, netHeadYaw);
         }

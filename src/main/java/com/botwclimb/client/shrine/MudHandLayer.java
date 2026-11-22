@@ -56,5 +56,8 @@ public final class MudHandLayer extends RenderLayer<AbstractClientPlayer, Player
         if (s == null) return;
         out.geom(com.botwclimb.client.shrine.totk.TotkRide.glowType(), (last, vc) ->
                 com.botwclimb.client.shrine.totk.TotkRide.layer(com.botwclimb.client.ClientCompat.poseStackOf(last), type -> vc, light, p, s, partialTick, hud));
+        // the Return's exit marker, and the ripple a rider arriving at a plot crouches in
+        if ((s.kind() == 1 && s.phase() <= 2 || s.kind() == 0 && s.phase() >= 4) && !hud) out.geom(com.botwclimb.client.shrine.totk.TotkRide.markerType(), (last, vc) ->
+                com.botwclimb.client.shrine.totk.TotkRide.marker(com.botwclimb.client.ClientCompat.poseStackOf(last), vc, p, s, partialTick));
     }
 }

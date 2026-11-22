@@ -2,23 +2,22 @@
 
 Everything the mod adds and how it behaves. Numbers here are the defaults in the code (`ClimbConstants`, `ParagliderConstants`, `BulletConstants`).
 
-Craft of the Mine plays like Breath of the Wild movement in Minecraft: wall climbing with ledge jumps, a paraglider with craftable fabrics, a stamina wheel and altar, bullet time with bows and crossbows, and personal plots reached through shrine terminals. One jar, no dependencies. The mod id is still `botwclimb` (worlds, config and the jar's contents keep that name); the mod is called Craft of the Mine (CotM).
+Craft of the Mine plays like Breath of the Wild movement in Minecraft: wall climbing with ledge jumps, a paraglider with craftable fabrics, a Stamina Bar and altar, bullet time with bows and crossbows, and personal plots reached through shrine terminals. One jar, no dependencies. The mod id is still `botwclimb` (worlds, config and the jar's contents keep that name); the mod is called Craft of the Mine (CotM).
 
 **Climbing.** Hold the Climb key (default Shift + Space, rebindable in Options > Controls, combos allowed) for 0.2 s next to a wall to
 grab it. W/A/S/D move along it at one constant speed; Sneak lets go. Space is a climbing jump (A/D alone hop sideways, W with A/D go
 diagonally). With W held, Space under a block or at the top of a wall is a ledge jump: hang from the edge, then pull up and stand
 (2 and 3 blocks deep overhangs get a long horizontal jump; 2x2 and deeper are refused). Taking damage while on a wall knocks you off.
 
-**Stamina.** Wheels of 750 units, up to three (2250): the first wheel is free and each of 8 upgrades adds a quarter wheel (187.5 units). Climbing drains 36.5/s while moving; a wall jump costs 22.5% of a wheel, a ledge
-jump 13%, a long ledge jump 17.5%; gliding drains it too. Running out leaves you exhausted until the wheel is full again. It recovers
+**Stamina.** The Stamina Bar holds 750 units per ring, up to three rings (2250): the first ring is free and each of 8 upgrades adds a quarter ring (187.5 units). Climbing drains 36.5/s while moving; a wall jump costs 22.5% of a ring, a ledge
+jump 13%, a long ledge jump 17.5%; gliding drains it too. Running out leaves you exhausted until the Stamina Bar is full again. It recovers
 whenever you are not climbing or gliding. The server keeps its own, more generous account so a modified client cannot climb or glide forever.
 
 **Stamina altar** (craft: 8 obsidian around 1 emerald; it breaks like an ender chest: any pickaxe, and it drops itself). Offer valuables for upgrades:
 diamond is 2 points, other items are listed in `data/botwclimb/data_maps/item/altar_value.json` (change it with a datapack), and tools
-and armor are worth their materials (diamond gear by its recipe, netherite plus 3 / 4, plus 2 for a level 4-5 enchantment, scaled by
-durability, over half needed). The 8 upgrades cost 10, 14, 20, 28, 38, 50, 64 and 80 points; extra points are kept as credit, and
-after the last upgrade credit can be taken back as an item. The altar's rings and runes light up per player, and finishing all 8
-plays a short blackout and then glows cyan for good.
+and armor are worth their materials (diamond gear by its recipe, netherite plus 3 / 4, plus 2 for a level 4-5 enchantment, which a
+trident gets too; scaled by durability, over half needed). The 8 upgrades cost 10, 14, 20, 28, 38, 50, 64 and 80 points; extra points are kept as credit, and
+after the last upgrade credit can be taken back as an item. The altar's rings and runes light up green per player, one quarter per upgrade.
 
 **Camera.** While climbing the camera is locked to third person, 25% farther back, with a smooth pull out and back (F5 is ignored
 meanwhile); your own perspective is restored afterwards. While gliding the same view is used unless you turn "Third person while gliding"
@@ -28,7 +27,7 @@ off in the settings, in which case the glider leaves your camera alone.
 
 **Bullet time.** Holding a bow or crossbow in the air slows the fall and really slows the mobs around you (they get about 1 tick in 7 within 8 chunks of you, so what you see is where they are and arrows hit what is drawn); other players near you are slowed down too (their walking, falling, jumping and hitting), but never creative players, riders or Create contraptions. Shots cost stamina. See `common/bullettime` and `client/bullettime`.
 
-**Shrine terminals and plots.** A shrine terminal (creative inventory or `/give`) lists the plots, lets you claim one and travel to it. The plot
+**Shrine terminals and plots.** A shrine terminal (creative inventory or `/give`) shows your plot (one each: claim it, then travel to it) and, beside it, the friends whose plots are open to join. The plot
 dimension is a void with a grass island per plot, and only a plot's owner (or a friend they have opened it to) can build in it. Riding
 there and back plays the Tears of the Kingdom travel. `/plot return` is the way out if the
 terminal is somehow gone. The terminal of a plot cannot be broken or blown up.

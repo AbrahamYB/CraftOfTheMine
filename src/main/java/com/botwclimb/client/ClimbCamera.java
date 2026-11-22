@@ -28,6 +28,7 @@ public final class ClimbCamera {
     /** Camera pull-out / pull-in speed per tick (about 0.7 s each way). */
     private static final float ZOOM_STEP = 0.07f;      // pulling out when you grab a wall
     private static final float ZOOM_STEP_BACK = 0.476f; // pulling back in when you let go: very quick, about 0.1 s (5% slower than 0.5)
+    private static final float RIDE_STEP_BACK = 0.1f; // back into the head after a terminal ride: 0.5 s, smooth
 
     /** The climbing camera sits this much farther behind the player than the normal third-person camera. */
     private static final float CAMERA_FARTHER = 1.25f;
@@ -37,7 +38,7 @@ public final class ClimbCamera {
     private static Phase phase = Phase.OFF;
     private static CameraType saved = CameraType.FIRST_PERSON;
     private static float zoom = 1f, zoomO = 1f; // 0 = camera at the head, 1 = the normal third-person distance
-    private static boolean afterLedge;
+    private static boolean afterLedge, riding; // riding: a terminal ride holds the view at the normal distance, not the climb's wider one
     private static int settle;
 
     private ClimbCamera() {}
@@ -79,7 +80,7 @@ public final class ClimbCamera {
                 if (want) { // grabbed a wall again while pulling in: turn around
                     phase = Phase.ON;
                 } else {
-                    zoom = Math.max(0f, zoom - ZOOM_STEP_BACK);
+                    zoom = Math.max(0f, zoom - (riding ? RIDE_STEP_BACK : ZOOM_STEP_BACK));
                     if (zoom <= 0f) { // now at the head (or back at the normal distance): switch to the player's own perspective
                         if (saved != CameraType.THIRD_PERSON_BACK) set(mc, saved);
                         if (saved.isFirstPerson() || saved == CameraType.THIRD_PERSON_BACK) finish();
@@ -99,6 +100,7 @@ public final class ClimbCamera {
         phase = Phase.OFF;
         zoom = zoomO = 1f;
         afterLedge = false;
+        riding = false;
         settle = 0;
         Minecraft mc = Minecraft.getInstance();
         while (mc.options.keyTogglePerspective.consumeClick()) { /* a press from the last moment must not toggle now */ }
@@ -110,9 +112,10 @@ public final class ClimbCamera {
         if (phase == Phase.OFF) return;
         float z = Mth.lerp(ClientCompat.partialTick(), zoomO, zoom);
         z = z * z * z * (z * (z * 6f - 15f) + 10f); // eased with a gentler start and finish than a plain smoothstep
+        float far = riding ? 1f : CAMERA_FARTHER;
         float mult = saved == CameraType.THIRD_PERSON_BACK
-                ? Mth.lerp(z, 1f, CAMERA_FARTHER)             // already third person: just ease out to the wider view
-                : CAMERA_FARTHER * Math.max(0.02f, z);        // from the head (or the front view) out to the wider view
+                ? Mth.lerp(z, 1f, far)             // already third person: just ease out to the wider view
+                : far * (riding ? Mth.lerp(z, 0.2f, 1f) : Math.max(0.02f, z)); // a ride starts just behind the head, never inside it        // from the head (or the front view) out to the wider view
         event.setDistance(event.getDistance() * mult);
     }
 
@@ -121,6 +124,12 @@ public final class ClimbCamera {
         if (p == null || mc.level == null || !p.isAlive() || !p.hasData(BotwClimb.CLIMB)) return false;
         ClimbData d = p.getData(BotwClimb.CLIMB);
         ClimbState s = d.state;
+        if (com.botwclimb.client.shrine.MudHandClient.get(p.getId()) != null) { // a terminal ride: the same eased switch to third person and back as climbing
+            riding = true; // kept until the camera is back (finish), or the pull-in would jump to the climb's distance
+            afterLedge = false;
+            settle = 0;
+            return true;
+        }
         if (s != ClimbState.NONE) {
             afterLedge = s == ClimbState.LEDGE_TRANSITION;
             settle = LEDGE_SETTLE_TICKS;
@@ -146,7 +155,6 @@ public final class ClimbCamera {
         if (before.isFirstPerson() != type.isFirstPerson()) { // what vanilla does after F5
             mc.gameRenderer.checkEntityPostEffect(type.isFirstPerson() ? mc.getCameraEntity() : null);
         }
-        mc.levelRenderer.needsUpdate();
     }
 
     /** Disconnecting, changing world or respawning must never leave the camera locked. */
@@ -157,6 +165,7 @@ public final class ClimbCamera {
 
     @SubscribeEvent
     public static void onRespawn(ClientPlayerNetworkEvent.Clone event) {
+        if (!com.botwclimb.client.shrine.MudHandClient.all().isEmpty()) return; // a terminal ride changes world mid-ride: keep the view
         hardRestore();
     }
 

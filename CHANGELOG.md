@@ -6,10 +6,34 @@ and on every client that joins it.
 
 ## 1.2
 
+### Added
+* **A guide inside the game.** Short animated lessons show how the altar, the shrine terminal and plots work. You can pause,
+  replay and skip between them. Open it from the mod menu button, or hold W over the altar or terminal item in your inventory.
+* **A mod menu button** next to the buttons on the pause menu and title screen. The idea is borrowed from Create, with credit.
+* **A friends list on the terminal.** Hop to a friend's plot, or open yours so friends can visit.
+* **Sound effects for the terminal ride**, made from scratch.
+* **A setting to stop the plot border's writing from moving.**
+
 ### Changed
+* **The altar has a new look:** a low, worn silver stand instead of a full dark block.
+* **The altar's rings fill from the inside out** and stay green when you are done. The cyan ending is gone.
+* **Some offerings are worth a different amount:** Elytra 40 → 20, Dragon Egg 60 → 45, Trident 6 → 8, Amethyst Shard 0.04 → 0.5.
+  A trident with a level IV or V enchantment is now worth 2 more, as gear already was.
+* **The terminal always looks switched on.**
+* **The terminal and altar menus look like frosted glass** instead of solid black.
+* **One plot per player.** Worlds where players had two keep the first.
+* **The plot border has a new look.**
+* **The terminal ride is rebuilt** to feel much closer to Tears of the Kingdom: floating up, the dark void, and the landing. Your
+  character now bends at the elbows and knees during the ride.
+* **The "stamina wheel" is now called the Stamina Bar.**
+* **The altar casts soft shadows** on the ground around it, like the terminal.
 * **The shrine terminal casts shadows.** Darker textures alone left it looking flat and unlike the world around it. It now has a soft
   shadow on the ground around its base, a shadow on the base's top where the floating top overhangs, a gradient down its pillar just
   under the top, and darker sides toward the ground. These are drawn as part of the block's model, so they work on every version.
+
+### Fixed
+* **The terminal ride** no longer plays a fall sound when you land, no longer jumps the camera, and waits for the world to load
+  before dropping you home.
 
 ## 1.1
 
