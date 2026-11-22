@@ -165,7 +165,8 @@ public class AltarScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float pt) {
-        renderBackground(g, mx, my, pt);
+        //? if <1.21.6
+        renderBackground(g, mx, my, pt); // from 1.21.6 the game draws the background itself first (twice blurs twice, which crashes)
         int x = left(), y = top();
         int ph = panelHeight();
         com.botwclimb.client.GlassUi.panel(g, x, y, W, ph);
