@@ -122,5 +122,4 @@ The first update. It fixes the stamina wheel, adds server checks on climbing, an
 ## 1.0
 
 The first release: climbing, the paraglider with 16 fabrics, the stamina wheel and altar, bullet time, shrine terminals and plot islands,
-for NeoForge on Minecraft 1.21.1, 1.21.3, 1.21.4, 1.21.5, 1.21.8, 1.21.10, 1.21.11, 26.1.2, 26.2 and 26.3. See the [README](README.md) and
-the [player guide](docs/GUIDE.md) for what everything does.
+for NeoForge on Minecraft 1.21.1, 1.21.3, 1.21.4, 1.21.5, 1.21.8, 1.21.10, 1.21.11, 26.1.2, 26.2 and 26.3. See the [README](README.md) for what everything does.

@@ -3,7 +3,7 @@
 NeoForge mod (id `botwclimb`, never change it), built for several Minecraft versions from one source tree with Stonecutter.
 
 Read [docs/HANDOFF.md](docs/HANDOFF.md) first: project state, how to build/test/run each version, the multi-version design, decisions
-and their reasons, open items, and how this user likes to work. Player-facing description: [docs/GUIDE.md](docs/GUIDE.md).
+and their reasons, open items, and how this user likes to work. Player-facing description: [README.md](README.md).
 
 Quick rules:
 * Work on the `main` branch. Tasks are per version, for example `gradlew.bat :1.21.1:build`, `:1.21.4:runGameTestServer`.

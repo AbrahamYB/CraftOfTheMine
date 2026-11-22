@@ -1,7 +1,7 @@
 # Handoff: Craft of the Mine (CotM)
 
 Current state for whoever picks the project up (a person or another Claude session): what it is, how to build and test it, the design
-choices and their reasons, and what is open. Feature numbers are in [GUIDE.md](GUIDE.md); dev setup is in [DEVELOPMENT.md](DEVELOPMENT.md).
+choices and their reasons, and what is open. Feature numbers are in the code and the CHANGELOG; dev setup is in [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## 1. What this is
 
@@ -139,4 +139,4 @@ The server never takes a client claim at face value; every client-to-server payl
 * Deploy the jar to Prism after changes; use hot swap instead of restarting the dev client where possible.
 * They test by playing; back visual claims with harness screenshots. The harness cannot press the real Shift + Space.
 * Release naming: tag `v<mod version>` (old-Minecraft style numbers: 1.1, 1.2, ...; the two early releases both called 1.0.0 were merged into 1.0); **bump `mod_version` in `gradle.properties` for every release, never re-release a number**, jar `CraftOfTheMine-<ver>+mc<mc>.jar`. GitHub shows each jar's SHA-256 itself, so the notes do not list them.
-* Memory notes: `C:\Users\suchy\.claude\projects\C--Users-suchy-Documents-Claude-BOTW-MC-MOD\memory\`.
+* Memory notes: the Claude Code memory folder for this project (under the user profile, `.claude/projects/.../memory/`).

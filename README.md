@@ -15,8 +15,6 @@ This is an unofficial fan project. It is not affiliated with or endorsed by Nint
 * **Bullet time.** A slow fall and slowed mobs while you aim a bow or crossbow in the air.
 * **Shrine terminals and plots.** Claim a plot island and travel there and back with a short ride.
 
-The full description of every feature and its numbers is in the [player guide](docs/GUIDE.md).
-
 ## Downloads
 
 Download the jar for your Minecraft version from the [Releases page](../../releases/latest). Each release lists what changed (the full
