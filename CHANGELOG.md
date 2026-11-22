@@ -7,7 +7,8 @@ and on every client that joins it.
 ## 1.2
 
 The guide update. It adds a guide inside the game, gives the altar a new look and new values, and rebuilds the terminal ride.
-**This version is only for Minecraft 1.21.1 so far;** the other versions follow in a later release.
+For NeoForge on Minecraft 1.21.1, 1.21.3, 1.21.4, 1.21.5, 1.21.8, 1.21.10, 1.21.11, 26.1.2, 26.2 and 26.3, in nine jars (one jar
+serves both 1.21.3 and 1.21.4).
 
 ### Added
 * **A guide inside the game, modelled on Create's Ponder.** The idea and the layout come from Ponder, the guide in the Create mod
